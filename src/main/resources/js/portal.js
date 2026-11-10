@@ -388,6 +388,9 @@
             }
         }
         markCards(doc);
+        if (theme.requests && theme.requests.order) {
+            orderCards(requestsRegion(doc), theme.requests.order);
+        }
         if (page === "login" || page === "create") {
             var forms = doc.getElementsByTagName("form");
             if (forms.length && forms[0].parentNode) {
@@ -442,6 +445,57 @@
         }
     }
 
+    function requestsRegion(doc) {
+        var nodes = doc.getElementsByTagName("*");
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].getAttribute && nodes[i].getAttribute("data-pd-region") === "requests") {
+                return nodes[i];
+            }
+        }
+        return null;
+    }
+
+    function orderCards(parent, order) {
+        if (!parent || !order || !order.length) {
+            return;
+        }
+        var rank = {};
+        for (var i = 0; i < order.length; i++) {
+            rank[String(order[i])] = i;
+        }
+        var cards = [];
+        var children = parent.children;
+        for (var c = 0; c < children.length; c++) {
+            if (children[c].getAttribute && children[c].getAttribute("data-pd-card") === "1") {
+                cards.push(children[c]);
+            }
+        }
+        cards.sort(function (a, b) {
+            var ia = rank[cardId(a)];
+            var ib = rank[cardId(b)];
+            if (ia == null) {
+                ia = 1000;
+            }
+            if (ib == null) {
+                ib = 1000;
+            }
+            return ia - ib;
+        });
+        for (var n = 0; n < cards.length; n++) {
+            parent.appendChild(cards[n]);
+        }
+    }
+
+    function cardId(node) {
+        var typed = node.getAttribute("data-pd-type");
+        if (typed) {
+            return String(typed);
+        }
+        var href = node.getAttribute("href") || "";
+        var match = href.match(/\/create\/(\d+)/);
+        return match ? match[1] : "";
+    }
+
     function apply(options) {
         options = options || {};
         var doc = options.document || document;
@@ -463,6 +517,7 @@
         setAttr(html, "data-pd-layout", (theme.requests && theme.requests.layout) || "grid");
         setAttr(html, "data-pd-shadow", (theme.layout && theme.layout.shadow) || "soft");
         setAttr(html, "data-pd-cards", (theme.requests && theme.requests.cardStyle) || "elevated");
+        setAttr(html, "data-pd-card-size", (theme.requests && theme.requests.size) || "m");
         setAttr(html, "data-pd-desc", theme.requests && theme.requests.showDescription === false ? "off" : "on");
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");

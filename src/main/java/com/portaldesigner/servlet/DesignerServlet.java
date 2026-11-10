@@ -47,6 +47,7 @@ public class DesignerServlet extends HttpServlet {
         }
         if (AdminGuard.requireAdmin(auth, permissions) == null) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setCharacterEncoding("UTF-8");
             response.setContentType("text/html; charset=UTF-8");
             response.getWriter().write("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
                     + "<title>Конструктор портала</title>"
@@ -64,6 +65,7 @@ public class DesignerServlet extends HttpServlet {
                 .replace("@@CONTEXT_JSON@@", Json.stringify(request.getContextPath()))
                 .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
                 .replace("@@PROJECT_JSON@@", Json.stringify(projectKey));
+        response.setCharacterEncoding("UTF-8");
         response.setContentType("text/html; charset=UTF-8");
         response.setHeader("Cache-Control", "no-store");
         response.setHeader("X-Frame-Options", "SAMEORIGIN");

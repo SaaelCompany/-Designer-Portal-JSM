@@ -179,6 +179,7 @@
 #pd-app .field input[type="number"],
 #pd-app .field select,
 #pd-app .field textarea { width: 100%; }
+#pd-app input[type="file"] { display: block; margin-top: 6px; max-width: 100%; font-size: 12px; }
 #pd-app .field textarea { min-height: 88px; resize: vertical; }
 #pd-app .color-row { display: flex; gap: 8px; align-items: center; }
 #pd-app .color-row input[type="color"] { width: 42px; height: 32px; border: 1px solid var(--line); background: #fff; padding: 2px; border-radius: 8px; }

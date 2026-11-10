@@ -9,6 +9,7 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -76,6 +77,30 @@ public class ThemePipelineTest {
         assertTrue(css.contains(".pd-brand-title{display:none !important;}"));
         assertTrue(css.contains("--pd-cols:" + theme.requests.columns));
         assertTrue(css.contains("min-height:48px"));
+    }
+
+    @Test
+    public void customFontCardShapeAndOrderAreKept() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.typography.customFont = "Manrope, \"Segoe UI\"";
+        theme.requests.radius = 28;
+        theme.requests.size = "l";
+        theme.requests.order.add("4");
+        theme.requests.order.add("1");
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        String css = String.valueOf(saved.get("css"));
+        assertTrue(css.contains("--pd-font:Manrope, \"Segoe UI\""));
+        assertTrue(css.contains("--pd-card-radius:28px"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> stored = (Map<String, Object>) saved.get("theme");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requests = (Map<String, Object>) stored.get("requests");
+        assertEquals("l", requests.get("size"));
+        assertEquals(Arrays.asList("4", "1"), requests.get("order"));
+
+        theme.typography.customFont = "Arial;background:url(http://evil)";
+        MappedTheme mapped = ThemeMapper.fromMap(ThemeMapper.toMap(theme));
+        assertEquals("", mapped.theme.typography.customFont);
     }
 
     @Test

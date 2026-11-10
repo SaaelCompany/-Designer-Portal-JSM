@@ -50,7 +50,7 @@ public final class Urls {
             return "";
         }
         if (value.regionMatches(true, 0, "data:image/", 0, 11)) {
-            if (value.length() > 120000 || !DATA_IMAGE.matcher(value).matches()) {
+            if (value.length() > 400000 || !DATA_IMAGE.matcher(value).matches()) {
                 return "";
             }
             return value;

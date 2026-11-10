@@ -43,6 +43,7 @@ public final class PortalTheme {
 
     public static final class Typography {
         public String font = "system";
+        public String customFont = "";
         public int baseSize = 16;
         public int headingWeight = 600;
         public double lineHeight = 1.5d;
@@ -94,6 +95,9 @@ public final class PortalTheme {
         public int gap = 16;
         public boolean showDescription = true;
         public String cardStyle = "elevated";
+        public int radius = 16;
+        public String size = "m";
+        public List<String> order = new ArrayList<String>();
     }
 
     public static final class Announcement {

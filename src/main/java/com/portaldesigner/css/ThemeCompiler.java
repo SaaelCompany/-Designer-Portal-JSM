@@ -2,6 +2,7 @@ package com.portaldesigner.css;
 
 import com.portaldesigner.sanitize.Urls;
 import com.portaldesigner.theme.PortalTheme;
+import com.portaldesigner.theme.ThemeMapper;
 
 /**
  * Turns a sanitized theme into the stylesheet the customer portal and the editor preview both load.
@@ -28,8 +29,10 @@ public final class ThemeCompiler {
         prop(css, "--pd-accent", theme.colors.accent);
         prop(css, "--pd-card", theme.colors.card);
         prop(css, "--pd-radius", theme.layout.radius + "px");
+        prop(css, "--pd-card-radius", theme.requests.radius + "px");
         prop(css, "--pd-content", theme.layout.contentWidth + "px");
-        prop(css, "--pd-font", fontStack(theme.typography.font));
+        String family = ThemeMapper.fontFamily(theme.typography.customFont);
+        prop(css, "--pd-font", family.isEmpty() ? fontStack(theme.typography.font) : family);
         prop(css, "--pd-base", theme.typography.baseSize + "px");
         prop(css, "--pd-heading-weight", String.valueOf(theme.typography.headingWeight));
         prop(css, "--pd-line", trim(theme.typography.lineHeight));

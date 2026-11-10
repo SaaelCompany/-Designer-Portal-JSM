@@ -47,13 +47,18 @@ public final class ThemeMapper {
         Map<String, Object> type = map(raw.get("typography"));
         theme.typography.font = oneOf(str(type.get("font")), theme.typography.font,
                 "system", "serif", "mono", "humanist", "condensed");
+        String requestedFont = str(type.get("customFont")).trim();
+        theme.typography.customFont = fontFamily(requestedFont);
+        if (!requestedFont.isEmpty() && theme.typography.customFont.isEmpty()) {
+            warnings.add("typography.customFont");
+        }
         theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 13, 22, "typography.baseSize", warnings);
         theme.typography.headingWeight = snapWeight(intVal(type.get("headingWeight"), theme.typography.headingWeight));
         theme.typography.lineHeight = clampDouble(doubleVal(type.get("lineHeight"), theme.typography.lineHeight), 1.15d, 1.9d);
 
         Map<String, Object> layout = map(raw.get("layout"));
         theme.layout.contentWidth = clamp(intVal(layout.get("contentWidth"), theme.layout.contentWidth), 640, 1440, "layout.contentWidth", warnings);
-        theme.layout.radius = clamp(intVal(layout.get("radius"), theme.layout.radius), 0, 32, "layout.radius", warnings);
+        theme.layout.radius = clamp(intVal(layout.get("radius"), theme.layout.radius), 0, 48, "layout.radius", warnings);
         theme.layout.shadow = oneOf(str(layout.get("shadow")), theme.layout.shadow, "none", "soft", "strong");
         theme.layout.pagePadding = clamp(intVal(layout.get("pagePadding"), theme.layout.pagePadding), 0, 64, "layout.pagePadding", warnings);
         theme.layout.backgroundImage = asset(str(layout.get("backgroundImage")), warnings, "layout.backgroundImage");
@@ -93,6 +98,9 @@ public final class ThemeMapper {
         theme.requests.gap = clamp(intVal(requests.get("gap"), theme.requests.gap), 0, 40, "requests.gap", warnings);
         theme.requests.showDescription = bool(requests.get("showDescription"), theme.requests.showDescription);
         theme.requests.cardStyle = oneOf(str(requests.get("cardStyle")), theme.requests.cardStyle, "elevated", "outline", "flat");
+        theme.requests.radius = clamp(intVal(requests.get("radius"), theme.requests.radius), 0, 48, "requests.radius", warnings);
+        theme.requests.size = oneOf(str(requests.get("size")), theme.requests.size, "s", "m", "l");
+        theme.requests.order = ids(requests.get("order"));
 
         Map<String, Object> announcement = map(raw.get("announcement"));
         theme.announcement.visible = bool(announcement.get("visible"), theme.announcement.visible);
@@ -152,6 +160,7 @@ public final class ThemeMapper {
 
         Map<String, Object> type = new LinkedHashMap<String, Object>();
         type.put("font", theme.typography.font);
+        type.put("customFont", theme.typography.customFont);
         type.put("baseSize", theme.typography.baseSize);
         type.put("headingWeight", theme.typography.headingWeight);
         type.put("lineHeight", theme.typography.lineHeight);
@@ -203,6 +212,9 @@ public final class ThemeMapper {
         requests.put("gap", theme.requests.gap);
         requests.put("showDescription", theme.requests.showDescription);
         requests.put("cardStyle", theme.requests.cardStyle);
+        requests.put("radius", theme.requests.radius);
+        requests.put("size", theme.requests.size);
+        requests.put("order", theme.requests.order);
         root.put("requests", requests);
 
         Map<String, Object> announcement = new LinkedHashMap<String, Object>();
@@ -271,6 +283,38 @@ public final class ThemeMapper {
         screen.showHero = bool(raw.get("showHero"), defaults.showHero);
         screen.showHeaderTitle = bool(raw.get("showHeaderTitle"), defaults.showHeaderTitle);
         return screen;
+    }
+
+    public static String fontFamily(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String value = raw.trim();
+        if (value.isEmpty() || value.length() > 80 || !value.matches("[\\p{L}\\p{N} ,.'\"\\-]+")) {
+            return "";
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains("url") || lower.contains("expression") || lower.indexOf('\\') >= 0 || lower.indexOf(';') >= 0) {
+            return "";
+        }
+        return value;
+    }
+
+    private static List<String> ids(Object raw) {
+        List<String> ids = new ArrayList<String>();
+        if (!(raw instanceof List)) {
+            return ids;
+        }
+        for (Object item : (List<?>) raw) {
+            String id = str(item).trim();
+            if (id.matches("[A-Za-z0-9_\\-]{1,40}") && !ids.contains(id)) {
+                ids.add(id);
+            }
+            if (ids.size() >= 40) {
+                break;
+            }
+        }
+        return ids;
     }
 
     private static List<PortalTheme.Column> columns(Object raw, List<String> warnings) {

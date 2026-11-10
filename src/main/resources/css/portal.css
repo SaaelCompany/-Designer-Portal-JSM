@@ -290,7 +290,7 @@ html.pd-active [data-pd-card] {
     background: var(--pd-card) !important;
     color: var(--pd-text) !important;
     text-decoration: none !important;
-    border-radius: var(--pd-radius) !important;
+    border-radius: var(--pd-card-radius, var(--pd-radius)) !important;
     padding: 18px 18px 16px;
     min-height: 112px;
     border: 1px solid transparent;
@@ -319,6 +319,32 @@ html.pd-active[data-pd-cards="flat"] [data-pd-card] {
 
 html.pd-active [data-pd-card]:hover {
     transform: translateY(-2px);
+}
+
+html.pd-active[data-pd-card-size="s"] [data-pd-card] {
+    padding: 12px;
+    min-height: 84px;
+}
+
+html.pd-active[data-pd-card-size="s"] .pd-card-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+}
+
+html.pd-active[data-pd-card-size="l"] [data-pd-card] {
+    padding: 28px 26px 24px;
+    min-height: 168px;
+}
+
+html.pd-active[data-pd-card-size="l"] .pd-card-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+}
+
+html.pd-active[data-pd-card-size="l"] .pd-card-title {
+    font-size: 1.25rem;
 }
 
 html.pd-active[data-pd-layout="list"] [data-pd-card] {

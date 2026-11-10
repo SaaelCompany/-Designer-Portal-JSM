@@ -58,7 +58,20 @@
             weight: "Насыщенность заголовков",
             line: "Интерлиньяж",
             width: "Ширина содержимого",
-            radius: "Скругление",
+            radius: "Скругление блоков",
+            cardRadius: "Скругление карточек",
+            cardSize: "Размер карточек",
+            sizeS: "Меньше",
+            sizeM: "Обычный",
+            sizeL: "Больше",
+            cardOrder: "Порядок карточек",
+            cardOrderHint: "Перетащите карточку в макете или подвиньте её кнопками. Так меняется порядок услуг на портале.",
+            moveUp: "Выше",
+            moveDown: "Ниже",
+            customFont: "Свой шрифт",
+            customFontHint: "Имя шрифта, который уже установлен у посетителя. Например: Manrope, Segoe UI",
+            upload: "Загрузить",
+            fileBig: "Изображение больше 270 КБ. Сожмите его или вставьте адрес.",
             shadow: "Тень",
             pad: "Поля страницы",
             pageImage: "Фон страницы, URL",
@@ -198,6 +211,19 @@
             line: "Line height",
             width: "Content width",
             radius: "Corner radius",
+            cardRadius: "Card corners",
+            cardSize: "Card size",
+            sizeS: "Smaller",
+            sizeM: "Regular",
+            sizeL: "Larger",
+            cardOrder: "Card order",
+            cardOrderHint: "Drag a card in the preview, or move it with the buttons. This is the order visitors see.",
+            moveUp: "Up",
+            moveDown: "Down",
+            customFont: "Custom font",
+            customFontHint: "A font already installed for the visitor. For example: Manrope, Segoe UI",
+            upload: "Upload",
+            fileBig: "Image is over 270 KB. Compress it or paste a URL.",
             shadow: "Shadow",
             pad: "Page padding",
             pageImage: "Page background URL",
@@ -569,13 +595,62 @@
             "</body></html>";
     }
 
+    function catalogTypes() {
+        return state.requestTypes.length ? state.requestTypes : SAMPLE;
+    }
+
+    function orderedTypes(types) {
+        var order = (state.theme && state.theme.requests && state.theme.requests.order) || [];
+        var copy = types.slice();
+        if (!order.length) {
+            return copy;
+        }
+        var rank = {};
+        order.forEach(function (id, index) { rank[String(id)] = index; });
+        copy.sort(function (a, b) {
+            var ia = rank[String(a.id)];
+            var ib = rank[String(b.id)];
+            if (ia == null) {
+                ia = 1000;
+            }
+            if (ib == null) {
+                ib = 1000;
+            }
+            return ia - ib;
+        });
+        return copy;
+    }
+
+    function moveCard(id, delta) {
+        var types = orderedTypes(catalogTypes());
+        var ids = types.map(function (type) { return String(type.id); });
+        var index = ids.indexOf(String(id));
+        var next = index + delta;
+        if (index < 0 || next < 0 || next >= ids.length) {
+            return;
+        }
+        var swap = ids[index];
+        ids[index] = ids[next];
+        ids[next] = swap;
+        remember();
+        state.theme.requests.order = ids;
+        markDirty();
+        var box = frameDoc() && frameDoc().getElementById("mock-requests");
+        if (box) {
+            box.removeAttribute("data-sig");
+        }
+        renderInspector();
+        scheduleCompile();
+    }
+
     function fillCards(doc) {
         var box = doc.getElementById("mock-requests");
         if (!box) {
             return;
         }
-        var types = state.requestTypes.length ? state.requestTypes : SAMPLE;
-        var sig = state.portalId + ":" + types.map(function (item) { return item.name; }).join("|");
+        var types = orderedTypes(catalogTypes());
+        var orderKey = ((state.theme && state.theme.requests && state.theme.requests.order) || []).join(",");
+        var sig = state.portalId + ":" + orderKey + ":" + types.map(function (item) { return item.name; }).join("|");
         if (box.getAttribute("data-sig") === sig) {
             return;
         }
@@ -583,11 +658,13 @@
         while (box.firstChild) {
             box.removeChild(box.firstChild);
         }
-        var portal = state.portalId === "global" ? "1" : state.portalId;
-        types.forEach(function (type, index) {
+        types.forEach(function (type) {
             var link = doc.createElement("a");
-            link.href = "#";
+            link.href = "/servicedesk/customer/portal/1/create/" + encodeURIComponent(type.id);
             link.setAttribute("data-pd-card", "1");
+            link.setAttribute("data-pd-type", String(type.id));
+            link.draggable = true;
+            link.style.cursor = "grab";
             var icon = doc.createElement("span");
             icon.className = "pd-card-icon";
             icon.textContent = (type.name || "?").charAt(0).toUpperCase();
@@ -627,6 +704,58 @@
                 node = node.parentNode;
             }
         }, true);
+        var dragId = "";
+        doc.addEventListener("dragstart", function (event) {
+            var card = event.target.closest ? event.target.closest("[data-pd-card]") : null;
+            if (!card) {
+                return;
+            }
+            dragId = card.getAttribute("data-pd-type") || "";
+            if (event.dataTransfer) {
+                event.dataTransfer.setData("text/plain", dragId);
+                event.dataTransfer.effectAllowed = "move";
+            }
+        });
+        doc.addEventListener("dragover", function (event) {
+            if (event.target.closest && event.target.closest("[data-pd-card]")) {
+                event.preventDefault();
+            }
+        });
+        doc.addEventListener("drop", function (event) {
+            var card = event.target.closest ? event.target.closest("[data-pd-card]") : null;
+            var box = doc.getElementById("mock-requests");
+            if (!card || !box || !dragId) {
+                return;
+            }
+            event.preventDefault();
+            var dragged = null;
+            var cards = box.children;
+            for (var i = 0; i < cards.length; i++) {
+                if (cards[i].getAttribute && cards[i].getAttribute("data-pd-type") === dragId) {
+                    dragged = cards[i];
+                    break;
+                }
+            }
+            if (dragged && dragged !== card) {
+                box.insertBefore(dragged, card);
+            }
+            var ids = [];
+            for (var n = 0; n < box.children.length; n++) {
+                var typed = box.children[n].getAttribute && box.children[n].getAttribute("data-pd-type");
+                if (typed) {
+                    ids.push(typed);
+                }
+            }
+            remember();
+            state.theme.requests.order = ids;
+            markDirty();
+            box.setAttribute("data-sig", state.portalId + ":" + ids.join(",") + ":" + catalogTypes().map(function (item) { return item.name; }).join("|"));
+            if (state.section === "requests") {
+                renderInspector();
+            }
+            scheduleCompile();
+            dragId = "";
+        });
         doc.addEventListener("input", function (event) {
             var path = event.target.getAttribute && event.target.getAttribute("data-pd-bind");
             if (!path || !state.theme) {
@@ -869,6 +998,34 @@
         return bind(path, h("input", {type: "text", value: getPath(state.theme, path) || ""}));
     }
 
+    function imageInput(path) {
+        var wrap = h("div", {});
+        wrap.appendChild(textInput(path));
+        var file = h("input", {type: "file", accept: "image/png,image/jpeg,image/gif,image/webp"});
+        file.addEventListener("change", function () {
+            var picked = file.files && file.files[0];
+            if (!picked) {
+                return;
+            }
+            if (picked.size > 270 * 1024) {
+                toast(t("fileBig"));
+                file.value = "";
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+                remember();
+                setPath(state.theme, path, String(reader.result || ""));
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            };
+            reader.readAsDataURL(picked);
+        });
+        wrap.appendChild(file);
+        return wrap;
+    }
+
     function area(path, rows) {
         return bind(path, h("textarea", {rows: rows || 4, value: getPath(state.theme, path) || ""}));
     }
@@ -1048,6 +1205,8 @@
         host.appendChild(field("typography.font", t("font"), selectInput("typography.font", [
             ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
         ])));
+        host.appendChild(field("typography.customFont", t("customFont"), textInput("typography.customFont")));
+        host.appendChild(h("p", {class: "hint", text: t("customFontHint")}));
         host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 13, 22)));
         host.appendChild(field("typography.headingWeight", t("weight"), selectInput("typography.headingWeight", [
             ["400", "400"], ["500", "500"], ["600", "600"], ["700", "700"], ["800", "800"]
@@ -1055,10 +1214,10 @@
         host.appendChild(field("typography.lineHeight", t("line"), numberInput("typography.lineHeight", 1.15, 1.9, 0.05)));
         host.appendChild(h("div", {class: "block-label", text: t("layout")}));
         host.appendChild(field("layout.contentWidth", t("width"), numberInput("layout.contentWidth", 640, 1440, 10)));
-        host.appendChild(field("layout.radius", t("radius"), numberInput("layout.radius", 0, 32)));
+        host.appendChild(field("layout.radius", t("radius"), numberInput("layout.radius", 0, 48)));
         host.appendChild(field("layout.shadow", t("shadow"), selectInput("layout.shadow", [["none", "none"], ["soft", "soft"], ["strong", "strong"]])));
         host.appendChild(field(pathFor("layout.pagePadding"), t("pad"), numberInput("layout.pagePadding", 0, 64)));
-        host.appendChild(field("layout.backgroundImage", t("pageImage"), textInput("layout.backgroundImage")));
+        host.appendChild(field("layout.backgroundImage", t("pageImage"), imageInput("layout.backgroundImage")));
     }
 
     function renderHeader(host) {
@@ -1069,7 +1228,7 @@
         host.appendChild(checkInput("header.showLogin", t("showLogin")));
         host.appendChild(field("header.loginLabel", t("loginLabel"), textInput("header.loginLabel")));
         host.appendChild(field(pathFor("header.height"), t("headerH"), numberInput("header.height", 48, 140)));
-        host.appendChild(field("header.logoUrl", t("logo"), textInput("header.logoUrl")));
+        host.appendChild(field("header.logoUrl", t("logo"), imageInput("header.logoUrl")));
         host.appendChild(field("header.logoAlt", t("logoAlt"), textInput("header.logoAlt")));
         host.appendChild(field("header.logoHeight", t("logoH"), numberInput("header.logoHeight", 16, 96)));
         host.appendChild(h("div", {class: "block-label", text: t("links")}));
@@ -1086,7 +1245,7 @@
         host.appendChild(field("hero.subtitle", t("heroSub"), area("hero.subtitle", 3)));
         host.appendChild(field("hero.align", t("align"), selectInput("hero.align", [["start", "start"], ["center", "center"]])));
         host.appendChild(field(pathFor("hero.height"), t("heroH"), numberInput("hero.height", 0, 640, 10)));
-        host.appendChild(field("hero.backgroundImage", t("heroImage"), textInput("hero.backgroundImage")));
+        host.appendChild(field("hero.backgroundImage", t("heroImage"), imageInput("hero.backgroundImage")));
         host.appendChild(field("hero.overlay", t("overlay"), numberInput("hero.overlay", 0, 0.8, 0.05)));
     }
 
@@ -1101,7 +1260,18 @@
         host.appendChild(field(pathFor("requests.columns"), t("columns"), numberInput("requests.columns", 1, 4)));
         host.appendChild(field("requests.gap", t("gap"), numberInput("requests.gap", 0, 40)));
         host.appendChild(field("requests.cardStyle", t("cardStyle"), selectInput("requests.cardStyle", [["elevated", "elevated"], ["outline", "outline"], ["flat", "flat"]])));
+        host.appendChild(field("requests.radius", t("cardRadius"), numberInput("requests.radius", 0, 48)));
+        host.appendChild(field("requests.size", t("cardSize"), selectInput("requests.size", [["s", "sizeS"], ["m", "sizeM"], ["l", "sizeL"]])));
         host.appendChild(checkInput("requests.showDescription", t("descriptions")));
+        host.appendChild(h("div", {class: "block-label", text: t("cardOrder")}));
+        host.appendChild(h("p", {class: "hint", text: t("cardOrderHint")}));
+        orderedTypes(catalogTypes()).forEach(function (type) {
+            host.appendChild(h("div", {class: "link-row"}, [
+                h("span", {text: type.name || type.id}),
+                h("button", {type: "button", class: "text-btn", text: t("moveUp"), onclick: function () { moveCard(type.id, -1); }}),
+                h("button", {type: "button", class: "text-btn", text: t("moveDown"), onclick: function () { moveCard(type.id, 1); }})
+            ]));
+        });
     }
 
     function renderAnnouncement(host) {
