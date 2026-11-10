@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<atlassian-plugin key="${atlassian.plugin.key}" name="Portal Designer" plugins-version="2">
+    <plugin-info>
+        <description key="portal-designer.description">WYSIWYG customer portal designer for Jira Service Management.</description>
+        <version>${project.version}</version>
+        <vendor name="Portal Designer" url="https://github.com"/>
+        <param name="configure.url">/plugins/servlet/portal-designer</param>
+        <param name="atlassian-data-center-compatible">true</param>
+        <param name="atlassian-data-center-status">compatible</param>
+        <param name="plugin-icon">images/pluginIcon.png</param>
+        <param name="plugin-logo">images/pluginLogo.png</param>
+    </plugin-info>
+
+    <resource type="i18n" name="i18n" location="portal-designer"/>
+
+    <web-section key="portal-designer-section" name="Portal Designer section" location="admin_plugins_menu" weight="120">
+        <label key="portal-designer.section.label"/>
+    </web-section>
+
+    <web-item key="portal-designer-link" name="Portal Designer link" section="admin_plugins_menu/portal-designer-section" weight="10">
+        <label key="portal-designer.menu.label"/>
+        <link linkId="portal-designer-admin-link">/plugins/servlet/portal-designer</link>
+    </web-item>
+
+    <servlet key="portal-designer-servlet" name="Portal Designer" class="com.portaldesigner.servlet.DesignerServlet">
+        <description>Visual editor for the customer portal.</description>
+        <url-pattern>/portal-designer</url-pattern>
+    </servlet>
+
+    <servlet-filter key="portal-designer-inject" name="Portal Designer runtime injector"
+                    class="com.portaldesigner.servlet.PortalInjectFilter"
+                    location="before-decoration" weight="100">
+        <description>Adds the portal runtime to customer portal HTML.</description>
+        <url-pattern>/servicedesk/customer/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+    </servlet-filter>
+
+    <web-resource key="portal-runtime" name="Portal Designer runtime">
+        <description>Styles and behaviour applied on the customer portal.</description>
+        <context>customerportal</context>
+        <context>servicedesk.portal</context>
+        <context>servicedesk.general</context>
+        <resource type="download" name="portal.css" location="css/portal.css"/>
+        <resource type="download" name="portal.js" location="js/portal.js"/>
+    </web-resource>
+
+    <web-resource key="designer-ui" name="Portal Designer editor">
+        <description>Editor assets. Loaded only by the designer page.</description>
+        <resource type="download" name="designer.css" location="ui/designer.css"/>
+        <resource type="download" name="designer.js" location="ui/designer.js"/>
+    </web-resource>
+
+    <rest key="portal-designer-rest" path="/portal-designer" version="1.0">
+        <description>Theme storage and CSS compilation.</description>
+        <package>com.portaldesigner.rest</package>
+    </rest>
+</atlassian-plugin>
