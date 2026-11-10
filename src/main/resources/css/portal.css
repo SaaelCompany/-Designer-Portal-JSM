@@ -274,8 +274,8 @@ html.pd-active [data-pd-region="search"] textarea {
     box-shadow: 0 10px 30px rgba(20, 16, 12, 0.06);
 }
 
-html.pd-active [data-pd-region="requests"] {
-    display: grid !important;
+html.pd-active[data-pd-page="home"][data-pd-chrome="full"] [data-pd-region="requests"] {
+    display: grid;
     grid-template-columns: repeat(var(--pd-cols), minmax(0, 1fr));
     gap: var(--pd-gap);
     padding: 18px 0 48px;
@@ -286,14 +286,18 @@ html.pd-active[data-pd-layout="list"] [data-pd-region="requests"] {
 }
 
 html.pd-active [data-pd-card] {
+    background: var(--pd-card);
+    color: var(--pd-text);
+    text-decoration: none;
+    border-radius: var(--pd-card-radius, var(--pd-radius));
+    border: 1px solid transparent;
+}
+
+html.pd-active[data-pd-chrome="full"] #mock-requests [data-pd-card],
+html.pd-active[data-pd-chrome="full"] .cv-request-types [data-pd-card] {
     display: block;
-    background: var(--pd-card) !important;
-    color: var(--pd-text) !important;
-    text-decoration: none !important;
-    border-radius: var(--pd-card-radius, var(--pd-radius)) !important;
     padding: 18px 18px 16px;
     min-height: 112px;
-    border: 1px solid transparent;
 }
 
 html.pd-active[data-pd-shadow="soft"] [data-pd-card] {
@@ -409,10 +413,12 @@ html.pd-active input[type="submit"] {
     background: var(--pd-primary) !important;
     color: var(--pd-primary-text) !important;
     border-color: transparent !important;
-    border-radius: 999px !important;
+    border-radius: var(--pd-radius, 3px) !important;
 }
 
-html.pd-active a {
+html.pd-active #pd-chrome a,
+html.pd-active #pd-footer a,
+html.pd-active [data-pd-card] {
     color: var(--pd-link);
 }
 
@@ -461,8 +467,25 @@ html.pd-active .pd-custom-html a {
 
 html.pd-active:not([data-pd-page="home"]) #mock-home,
 html.pd-active:not([data-pd-page="login"]) #mock-login,
-html.pd-active:not([data-pd-page="create"]) #mock-create {
+html.pd-active:not([data-pd-page="create"]) #mock-create,
+html.pd-active:not([data-pd-page="requests"]) #mock-requests-page {
     display: none !important;
+}
+
+html.pd-active[data-pd-chrome="quiet"] #pd-header,
+html.pd-active[data-pd-chrome="quiet"] #pd-hero,
+html.pd-active[data-pd-chrome="quiet"] #pd-footer,
+html.pd-active[data-pd-chrome="quiet"] #pd-announcement {
+    display: none !important;
+}
+
+html.pd-active[data-pd-chrome="quiet"] [data-pd-region="header"],
+html.pd-active[data-pd-chrome="quiet"] [data-pd-region="footer"] {
+    display: revert !important;
+    position: static !important;
+    background: unset !important;
+    color: unset !important;
+    min-height: 0;
 }
 
 html.pd-active #mock-login h2,
@@ -588,6 +611,42 @@ html.pd-active .pd-widget img {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+html.pd-active .pd-tip {
+    z-index: 8;
+}
+
+html.pd-active .pd-tip-mark {
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--pd-primary);
+    color: var(--pd-primary-text);
+    font-weight: 700;
+    cursor: help;
+}
+
+html.pd-active .pd-tip-bubble {
+    display: none;
+    position: absolute;
+    left: 28px;
+    top: 0;
+    width: 220px;
+    background: #172B4D;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1.4;
+    z-index: 9;
+}
+
+html.pd-active .pd-tip:hover .pd-tip-bubble,
+html.pd-active .pd-tip:focus-within .pd-tip-bubble,
+html.pd-active .pd-tip.pd-tip-open .pd-tip-bubble {
+    display: block;
 }
 
 html.pd-active .pd-widget-button {

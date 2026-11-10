@@ -91,6 +91,7 @@
     color: var(--ink);
 }
 
+#pd-app .ghost.active { background: #DEEBFF; color: #0052CC; }
 #pd-app .ghost:hover,
 #pd-app .text-btn:hover { background: #F4F5F7; }
 

@@ -74,6 +74,8 @@ public final class ThemeMapper {
         theme.header.showLogin = bool(header.get("showLogin"), theme.header.showLogin);
         theme.header.loginLabel = text(header.get("loginLabel"), theme.header.loginLabel, 40);
         theme.header.height = clamp(intVal(header.get("height"), theme.header.height), 48, 140, "header.height", warnings);
+        theme.header.allPages = bool(header.get("allPages"), theme.header.allPages);
+        theme.header.takeover = bool(header.get("takeover"), theme.header.takeover);
         theme.header.links = links(header.get("links"), 8, warnings);
         theme.header.customHtml = html(str(header.get("customHtml")), warnings, "header.customHtml");
 
@@ -123,6 +125,7 @@ public final class ThemeMapper {
         theme.responsive.mobile = screen(map(responsive.get("mobile")), PortalTheme.Screen.mobile(), warnings, "mobile");
         theme.responsive.tablet = screen(map(responsive.get("tablet")), PortalTheme.Screen.tablet(), warnings, "tablet");
         theme.canvas = canvas(raw.get("canvas"), warnings);
+        theme.elements = elements(raw.get("elements"), warnings);
 
         String custom = str(raw.get("customCss"));
         String cleanCss = CssSanitizer.sanitize(custom);
@@ -186,6 +189,8 @@ public final class ThemeMapper {
         header.put("showLogin", theme.header.showLogin);
         header.put("loginLabel", theme.header.loginLabel);
         header.put("height", theme.header.height);
+        header.put("allPages", theme.header.allPages);
+        header.put("takeover", theme.header.takeover);
         header.put("links", linkMaps(theme.header.links));
         header.put("customHtml", theme.header.customHtml);
         root.put("header", header);
@@ -245,6 +250,7 @@ public final class ThemeMapper {
         responsive.put("tablet", screenMap(theme.responsive.tablet));
         root.put("responsive", responsive);
         root.put("canvas", canvasMap(theme.canvas));
+        root.put("elements", elementMaps(theme.elements));
         root.put("customCss", theme.customCss);
         return root;
     }
@@ -311,7 +317,8 @@ public final class ThemeMapper {
             }
             PortalTheme.Widget widget = new PortalTheme.Widget();
             widget.id = id;
-            widget.type = oneOf(str(item.get("type")), "text", "text", "image", "button", "html");
+            widget.type = oneOf(str(item.get("type")), "text", "text", "image", "button", "html", "tooltip");
+            widget.page = oneOf(str(item.get("page")), "home", "home", "requests", "create", "login", "all");
             widget.text = text(item.get("text"), "", 500);
             String href = Urls.safeHref(str(item.get("href")));
             if (!str(item.get("href")).trim().isEmpty() && href.isEmpty()) {
@@ -320,6 +327,7 @@ public final class ThemeMapper {
             widget.href = href;
             widget.imageUrl = asset(str(item.get("imageUrl")), warnings, "canvas.widgets");
             widget.html = html(str(item.get("html")), warnings, "canvas.widgets");
+            widget.target = selector(str(item.get("target")), warnings, "canvas.widgets");
             widget.desktop = spot(item.get("desktop"));
             widget.tablet = spot(item.get("tablet"));
             widget.mobile = spot(item.get("mobile"));
@@ -343,10 +351,12 @@ public final class ThemeMapper {
                 Map<String, Object> item = new LinkedHashMap<String, Object>();
                 item.put("id", widget.id);
                 item.put("type", widget.type);
+                item.put("page", widget.page);
                 item.put("text", widget.text);
                 item.put("href", widget.href);
                 item.put("imageUrl", widget.imageUrl);
                 item.put("html", widget.html);
+                item.put("target", widget.target);
                 item.put("desktop", spotMapOne(widget.desktop));
                 item.put("tablet", spotMapOne(widget.tablet));
                 item.put("mobile", spotMapOne(widget.mobile));
@@ -378,6 +388,114 @@ public final class ThemeMapper {
         map.put("w", source.w);
         map.put("h", source.h);
         return map;
+    }
+
+    private static String selector(String raw, List<String> warnings, String field) {
+        String value = raw == null ? "" : raw.trim();
+        if (value.isEmpty()) {
+            return "";
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (value.length() > 180 || lower.contains("url") || lower.contains("expression")
+                || lower.contains("javascript") || value.indexOf('\\') >= 0 || value.indexOf(';') >= 0
+                || value.indexOf('{') >= 0 || value.indexOf('}') >= 0) {
+            warnings.add(field);
+            return "";
+        }
+        String stripped = value.replaceAll(":nth-child\\(\\d+\\)", "").replaceAll(":nth-of-type\\(\\d+\\)", "");
+        if (!stripped.matches("[#\\.\\[\\]A-Za-z0-9_=\"':\\s>+~-]{1,180}")
+                || stripped.indexOf('(') >= 0 || stripped.indexOf(')') >= 0) {
+            warnings.add(field);
+            return "";
+        }
+        return value;
+    }
+
+    private static List<PortalTheme.ElementRule> elements(Object raw, List<String> warnings) {
+        List<PortalTheme.ElementRule> rules = new ArrayList<PortalTheme.ElementRule>();
+        if (!(raw instanceof List)) {
+            return rules;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && rules.size() < 40; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String id = str(item.get("id")).trim();
+            String selector = selector(str(item.get("selector")), warnings, "elements");
+            if (!id.matches("[A-Za-z][A-Za-z0-9]{0,19}") || selector.isEmpty()) {
+                warnings.add("elements");
+                continue;
+            }
+            PortalTheme.ElementRule rule = new PortalTheme.ElementRule();
+            rule.id = id;
+            rule.page = oneOf(str(item.get("page")), "home", "home", "requests", "create", "login", "all");
+            rule.selector = selector;
+            rule.label = text(item.get("label"), "", 80);
+            rule.look = look(map(item.get("look")), warnings);
+            rule.desktop = spot(item.get("desktop"));
+            rule.tablet = spot(item.get("tablet"));
+            rule.mobile = spot(item.get("mobile"));
+            rules.add(rule);
+        }
+        if (list.size() > 40) {
+            warnings.add("elements");
+        }
+        return rules;
+    }
+
+    private static PortalTheme.Look look(Map<String, Object> raw, List<String> warnings) {
+        PortalTheme.Look look = new PortalTheme.Look();
+        if (raw.get("color") != null && !str(raw.get("color")).trim().isEmpty()) {
+            look.color = color(raw, "color", "", warnings);
+        }
+        if (raw.get("background") != null && !str(raw.get("background")).trim().isEmpty()) {
+            look.background = color(raw, "background", "", warnings);
+        }
+        look.fontFamily = fontFamily(str(raw.get("fontFamily")));
+        int fontSize = intVal(raw.get("fontSize"), 0);
+        look.fontSize = fontSize <= 0 ? 0 : clampSilent(fontSize, 10, 72);
+        int weight = intVal(raw.get("fontWeight"), 0);
+        look.fontWeight = weight <= 0 ? 0 : snapWeight(weight);
+        int radius = intVal(raw.get("radius"), -1);
+        look.radius = radius < 0 ? -1 : clampSilent(radius, 0, 48);
+        int padding = intVal(raw.get("padding"), -1);
+        look.padding = padding < 0 ? -1 : clampSilent(padding, 0, 80);
+        if (raw.get("width") != null) {
+            look.width = clampSilent(intVal(raw.get("width"), 0), 0, 2400);
+        }
+        if (raw.get("height") != null) {
+            look.height = clampSilent(intVal(raw.get("height"), 0), 0, 2400);
+        }
+        return look;
+    }
+
+    private static List<Map<String, Object>> elementMaps(List<PortalTheme.ElementRule> rules) {
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        if (rules == null) {
+            return out;
+        }
+        for (PortalTheme.ElementRule rule : rules) {
+            Map<String, Object> item = new LinkedHashMap<String, Object>();
+            item.put("id", rule.id);
+            item.put("page", rule.page);
+            item.put("selector", rule.selector);
+            item.put("label", rule.label);
+            Map<String, Object> look = new LinkedHashMap<String, Object>();
+            look.put("color", rule.look.color);
+            look.put("background", rule.look.background);
+            look.put("fontFamily", rule.look.fontFamily);
+            look.put("fontSize", rule.look.fontSize);
+            look.put("fontWeight", rule.look.fontWeight);
+            look.put("radius", rule.look.radius);
+            look.put("padding", rule.look.padding);
+            look.put("width", rule.look.width);
+            look.put("height", rule.look.height);
+            item.put("look", look);
+            item.put("desktop", spotMapOne(rule.desktop));
+            item.put("tablet", spotMapOne(rule.tablet));
+            item.put("mobile", spotMapOne(rule.mobile));
+            out.add(item);
+        }
+        return out;
     }
 
     private static Map<String, Object> screenMap(PortalTheme.Screen screen) {

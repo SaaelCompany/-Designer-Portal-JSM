@@ -8,6 +8,7 @@
             all: "Все порталы",
             portalPh: "ID",
             home: "Главная",
+            pageRequests: "Запросы",
             login: "Вход",
             create: "Заявка",
             desktop: "Компьютер",
@@ -48,6 +49,29 @@
             dragHandle: "Переместить",
             resizeHandle: "Размер",
             blocks: "Блоки портала",
+            object: "Объект",
+            objectHint: "Кликните по любому объекту живого портала. Ниже меняются его размер, скругление, шрифт, цвет и положение.",
+            objectEmpty: "Объект ещё не выбран.",
+            selector: "Какие объекты",
+            fontSize: "Размер шрифта",
+            fontWeight: "Насыщенность",
+            padding: "Внутренние поля",
+            blockW: "Ширина",
+            blockH: "Высота",
+            objectColor: "Цвет текста",
+            fillColor: "Заливка",
+            addTip: "Подсказка",
+            tipText: "Текст подсказки",
+            tipTarget: "К какому объекту",
+            chromeAll: "Своя шапка и подвал на всех страницах",
+            takeover: "Заменить шапку, подвал и сетку карточек",
+            browse: "Переход",
+            browseOn: "Режим перехода: ссылки открывают страницы портала. Нажмите «Переход» ещё раз, чтобы выбирать объекты.",
+            restore: "Стандартный портал",
+            restored: "Посетители снова видят обычный портал. Обновите его страницу. Черновик сохранён.",
+            removeTheme: "Удалить оформление",
+            removedTheme: "Оформление удалено. Портал снова стандартный.",
+            liveHint: "В макете ваш портал. «Переход» открывает проекты и запросы. Без него клик выбирает объект: размер, скругление, шрифт, цвет и положение.",
             screens: "Экраны",
             css: "Свой CSS",
             presets: "Готовые стили",
@@ -178,6 +202,7 @@
             all: "All portals",
             portalPh: "ID",
             home: "Home",
+            pageRequests: "Requests",
             login: "Login",
             create: "Request",
             desktop: "Desktop",
@@ -218,6 +243,29 @@
             dragHandle: "Move",
             resizeHandle: "Resize",
             blocks: "Portal blocks",
+            object: "Object",
+            objectHint: "Click any object in the live portal. Size, corners, font, color and position are edited below.",
+            objectEmpty: "No object selected yet.",
+            selector: "Which objects",
+            fontSize: "Font size",
+            fontWeight: "Weight",
+            padding: "Padding",
+            blockW: "Width",
+            blockH: "Height",
+            objectColor: "Text color",
+            fillColor: "Fill",
+            addTip: "Tooltip",
+            tipText: "Tooltip text",
+            tipTarget: "Attached to",
+            chromeAll: "Custom header and footer on every page",
+            takeover: "Replace header, footer and the card grid",
+            browse: "Browse",
+            browseOn: "Browse mode: links open portal pages. Press Browse again to select objects.",
+            restore: "Standard portal",
+            restored: "Visitors see the standard portal again. Refresh it. The draft is kept.",
+            removeTheme: "Delete styling",
+            removedTheme: "Styling deleted. The portal is standard again.",
+            liveHint: "The preview is your portal. Browse opens projects and requests. Without it, a click selects an object: size, corners, font, color and position.",
             screens: "Screens",
             css: "Custom CSS",
             presets: "Presets",
@@ -383,7 +431,11 @@
         req: 0,
         compileTimer: 0,
         compileDirty: false,
-        frameReady: false
+        frameReady: false,
+        liveFrame: false,
+        mockFallback: false,
+        browse: false,
+        picked: null
     };
 
     function t(key) {
@@ -544,6 +596,8 @@
         theme.canvas.tablet = theme.canvas.tablet || {};
         theme.canvas.mobile = theme.canvas.mobile || {};
         theme.canvas.widgets = theme.canvas.widgets || [];
+        theme.elements = theme.elements || [];
+        theme.header = theme.header || {};
         return theme;
     }
 
@@ -632,6 +686,8 @@
             "<label>Пароль<input type=\"password\"/></label><button type=\"submit\">Войти</button></form></div>" +
             "<div id=\"mock-create\"><form><h2>Новая заявка</h2><label>Тема<input type=\"text\"/></label>" +
             "<label>Описание<textarea rows=\"4\"></textarea></label><button type=\"submit\">Отправить</button></form></div>" +
+            "<div id=\"mock-requests-page\"><header>Запросы</header><table class=\"cv-requests\"><tr><td><a href=\"/servicedesk/customer/portal/1/IT-15\">IT-15</a></td><td>Не работает почта</td></tr>" +
+            "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td><td>Доступ для нового сотрудника</td></tr></table></div>" +
             "<footer data-pd-region=\"footer\">Jira Service Management</footer>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
@@ -731,6 +787,26 @@
         }
         doc.__pdBound = true;
         doc.addEventListener("click", function (event) {
+            if (state.browse && state.liveFrame) {
+                var link = event.target && event.target.closest && event.target.closest("a[href]");
+                var raw = link ? (link.getAttribute("href") || "") : "";
+                if (link && raw && raw.indexOf("javascript:") !== 0 && raw.charAt(0) !== "#") {
+                    event.preventDefault();
+                    var view = doc.defaultView;
+                    var abs = raw;
+                    try {
+                        abs = new view.URL(raw, view.location.href).href;
+                    } catch (e) {
+                        abs = raw;
+                    }
+                    var hashless = String(abs).split("#")[0];
+                    if (hashless.indexOf("pdPreview=1") < 0) {
+                        hashless += (hashless.indexOf("?") >= 0 ? "&" : "?") + "pdPreview=1";
+                    }
+                    document.getElementById("preview").src = hashless;
+                }
+                return;
+            }
             var node = event.target;
             if (node && node.closest && node.closest("a,button")) {
                 event.preventDefault();
@@ -738,15 +814,32 @@
             while (node && node !== doc) {
                 if (node.getAttribute && node.getAttribute("data-pd-widget")) {
                     state.widgetId = node.getAttribute("data-pd-widget");
-                }
-                if (node.getAttribute && node.getAttribute("data-pd-select")) {
-                    state.section = node.getAttribute("data-pd-select");
+                    state.section = "canvas";
                     renderNav();
                     renderInspector();
                     return;
                 }
                 node = node.parentNode;
             }
+            var picked = event.target;
+            if (!picked || !picked.closest || picked.closest("#pd-editor-layer, #pd-chrome, #pd-widgets")) {
+                return;
+            }
+            if (picked === doc.body || picked === doc.documentElement) {
+                return;
+            }
+            state.picked = {
+                selector: selectorFor(picked),
+                label: (picked.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60)
+            };
+            if (state.picked.selector) {
+                ruleForPicked(true);
+                markDirty();
+                scheduleCompile();
+            }
+            state.section = "object";
+            renderNav();
+            renderInspector();
         }, true);
         var dragId = "";
         doc.addEventListener("dragstart", function (event) {
@@ -834,7 +927,9 @@
         if (!doc || !doc.documentElement || !runtime || !state.previewTheme) {
             return;
         }
-        fillCards(doc);
+        if (!state.liveFrame) {
+            fillCards(doc);
+        }
         runtime.apply({
             document: doc,
             theme: state.previewTheme,
@@ -844,6 +939,7 @@
             page: state.page,
             device: state.device,
             preview: true,
+            mock: !state.liveFrame,
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind], [data-pd-widget-field]");
                 for (var i = 0; i < bound.length; i++) {
@@ -867,6 +963,9 @@
         if (state.portalId !== "global" && state.theme.useGlobal) {
             messages.push(t("inherited"));
         }
+        if (state.liveFrame) {
+            messages.push(state.browse ? t("browseOn") : t("liveHint"));
+        }
         banner.textContent = messages.join(" ");
         banner.className = messages.length ? "banner show" : "banner";
     }
@@ -885,15 +984,76 @@
         list.appendChild(h("li", {text: t("warnings")}));
     }
 
+    function liveSrc() {
+        var id = state.portalId;
+        var base = (window.PD_CONTEXT || "") + "/servicedesk/customer";
+        var q = "pdPreview=1";
+        if (state.page === "requests") {
+            return base + "/user/requests?" + q;
+        }
+        if (state.page === "login") {
+            return /^[0-9]+$/.test(id) ? base + "/portal/" + id + "/user/login?" + q : base + "/user/login?" + q;
+        }
+        if (/^[0-9]+$/.test(id)) {
+            if (state.page === "create") {
+                return base + "/portal/" + id + "/create/10?" + q;
+            }
+            return base + "/portal/" + id + "?" + q;
+        }
+        return base + "/portals?" + q;
+    }
+
     function bootFrame() {
         var frame = document.getElementById("preview");
-        frame.srcdoc = previewHtml();
         frame.onload = function () {
+            var doc = frame.contentDocument;
+            var view = doc && doc.defaultView;
+            var runtime = view && view.PortalDesigner;
+            var href = view && view.location ? view.location.href : "";
+            if (!runtime && !state.mockFallback) {
+                state.mockFallback = true;
+                state.liveFrame = false;
+                frame.removeAttribute("src");
+                frame.srcdoc = previewHtml();
+                return;
+            }
+            state.liveFrame = href.indexOf("pdPreview=1") >= 0;
+            if (state.liveFrame && runtime && runtime.pageKind) {
+                state.page = runtime.pageKind(view.location.pathname);
+                renderSegments();
+            }
             state.frameReady = true;
             paintPreview();
+            watchFrame(doc);
             fitChrome();
             layoutDevice();
         };
+        if (!state.mockFallback) {
+            frame.removeAttribute("srcdoc");
+            frame.src = liveSrc();
+        } else {
+            frame.srcdoc = previewHtml();
+        }
+    }
+
+    function watchFrame(doc) {
+        if (!doc || doc.__pdWatch || !state.liveFrame) {
+            return;
+        }
+        doc.__pdWatch = true;
+        var view = doc.defaultView;
+        var last = view.location.pathname;
+        setInterval(function () {
+            if (!view.location || view.location.pathname === last) {
+                return;
+            }
+            last = view.location.pathname;
+            if (view.PortalDesigner && view.PortalDesigner.pageKind) {
+                state.page = view.PortalDesigner.pageKind(last);
+                renderSegments();
+            }
+            paintPreview();
+        }, 500);
     }
 
     function fitChrome() {
@@ -955,6 +1115,9 @@
                         h("input", {id: "enabled", type: "checkbox", onchange: onEnabled}),
                         h("span", {id: "published-label", text: t("published")})
                     ]),
+                    h("button", {type: "button", class: "ghost", id: "browse", text: t("browse"), onclick: toggleBrowse}),
+                    h("button", {type: "button", class: "ghost", text: t("restore"), onclick: restoreStandard}),
+                    h("button", {type: "button", class: "ghost", text: t("removeTheme"), onclick: removeTheme}),
                     save
                 ])
             ]),
@@ -984,10 +1147,15 @@
     }
 
     function renderSegments() {
-        fillSeg("pages", [["home", "home"], ["login", "login"], ["create", "create"]], state.page, function (id) {
+        fillSeg("pages", [["home", "home"], ["requests", "pageRequests"], ["login", "login"], ["create", "create"]], state.page, function (id) {
             state.page = id;
+            state.picked = null;
             renderSegments();
-            paintPreview();
+            if (state.liveFrame && !state.mockFallback) {
+                document.getElementById("preview").src = liveSrc();
+            } else {
+                paintPreview();
+            }
         });
         fillSeg("devices", [["desktop", "desktop"], ["tablet", "tablet"], ["mobile", "mobile"]], state.device, function (id) {
             state.device = id;
@@ -1014,7 +1182,7 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "canvas", "screens", "css"].forEach(function (id) {
+        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "canvas", "object", "screens", "css"].forEach(function (id) {
             host.appendChild(h("button", {
                 type: "button",
                 class: state.section === id ? "active" : "",
@@ -1232,6 +1400,14 @@
             widget[deviceKey()] = widget[deviceKey()] || blankSpot(true);
             return widget[deviceKey()];
         }
+        if (key.indexOf("el-") === 0) {
+            var rule = elementById(key.substring(3));
+            if (!rule) {
+                return blankSpot(false);
+            }
+            rule[deviceKey()] = rule[deviceKey()] || blankSpot(false);
+            return rule[deviceKey()];
+        }
         var spots = screenSpots(state.theme);
         spots[key] = spots[key] || blankSpot(false);
         return spots[key];
@@ -1250,6 +1426,14 @@
                 for (var w = 0; w < list.length; w++) {
                     if (list[w].id === key.substring(7)) {
                         list[w][deviceKey()] = spot;
+                    }
+                }
+            } else if (key.indexOf("el-") === 0) {
+                ensureShape(theme);
+                var rules = theme.elements;
+                for (var r = 0; r < rules.length; r++) {
+                    if (rules[r].id === key.substring(3)) {
+                        rules[r][deviceKey()] = spot;
                     }
                 }
             } else {
@@ -1289,8 +1473,8 @@
             hidden: false,
             x: 48,
             y: y,
-            w: type === "button" ? 180 : 320,
-            h: type === "button" ? 52 : (type === "image" ? 180 : 96)
+            w: type === "button" ? 180 : (type === "tooltip" ? 36 : 320),
+            h: type === "button" ? 52 : (type === "image" ? 180 : (type === "tooltip" ? 36 : 96))
         };
         state.theme.canvas.widgets.push({
             id: id,
@@ -1299,6 +1483,8 @@
             href: type === "button" ? "#" : "",
             imageUrl: "",
             html: "<p>Свой блок</p>",
+            page: state.page || "home",
+            target: "",
             desktop: clone(spot),
             tablet: clone(spot),
             mobile: {free: true, hidden: false, x: 16, y: y, w: 300, h: spot.h}
@@ -1386,6 +1572,9 @@
             if (type === "html") {
                 return t("addHtml");
             }
+            if (type === "tooltip") {
+                return t("addTip");
+            }
             return t("addText");
         }
         if (key.indexOf("card-") === 0) {
@@ -1424,6 +1613,9 @@
         if (!doc.__pdMove) {
             doc.__pdMove = true;
             doc.addEventListener("pointerdown", function (event) {
+                if (state.browse && state.liveFrame) {
+                    return;
+                }
                 if (event.button !== 0) {
                     return;
                 }
@@ -1576,7 +1768,7 @@
         ensureShape(state.theme);
         host.appendChild(h("p", {class: "hint", text: t("canvasHint")}));
         var row = h("div", {class: "grid-2"});
-        [["text", "addText"], ["image", "addImage"], ["button", "addButton"], ["html", "addHtml"]].forEach(function (item) {
+        [["text", "addText"], ["image", "addImage"], ["button", "addButton"], ["html", "addHtml"], ["tooltip", "addTip"]].forEach(function (item) {
             row.appendChild(h("button", {
                 type: "button",
                 class: "ghost",
@@ -1652,6 +1844,11 @@
                 editWidget(widget, "href", value);
             }));
         }
+        if (widget.type === "tooltip") {
+            box.appendChild(widgetField(t("tipTarget"), widget.target, function (value) {
+                editWidget(widget, "target", value);
+            }));
+        }
         if (widget.type === "image") {
             var image = h("input", {type: "text", value: widget.imageUrl || ""});
             image.addEventListener("input", function () { editWidget(widget, "imageUrl", image.value); });
@@ -1711,6 +1908,8 @@
             renderFooter(host);
         } else if (state.section === "canvas") {
             renderCanvas(host);
+        } else if (state.section === "object") {
+            renderObject(host);
         } else if (state.section === "screens") {
             renderScreens(host);
         } else if (state.section === "css") {
@@ -1736,6 +1935,182 @@
             enabled.checked = !!state.theme.enabled;
         }
         paintBanner();
+    }
+
+    function elementById(id) {
+        ensureShape(state.theme);
+        var list = state.theme.elements;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function selectorFor(el) {
+        if (!el || el.nodeType !== 1) {
+            return "";
+        }
+        if (el.id && /^[A-Za-z][\w:-]{0,60}$/.test(el.id) && el.id.indexOf("pd-") !== 0) {
+            return "#" + el.id;
+        }
+        var node = el;
+        var parts = [];
+        var guard = 0;
+        while (node && node.nodeType === 1 && node.tagName !== "BODY" && node.tagName !== "HTML" && guard < 4) {
+            var piece = node.tagName.toLowerCase();
+            var raw = typeof node.className === "string" ? node.className : "";
+            var classes = raw.split(/\s+/).filter(function (name) {
+                return /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(name) && name.indexOf("pd-") !== 0 && name.indexOf("css-") !== 0;
+            }).slice(0, 2);
+            if (classes.length) {
+                piece += "." + classes.join(".");
+            }
+            parts.unshift(piece);
+            if (classes.length || (node.id && node.id.indexOf("pd-") !== 0)) {
+                break;
+            }
+            node = node.parentNode;
+            guard++;
+        }
+        return parts.join(" > ").slice(0, 180);
+    }
+
+    function ruleForPicked(create) {
+        ensureShape(state.theme);
+        if (!state.picked || !state.picked.selector) {
+            return null;
+        }
+        var list = state.theme.elements;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].selector === state.picked.selector && (list[i].page || "home") === (state.page || "home")) {
+                return list[i];
+            }
+        }
+        if (!create) {
+            return null;
+        }
+        var rule = {
+            id: "e" + Math.floor(Math.random() * 1e9).toString(36),
+            page: state.page || "home",
+            selector: state.picked.selector,
+            label: state.picked.label || "",
+            look: {color: "", background: "", fontFamily: "", fontSize: 0, fontWeight: 0, radius: -1, padding: -1, width: 0, height: 0},
+            desktop: blankSpot(false),
+            tablet: blankSpot(false),
+            mobile: blankSpot(false)
+        };
+        list.push(rule);
+        return rule;
+    }
+
+    function editLook(prop, value) {
+        var rule = ruleForPicked(true);
+        if (!rule) {
+            return;
+        }
+        remember();
+        rule.look[prop] = value;
+        markDirty();
+        scheduleCompile();
+    }
+
+    function renderObject(host) {
+        host.appendChild(h("p", {class: "hint", text: t("objectHint")}));
+        if (!state.picked || !state.picked.selector) {
+            host.appendChild(h("p", {class: "hint", text: t("objectEmpty")}));
+            return;
+        }
+        var rule = ruleForPicked(false);
+        var look = (rule && rule.look) || {};
+        host.appendChild(h("p", {class: "hint", text: state.picked.label || state.picked.selector}));
+        var selector = h("input", {type: "text", value: (rule && rule.selector) || state.picked.selector});
+        selector.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            current.selector = selector.value.trim();
+            state.picked.selector = current.selector;
+            markDirty();
+            scheduleCompile();
+        });
+        host.appendChild(field("", t("selector"), selector));
+        host.appendChild(lookColor(t("objectColor"), look.color, "color"));
+        host.appendChild(lookColor(t("fillColor"), look.background, "background"));
+        host.appendChild(field("", t("fontSize"), lookNumber(look.fontSize, 0, 72, "fontSize")));
+        host.appendChild(field("", t("fontWeight"), lookNumber(look.fontWeight, 0, 800, "fontWeight")));
+        host.appendChild(field("", t("radius"), lookNumber(look.radius < 0 ? 0 : look.radius, 0, 48, "radius")));
+        host.appendChild(field("", t("padding"), lookNumber(look.padding < 0 ? 0 : look.padding, 0, 80, "padding")));
+        host.appendChild(field("", t("blockW"), lookNumber(look.width, 0, 2400, "width")));
+        host.appendChild(field("", t("blockH"), lookNumber(look.height, 0, 2400, "height")));
+        var spot = (rule && rule[deviceKey()]) || blankSpot(false);
+        var free = h("input", {type: "checkbox", checked: !!spot.free});
+        free.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            var next = clone(current[deviceKey()] || blankSpot(false));
+            next.free = free.checked;
+            writeSpot("el-" + current.id, next);
+            markDirty();
+            scheduleCompile();
+        });
+        host.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePos"))]));
+        host.appendChild(field("", "X", spotNumber(spot.x, "x")));
+        host.appendChild(field("", "Y", spotNumber(spot.y, "y")));
+        var font = h("input", {type: "text", value: look.fontFamily || "", placeholder: "Manrope, Segoe UI"});
+        font.addEventListener("change", function () { editLook("fontFamily", font.value); });
+        host.appendChild(field("", t("customFont"), font));
+        host.appendChild(h("button", {
+            type: "button",
+            class: "ghost",
+            text: t("addTip"),
+            onclick: function () {
+                addWidget("tooltip");
+                var widget = state.theme.canvas.widgets[state.theme.canvas.widgets.length - 1];
+                widget.target = state.picked.selector;
+                widget.text = "Подсказка";
+                widget.page = state.page || "home";
+                scheduleCompile();
+            }
+        }));
+    }
+
+    function lookColor(label, value, prop) {
+        var input = h("input", {type: "color", value: /^#[0-9a-fA-F]{6}$/.test(value || "") ? value : "#172B4D"});
+        var text = h("input", {type: "text", value: value || ""});
+        input.addEventListener("input", function () {
+            text.value = input.value;
+            editLook(prop, input.value);
+        });
+        text.addEventListener("change", function () { editLook(prop, text.value); });
+        return field("", label, h("div", {class: "color-row"}, [input, text]));
+    }
+
+    function spotNumber(value, prop) {
+        var input = h("input", {type: "number", value: value || 0});
+        input.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            var next = clone(current[deviceKey()] || blankSpot(false));
+            next[prop] = parseInt(input.value, 10) || 0;
+            next.free = true;
+            writeSpot("el-" + current.id, next);
+            markDirty();
+            scheduleCompile();
+        });
+        return input;
+    }
+
+    function lookNumber(value, min, max, prop) {
+        var input = h("input", {type: "number", min: String(min), max: String(max), value: value || 0});
+        input.addEventListener("change", function () {
+            var number = parseInt(input.value, 10);
+            if (isNaN(number)) {
+                number = 0;
+            }
+            editLook(prop, number);
+        });
+        return input;
     }
 
     function renderTheme(host) {
@@ -1783,6 +2158,8 @@
     }
 
     function renderHeader(host) {
+        host.appendChild(checkInput("header.takeover", t("takeover")));
+        host.appendChild(checkInput("header.allPages", t("chromeAll")));
         host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));
         host.appendChild(checkInput("header.showTitle", t("showTitle")));
@@ -1927,6 +2304,44 @@
         markDirty();
         renderInspector();
         scheduleCompile();
+    }
+
+    function toggleBrowse() {
+        state.browse = !state.browse;
+        var button = document.getElementById("browse");
+        if (button) {
+            button.className = state.browse ? "ghost active" : "ghost";
+        }
+        paintBanner();
+    }
+
+    function restoreStandard() {
+        if (state.portalId !== "global" && state.theme && state.theme.useGlobal) {
+            state.portalId = "global";
+            var portal = document.getElementById("portal");
+            if (portal) {
+                portal.value = "global";
+            }
+            state.restoreAfterLoad = true;
+            loadPortal("global");
+            return;
+        }
+        remember();
+        state.theme.enabled = false;
+        markDirty();
+        saveTheme();
+        toast(t("restored"));
+    }
+
+    function removeTheme() {
+        api("DELETE", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), null, function (err) {
+            if (err) {
+                toast(t("saveError"));
+                return;
+            }
+            toast(t("removedTheme"));
+            loadPortal(state.portalId);
+        });
     }
 
     function onEnabled(event) {
@@ -2091,6 +2506,18 @@
             loadRequestTypes();
             renderInspector();
             scheduleCompile();
+            if (state.restoreAfterLoad) {
+                state.restoreAfterLoad = false;
+                state.theme.enabled = false;
+                saveTheme();
+                toast(t("restored"));
+            }
+            if (state.liveFrame && !state.mockFallback) {
+                var frame = document.getElementById("preview");
+                if (frame) {
+                    frame.src = liveSrc();
+                }
+            }
         });
     }
 

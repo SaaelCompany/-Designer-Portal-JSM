@@ -166,6 +166,12 @@ public class ThemePipelineTest {
         String js = readQuiet("/js/portal.js");
         assertTrue(js.contains("data-pd-canvas"));
         assertTrue(js.contains("pd-widgets"));
+        assertTrue(js.contains("pdPreview=1"));
+        assertTrue(js.contains("clearTouched"));
+        String scoped = readQuiet("/css/portal.css");
+        assertTrue(scoped.contains("data-pd-chrome=\"full\"] [data-pd-region=\"requests\"]"));
+        assertTrue(scoped.contains("data-pd-chrome=\"quiet\""));
+        assertTrue(scoped.contains("pd-tip-bubble"));
         String css = readQuiet("/css/portal.css");
         assertTrue(css.contains("pd-free"));
         assertTrue(css.contains("pd-widget"));
@@ -177,6 +183,59 @@ public class ThemePipelineTest {
         } catch (Exception ex) {
             throw new AssertionError(ex);
         }
+    }
+
+    @Test
+    public void elementRulesAndTooltipsStaySanitized() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        List<Map<String, Object>> elements = new ArrayList<Map<String, Object>>();
+        Map<String, Object> rule = new LinkedHashMap<String, Object>();
+        rule.put("id", "e1");
+        rule.put("page", "requests");
+        rule.put("selector", ".cv-request-summary");
+        rule.put("label", "Тема");
+        Map<String, Object> look = new LinkedHashMap<String, Object>();
+        look.put("color", "#172B4D");
+        look.put("background", "#FFFFFF");
+        look.put("fontSize", Integer.valueOf(18));
+        look.put("radius", Integer.valueOf(6));
+        look.put("fontFamily", "Manrope, Segoe UI");
+        rule.put("look", look);
+        elements.add(rule);
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "e2");
+        evil.put("selector", "div;background:expression(1)");
+        evil.put("label", "bad");
+        elements.add(evil);
+        raw.put("elements", elements);
+
+        List<Map<String, Object>> widgets = new ArrayList<Map<String, Object>>();
+        Map<String, Object> tip = new LinkedHashMap<String, Object>();
+        tip.put("id", "wtip");
+        tip.put("type", "tooltip");
+        tip.put("page", "requests");
+        tip.put("text", "Как открыть заявку");
+        tip.put("target", ".cv-request-summary");
+        widgets.add(tip);
+        Map<String, Object> canvas = new LinkedHashMap<String, Object>();
+        canvas.put("widgets", widgets);
+        raw.put("canvas", canvas);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals(1, theme.elements.size());
+        assertEquals("requests", theme.elements.get(0).page);
+        assertEquals(".cv-request-summary", theme.elements.get(0).selector);
+        assertEquals(18, theme.elements.get(0).look.fontSize);
+        assertEquals(6, theme.elements.get(0).look.radius);
+        assertEquals("#172B4D", theme.elements.get(0).look.color);
+        assertEquals(1, theme.canvas.widgets.size());
+        assertEquals("tooltip", theme.canvas.widgets.get(0).type);
+        assertEquals("requests", theme.canvas.widgets.get(0).page);
+        assertEquals(".cv-request-summary", theme.canvas.widgets.get(0).target);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(18, again.elements.get(0).look.fontSize);
+        assertEquals("tooltip", again.canvas.widgets.get(0).type);
     }
 
     @Test

@@ -50,7 +50,25 @@
         if (/\/portal\/\d+\/create\/\d+$/.test(clean)) {
             return "create";
         }
+        if (/\/user\/requests(?:\/|$)/.test(clean) || /\/portal\/\d+\/[A-Z][A-Z0-9]*-\d+$/.test(clean)) {
+            return "requests";
+        }
         return "other";
+    }
+
+    function samePage(rulePage, page) {
+        if (!rulePage || rulePage === "all") {
+            return true;
+        }
+        return rulePage === page;
+    }
+
+    function fullChrome(theme, page, mock) {
+        var header = (theme && theme.header) || {};
+        if (header.allPages) {
+            return page !== "login";
+        }
+        return page === "home" && (!!header.takeover || !!mock);
     }
 
     function addClass(el, name) {
@@ -349,7 +367,7 @@
         renderFooter(doc, theme, ctx);
     }
 
-    function markRegions(doc, theme, page) {
+    function markRegions(doc, theme, page, structural) {
         var headers = doc.getElementsByTagName("header");
         for (var h = 0; h < headers.length; h++) {
             if (headers[h].id === "pd-header" || inChrome(headers[h])) {
@@ -391,9 +409,11 @@
                 setAttr(headings[t], "data-pd-region", "native-title");
             }
         }
-        markCards(doc);
-        if (theme.requests && theme.requests.order) {
-            orderCards(requestsRegion(doc), theme.requests.order);
+        if (structural) {
+            markCards(doc);
+            if (theme.requests && theme.requests.order) {
+                orderCards(requestsRegion(doc), theme.requests.order);
+            }
         }
         if (page === "login" || page === "create") {
             var forms = doc.getElementsByTagName("form");
@@ -600,18 +620,33 @@
         return screen[key] || null;
     }
 
-    function anyFree(theme, device) {
+    function anyFree(theme, device, page) {
         var canvas = theme.canvas || {};
-        var screen = canvas[device] || {};
-        for (var key in screen) {
-            if (screen.hasOwnProperty(key) && screen[key] && screen[key].free) {
-                return true;
+        if (page === "home") {
+            var screen = canvas[device] || {};
+            for (var key in screen) {
+                if (screen.hasOwnProperty(key) && screen[key] && screen[key].free) {
+                    return true;
+                }
             }
         }
         var widgets = canvas.widgets || [];
         for (var i = 0; i < widgets.length; i++) {
+            if (!samePage(widgets[i].page || "home", page)) {
+                continue;
+            }
             var spot = widgets[i][device] || widgets[i].desktop;
             if (spot && spot.free && !spot.hidden) {
+                return true;
+            }
+        }
+        var elements = theme.elements || [];
+        for (var e = 0; e < elements.length; e++) {
+            if (!samePage(elements[e].page, page)) {
+                continue;
+            }
+            var placed = elements[e][device] || elements[e].desktop;
+            if (placed && placed.free && !placed.hidden) {
                 return true;
             }
         }
@@ -655,9 +690,9 @@
         el.style.height = spot.h > 0 ? spot.h + "px" : "";
     }
 
-    function placeCanvas(doc, theme, device) {
+    function placeCanvas(doc, theme, device, page) {
         var html = doc.documentElement;
-        if (anyFree(theme, device)) {
+        if (anyFree(theme, device, page)) {
             addClass(html, "pd-free");
         } else {
             removeClass(html, "pd-free");
@@ -665,16 +700,95 @@
         var nodes = doc.querySelectorAll ? doc.querySelectorAll("[data-pd-canvas]") : [];
         for (var i = 0; i < nodes.length; i++) {
             var key = nodes[i].getAttribute("data-pd-canvas");
-            if (!key || key.indexOf("widget-") === 0) {
+            if (!key || key.indexOf("widget-") === 0 || key.indexOf("el-") === 0) {
+                continue;
+            }
+            if (page !== "home") {
+                place(nodes[i], null);
                 continue;
             }
             place(nodes[i], spotFor(theme, key, device));
         }
         var widgets = (theme.canvas && theme.canvas.widgets) || [];
         for (var w = 0; w < widgets.length; w++) {
-            var node = doc.getElementById("pd-widget-" + widgets[w].id);
-            place(node, widgets[w][device] || widgets[w].desktop);
+            var widget = widgets[w];
+            var node = doc.getElementById("pd-widget-" + widget.id);
+            if (!node) {
+                continue;
+            }
+            if (!samePage(widget.page || "home", page)) {
+                node.setAttribute("data-pd-hidden", "1");
+                continue;
+            }
+            node.removeAttribute("data-pd-hidden");
+            place(node, widget[device] || widget.desktop);
+            if ((widget.type || "") === "tooltip") {
+                bindTip(doc, node, widget.target);
+            }
         }
+    }
+
+    function paintLook(el, look) {
+        if (!el || !look) {
+            return;
+        }
+        el.setAttribute("data-pd-target", el.getAttribute("data-pd-target") || "1");
+        el.style.color = look.color || "";
+        el.style.backgroundColor = look.background || "";
+        el.style.fontFamily = look.fontFamily || "";
+        el.style.fontSize = look.fontSize > 0 ? look.fontSize + "px" : "";
+        el.style.fontWeight = look.fontWeight > 0 ? String(look.fontWeight) : "";
+        el.style.borderRadius = look.radius >= 0 ? look.radius + "px" : "";
+        el.style.padding = look.padding >= 0 ? look.padding + "px" : "";
+        el.style.width = look.width > 0 ? look.width + "px" : "";
+        el.style.height = look.height > 0 ? look.height + "px" : "";
+    }
+
+    function applyElements(doc, theme, device, page) {
+        var list = theme.elements || [];
+        for (var i = 0; i < list.length; i++) {
+            var rule = list[i];
+            if (!rule || !rule.selector || !samePage(rule.page, page)) {
+                continue;
+            }
+            var found;
+            try {
+                found = doc.querySelectorAll(rule.selector);
+            } catch (e) {
+                continue;
+            }
+            var spot = rule[device] || rule.desktop;
+            for (var n = 0; n < found.length; n++) {
+                found[n].setAttribute("data-pd-target", rule.id);
+                found[n].setAttribute("data-pd-canvas", "el-" + rule.id);
+                paintLook(found[n], rule.look || {});
+                if (spot && (spot.free || spot.hidden)) {
+                    place(found[n], spot);
+                }
+            }
+        }
+    }
+
+    function bindTip(doc, node, target) {
+        if (!target || node.getAttribute("data-pd-tip-bound") === target) {
+            return;
+        }
+        var found;
+        try {
+            found = doc.querySelector(target);
+        } catch (e) {
+            return;
+        }
+        if (!found) {
+            return;
+        }
+        node.setAttribute("data-pd-tip-bound", target);
+        var show = function () { addClass(node, "pd-tip-open"); };
+        var hide = function () { removeClass(node, "pd-tip-open"); };
+        found.addEventListener("mouseenter", show);
+        found.addEventListener("mouseleave", hide);
+        found.addEventListener("focusin", show);
+        found.addEventListener("focusout", hide);
     }
 
     function widgetSig(widget) {
@@ -703,6 +817,17 @@
         }
         if (type === "html") {
             node.innerHTML = widget.html || "";
+            return;
+        }
+        if (type === "tooltip") {
+            node.className = "pd-widget pd-tip";
+            var mark = el(doc, "button", "pd-tip-mark", "?");
+            mark.setAttribute("type", "button");
+            mark.setAttribute("aria-label", widget.text || "");
+            var bubble = el(doc, "span", "pd-tip-bubble", widget.text || "");
+            bubble.setAttribute("role", "tooltip");
+            node.appendChild(mark);
+            node.appendChild(bubble);
             return;
         }
         var text = el(doc, "div", "pd-widget-text", widget.text || "");
@@ -797,23 +922,70 @@
         setAttr(html, "data-pd-desc", theme.requests && theme.requests.showDescription === false ? "off" : "on");
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");
+        var structural = fullChrome(theme, page, options.mock);
         setAttr(html, "data-pd-page", page);
+        setAttr(html, "data-pd-chrome", structural ? "full" : "quiet");
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
+        clearTouched(doc);
         renderChrome(doc, theme, ctx);
-        markRegions(doc, theme, page);
+        markRegions(doc, theme, page, structural);
         renderWidgets(doc, theme, ctx);
         tagCanvas(doc);
-        placeCanvas(doc, theme, deviceOf(theme, options, doc));
+        var device = deviceOf(theme, options, doc);
+        placeCanvas(doc, theme, device, page);
+        applyElements(doc, theme, device, page);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
     }
 
+    function clearTouched(doc) {
+        if (!doc.querySelectorAll) {
+            return;
+        }
+        var nodes = doc.querySelectorAll("[data-pd-region], [data-pd-canvas], [data-pd-card], [data-pd-free], [data-pd-hidden], [data-pd-target], [data-pd-desc]");
+        var props = ["position", "left", "top", "width", "height", "margin", "zIndex", "color", "backgroundColor", "fontSize", "fontWeight", "fontFamily", "borderRadius", "padding"];
+        for (var i = 0; i < nodes.length; i++) {
+            var node = nodes[i];
+            if (node.id === "pd-header" || node.id === "pd-hero" || node.id === "pd-footer" || node.id === "pd-announcement" || node.id === "pd-editor-layer") {
+                continue;
+            }
+            if (node.id && node.id.indexOf("pd-widget-") === 0) {
+                continue;
+            }
+            node.removeAttribute("data-pd-region");
+            node.removeAttribute("data-pd-canvas");
+            node.removeAttribute("data-pd-card");
+            node.removeAttribute("data-pd-free");
+            node.removeAttribute("data-pd-hidden");
+            node.removeAttribute("data-pd-target");
+            node.removeAttribute("data-pd-select");
+            node.removeAttribute("data-pd-desc");
+            for (var p = 0; p < props.length; p++) {
+                node.style[props[p]] = "";
+            }
+        }
+    }
+
     function teardown(doc) {
         var html = doc.documentElement;
+        clearTouched(doc);
         removeClass(html, "pd-active");
+        html.removeAttribute("data-pd-header-mode");
+        html.removeAttribute("data-pd-footer-mode");
+        html.removeAttribute("data-pd-sticky");
+        html.removeAttribute("data-pd-search");
+        html.removeAttribute("data-pd-layout");
+        html.removeAttribute("data-pd-shadow");
+        html.removeAttribute("data-pd-cards");
+        html.removeAttribute("data-pd-card-size");
+        html.removeAttribute("data-pd-desc");
+        html.removeAttribute("data-pd-align");
+        html.removeAttribute("data-pd-hero");
+        html.removeAttribute("data-pd-page");
+        html.removeAttribute("data-pd-chrome");
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
             style.parentNode.removeChild(style);
@@ -856,6 +1028,11 @@
 
     function boot() {
         if (window.__PD_BOOTED) {
+            return;
+        }
+        if (/[?&]pdPreview=1(?:&|$)/.test(window.location.search || "")) {
+            window.__PD_PREVIEW = true;
+            window.__PD_BOOTED = true;
             return;
         }
         window.__PD_BOOTED = true;

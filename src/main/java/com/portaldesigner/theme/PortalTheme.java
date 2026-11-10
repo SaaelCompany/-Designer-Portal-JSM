@@ -23,6 +23,7 @@ public final class PortalTheme {
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
     public Canvas canvas = new Canvas();
+    public List<ElementRule> elements = new ArrayList<ElementRule>();
     public String customCss = "";
 
     public static final class Colors {
@@ -71,6 +72,8 @@ public final class PortalTheme {
         public boolean showLogin = true;
         public String loginLabel = "Войти";
         public int height = 72;
+        public boolean allPages;
+        public boolean takeover;
         public List<Link> links = new ArrayList<Link>();
         public String customHtml = "";
     }
@@ -191,13 +194,39 @@ public final class PortalTheme {
     public static final class Widget {
         public String id = "";
         public String type = "text";
+        public String page = "home";
         public String text = "";
         public String href = "";
         public String imageUrl = "";
         public String html = "";
+        public String target = "";
         public Spot desktop = new Spot();
         public Spot tablet = new Spot();
         public Spot mobile = new Spot();
+    }
+
+    /** A style override for one object on the customer portal, found by a CSS selector. */
+    public static final class ElementRule {
+        public String id = "";
+        public String page = "home";
+        public String selector = "";
+        public String label = "";
+        public Look look = new Look();
+        public Spot desktop = new Spot();
+        public Spot tablet = new Spot();
+        public Spot mobile = new Spot();
+    }
+
+    public static final class Look {
+        public String color = "";
+        public String background = "";
+        public String fontFamily = "";
+        public int fontSize;
+        public int fontWeight;
+        public int radius = -1;
+        public int padding = -1;
+        public int width;
+        public int height;
     }
 
     public static final class Column {

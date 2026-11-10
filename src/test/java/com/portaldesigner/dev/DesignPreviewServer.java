@@ -91,6 +91,10 @@ public final class DesignPreviewServer {
                 routeTheme(exchange, themes, path, query);
                 return;
             }
+            if (path.startsWith("/servicedesk/customer/")) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerPage(path).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             send(exchange, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
         } catch (ThemeException ex) {
             sendJson(exchange, 400, error(ex.code()));
@@ -119,6 +123,48 @@ public final class DesignPreviewServer {
         } else {
             send(exchange, 404, "text/plain", "no route".getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    private static String customerPage(String path) {
+        String body;
+        if (path.matches(".*/[A-Z][A-Z0-9]*-\\d+$")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/user/requests\">Запросы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-request\"><h1>IT-15</h1>"
+                    + "<table><tr><td class=\"cv-request-summary\">Не работает почта</td></tr></table>"
+                    + "<form><label>Комментарий<input type=\"text\"></label><button type=\"submit\">Отправить</button></form></div>";
+        } else if (path.contains("/user/requests")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portals\">Порталы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-requests\"><h1>Запросы</h1>"
+                    + "<table><tr><td><a href=\"/servicedesk/customer/portal/1/IT-15\">IT-15</a></td>"
+                    + "<td class=\"cv-request-summary\">Не работает почта</td></tr>"
+                    + "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td>"
+                    + "<td class=\"cv-request-summary\">Доступ для нового сотрудника</td></tr></table></div>";
+        } else if (path.endsWith("/portals")) {
+            body = "<header class=\"cv-smart-portal-header\">Порталы</header><div id=\"cv-content\">"
+                    + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/1\">IT поддержка</a>"
+                    + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/4\">Кадры</a></div>";
+        } else if (path.contains("/create/")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portal/1\">Назад</a></header>"
+                    + "<div id=\"cv-content\"><form class=\"cv-create\"><h1>Новая заявка</h1>"
+                    + "<label>Тема<input type=\"text\"></label><button type=\"submit\">Отправить</button></form></div>";
+        } else if (path.endsWith("/login")) {
+            body = "<div id=\"cv-content\"><form class=\"cv-login\"><h1>Вход</h1><input type=\"email\"><button type=\"submit\">Войти</button></form></div>";
+        } else {
+            body = "<div id=\"jsd-portal-container\"><header class=\"cv-smart-portal-header\">"
+                    + "<a class=\"cv-brand\" href=\"/servicedesk/customer/portal/1\">Центр поддержки</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-smart-portal\"><h1>Чем мы можем помочь?</h1>"
+                    + "<div class=\"cv-search\"><input type=\"search\" placeholder=\"Поиск\"></div>"
+                    + "<div class=\"cv-request-types\">"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/10\">Доступ к системе</a>"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/11\">Не работает сервис</a>"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/12\">Новый сотрудник</a>"
+                    + "</div></div></div>";
+        }
+        return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
+                + "</head><body>" + body
+                + "<script src=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js\"></script>"
+                + "</body></html>";
     }
 
     private static Map<String, Object> samplePortals() {
