@@ -1,0 +1,213 @@
+package com.portaldesigner.dev;
+
+import com.portaldesigner.json.Json;
+import com.portaldesigner.service.ThemeService;
+import com.portaldesigner.store.MemoryThemeRepository;
+import com.portaldesigner.theme.ThemeException;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Local stand-in for Jira so the WYSIWYG editor can be opened without a Service Management instance.
+ * Not packaged into the plugin.
+ */
+public final class DesignPreviewServer {
+    private static final String PLUGIN_KEY = "com.portaldesigner.portal-designer";
+
+    public static void main(String[] args) throws Exception {
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : 8765;
+        Path resources = Paths.get("src/main/resources").toAbsolutePath().normalize();
+        ThemeService themes = new ThemeService(new MemoryThemeRepository());
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+        server.createContext("/", exchange -> handle(exchange, resources, themes));
+        server.start();
+        System.out.println("Portal Designer preview: http://127.0.0.1:" + port + "/plugins/servlet/portal-designer");
+        Thread.currentThread().join();
+    }
+
+    private static void handle(HttpExchange exchange, Path resources, ThemeService themes) throws IOException {
+        String path = exchange.getRequestURI().getPath();
+        String query = exchange.getRequestURI().getRawQuery();
+        try {
+            if ("/plugins/servlet/portal-designer".equals(path)) {
+                String html = new String(Files.readAllBytes(resources.resolve("ui/designer.html")), StandardCharsets.UTF_8);
+                html = html.replace("@@CONTEXT@@", "")
+                        .replace("@@PLUGIN_KEY@@", PLUGIN_KEY)
+                        .replace("@@CONTEXT_JSON@@", "\"\"")
+                        .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
+                        .replace("@@PROJECT_JSON@@", "\"IT\"");
+                send(exchange, 200, "text/html; charset=UTF-8", html.getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if (path.startsWith("/download/resources/" + PLUGIN_KEY + ":")) {
+                String rest = path.substring(path.lastIndexOf(':') + 1);
+                Path relative;
+                if ("designer-ui/designer.css".equals(rest)) {
+                    relative = Paths.get("ui/designer.css");
+                } else if ("designer-ui/designer.js".equals(rest)) {
+                    relative = Paths.get("ui/designer.js");
+                } else if ("portal-runtime/portal.css".equals(rest)) {
+                    relative = Paths.get("css/portal.css");
+                } else if ("portal-runtime/portal.js".equals(rest)) {
+                    relative = Paths.get("js/portal.js");
+                } else {
+                    send(exchange, 404, "text/plain", "missing".getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
+                Path file = resources.resolve(relative).normalize();
+                if (!file.startsWith(resources) || !Files.isRegularFile(file)) {
+                    send(exchange, 404, "text/plain", "missing".getBytes(StandardCharsets.UTF_8));
+                    return;
+                }
+                String type = file.toString().endsWith(".css") ? "text/css; charset=UTF-8" : "application/javascript; charset=UTF-8";
+                send(exchange, 200, type, Files.readAllBytes(file));
+                return;
+            }
+            if ("/rest/servicedeskapi/servicedesk".equals(path)) {
+                sendJson(exchange, samplePortals());
+                return;
+            }
+            if (path.startsWith("/rest/servicedeskapi/servicedesk/") && path.endsWith("/requesttype")) {
+                sendJson(exchange, sampleTypes());
+                return;
+            }
+            if (path.startsWith("/rest/portal-designer/1.0/")) {
+                routeTheme(exchange, themes, path, query);
+                return;
+            }
+            send(exchange, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
+        } catch (ThemeException ex) {
+            sendJson(exchange, 400, error(ex.code()));
+        } catch (RuntimeException ex) {
+            ex.printStackTrace();
+            send(exchange, 500, "text/plain", "error".getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private static void routeTheme(HttpExchange exchange, ThemeService themes, String path, String query) throws IOException {
+        String portalId = queryParam(query, "portalId");
+        String method = exchange.getRequestMethod();
+        if (path.endsWith("/public-theme") && "GET".equals(method)) {
+            sendJson(exchange, themes.publicTheme(portalId));
+        } else if (path.endsWith("/admin/presets") && "GET".equals(method)) {
+            sendJson(exchange, themes.presets());
+        } else if (path.endsWith("/admin/theme") && "GET".equals(method)) {
+            sendJson(exchange, themes.adminTheme(portalId));
+        } else if (path.endsWith("/admin/theme") && "PUT".equals(method)) {
+            sendJson(exchange, themes.save(portalId, body(exchange)));
+        } else if (path.endsWith("/admin/theme") && "DELETE".equals(method)) {
+            themes.delete(portalId);
+            sendJson(exchange, themes.adminTheme(portalId));
+        } else if (path.endsWith("/admin/compile") && "POST".equals(method)) {
+            sendJson(exchange, themes.compile(body(exchange)));
+        } else {
+            send(exchange, 404, "text/plain", "no route".getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    private static Map<String, Object> samplePortals() {
+        List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
+        values.add(portal("1", "IT", "IT поддержка"));
+        values.add(portal("4", "HR", "Кадры"));
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("values", values);
+        return body;
+    }
+
+    private static Map<String, Object> portal(String id, String key, String name) {
+        Map<String, Object> portal = new LinkedHashMap<String, Object>();
+        portal.put("id", id);
+        portal.put("projectKey", key);
+        portal.put("projectName", name);
+        return portal;
+    }
+
+    private static Map<String, Object> sampleTypes() {
+        List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
+        values.add(type("10", "Доступ к системе", "Учётная запись, права, VPN"));
+        values.add(type("11", "Не работает сервис", "Сбой в рабочей системе"));
+        values.add(type("12", "Новый сотрудник", "Техника, доступы, рабочее место"));
+        values.add(type("13", "Закупка", "Лицензии и оборудование"));
+        values.add(type("14", "Консультация", "Вопрос без поломки"));
+        values.add(type("15", "Пропуск в офис", "Гость или постоянный доступ"));
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("values", values);
+        return body;
+    }
+
+    private static Map<String, Object> type(String id, String name, String description) {
+        Map<String, Object> type = new LinkedHashMap<String, Object>();
+        type.put("id", id);
+        type.put("name", name);
+        type.put("description", description);
+        return type;
+    }
+
+    private static Map<String, Object> error(String code) {
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("error", code);
+        return body;
+    }
+
+    private static String queryParam(String query, String name) throws IOException {
+        if (query == null) {
+            return "global";
+        }
+        for (String part : query.split("&")) {
+            int eq = part.indexOf('=');
+            if (eq > 0 && name.equals(URLDecoder.decode(part.substring(0, eq), "UTF-8"))) {
+                return URLDecoder.decode(part.substring(eq + 1), "UTF-8");
+            }
+        }
+        return "global";
+    }
+
+    private static String body(HttpExchange exchange) throws IOException {
+        InputStream in = exchange.getRequestBody();
+        byte[] data = read(in);
+        return new String(data, StandardCharsets.UTF_8);
+    }
+
+    private static byte[] read(InputStream in) throws IOException {
+        byte[] buffer = new byte[4096];
+        int n;
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        while ((n = in.read(buffer)) >= 0) {
+            out.write(buffer, 0, n);
+        }
+        return out.toByteArray();
+    }
+
+    private static void sendJson(HttpExchange exchange, Object body) throws IOException {
+        sendJson(exchange, 200, body);
+    }
+
+    private static void sendJson(HttpExchange exchange, int status, Object body) throws IOException {
+        send(exchange, status, "application/json; charset=UTF-8", Json.stringify(body).getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void send(HttpExchange exchange, int status, String type, byte[] body) throws IOException {
+        Headers headers = exchange.getResponseHeaders();
+        headers.set("Content-Type", type);
+        headers.set("Cache-Control", "no-store");
+        exchange.sendResponseHeaders(status, body.length);
+        OutputStream out = exchange.getResponseBody();
+        out.write(body);
+        out.close();
+    }
+}
