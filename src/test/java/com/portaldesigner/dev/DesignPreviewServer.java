@@ -51,6 +51,7 @@ public final class DesignPreviewServer {
                         .replace("@@CONTEXT_JSON@@", "\"\"")
                         .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
                         .replace("@@PROJECT_JSON@@", "\"IT\"");
+                html = withAdminChrome(html);
                 send(exchange, 200, "text/html; charset=UTF-8", html.getBytes(StandardCharsets.UTF_8));
                 return;
             }
@@ -191,6 +192,85 @@ public final class DesignPreviewServer {
             out.write(buffer, 0, n);
         }
         return out.toByteArray();
+    }
+
+    /**
+     * Local stand-in for Jira's {@code atl.admin} decorator. The plugin page only asks for that
+     * decorator; this wrapper is not packaged and is here so the editor can be viewed beside a
+     * header and an administration sidebar without a Jira process.
+     */
+    private static String withAdminChrome(String html) {
+        String chrome = ""
+                + "<style id=\"pd-jira-chrome\">"
+                + "html,body#jira{height:100%;margin:0;}"
+                + "body#jira{display:flex;flex-direction:column;background:#f4f5f7;color:#172b4b;"
+                + "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-size:14px;}"
+                + "#header{flex:0 0 56px;background:#0747a6;color:#fff;}"
+                + ".jira-header-inner{height:56px;display:flex;align-items:center;padding:0 12px 0 8px;gap:8px;}"
+                + ".jira-logo{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none;font-weight:700;padding:0 10px;}"
+                + ".jira-logo i{width:24px;height:24px;border-radius:4px;background:#fff;color:#0747a6;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;}"
+                + ".jira-nav{display:flex;align-items:center;gap:2px;list-style:none;margin:0;padding:0;}"
+                + ".jira-nav a{color:#fff;text-decoration:none;padding:8px 10px;border-radius:3px;}"
+                + ".jira-nav a:hover{background:rgba(255,255,255,.16);}"
+                + ".jira-spacer{margin-left:auto;display:flex;align-items:center;gap:10px;}"
+                + ".jira-search{background:rgba(255,255,255,.16);color:#fff;border-radius:3px;padding:6px 10px;min-width:180px;}"
+                + ".jira-create{background:#fff;color:#0747a6;border:0;border-radius:3px;padding:6px 10px;font-weight:600;}"
+                + ".jira-avatar{width:28px;height:28px;border-radius:50%;background:#6554c0;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}"
+                + "#content{flex:1;min-height:0;display:flex;}"
+                + ".aui-page-panel{flex:1;display:flex;min-width:0;background:#fff;}"
+                + ".aui-page-panel-inner{display:flex;flex:1;min-width:0;min-height:0;}"
+                + ".aui-page-panel-nav{width:240px;flex:0 0 240px;background:#f4f5f7;border-right:1px solid #dfe1e6;overflow:auto;padding:16px 0;}"
+                + ".aui-page-panel-content{flex:1;min-width:0;padding:20px;background:#fff;overflow:hidden;}"
+                + ".admin-section{margin:0;padding:14px 16px 4px;color:#6b778c;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}"
+                + ".admin-links{list-style:none;margin:0;padding:0;}"
+                + ".admin-links a{display:block;padding:7px 16px 7px 20px;color:#172b4b;text-decoration:none;border-left:3px solid transparent;}"
+                + ".admin-links a:hover{background:#ebecf0;}"
+                + ".admin-links .is-selected a{background:#deebff;color:#0052cc;font-weight:600;border-left-color:#0052cc;}"
+                + "#footer{flex:0 0 40px;display:flex;align-items:center;padding:0 16px;background:#f4f5f7;border-top:1px solid #dfe1e6;color:#6b778c;font-size:12px;}"
+                + "</style>";
+        String open = "<body id=\"jira\" class=\"pd-designer\">"
+                + "<header id=\"header\" role=\"banner\">"
+                + "<div class=\"jira-header-inner\">"
+                + "<a class=\"jira-logo\" href=\"#\"><i>J</i>Jira</a>"
+                + "<ul class=\"jira-nav\">"
+                + "<li><a href=\"#\">Дашборды</a></li>"
+                + "<li><a href=\"#\">Проекты</a></li>"
+                + "<li><a href=\"#\">Задачи</a></li>"
+                + "</ul>"
+                + "<div class=\"jira-spacer\">"
+                + "<div class=\"jira-search\">Поиск</div>"
+                + "<button class=\"jira-create\" type=\"button\">Создать</button>"
+                + "<span class=\"jira-avatar\">А</span>"
+                + "</div></div></header>"
+                + "<div id=\"content\"><div class=\"aui-page-panel\"><div class=\"aui-page-panel-inner\">"
+                + "<aside class=\"aui-page-panel-nav\" aria-label=\"Администрирование\">"
+                + "<div class=\"admin-section\">Приложения</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Версии и лицензии</a></li><li><a href=\"#\">Свойства приложения</a></li></ul>"
+                + "<div class=\"admin-section\">Проекты</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Проекты</a></li></ul>"
+                + "<div class=\"admin-section\">Задачи</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Типы задач</a></li></ul>"
+                + "<div class=\"admin-section\">Управление приложениями</div>"
+                + "<ul class=\"admin-links\">"
+                + "<li><a href=\"#\">Найти приложения</a></li>"
+                + "<li><a href=\"#\">Управление приложениями</a></li>"
+                + "<li><a href=\"#\">Клиентский портал</a></li>"
+                + "<li class=\"is-selected\"><a id=\"portal-designer-admin-link\" href=\"/plugins/servlet/portal-designer\">Конструктор портала</a></li>"
+                + "</ul>"
+                + "<div class=\"admin-section\">Пользователи</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Пользователи</a></li><li><a href=\"#\">Группы</a></li></ul>"
+                + "<div class=\"admin-section\">Система</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Общие настройки</a></li><li><a href=\"#\">Системная информация</a></li></ul>"
+                + "</aside><section class=\"aui-page-panel-content\">";
+        String close = "</section></div></div></div>"
+                + "<footer id=\"footer\">Jira</footer>";
+        if (!html.contains("<body class=\"pd-designer\">") || !html.contains("</body>")) {
+            return html;
+        }
+        html = html.replace("</head>", chrome + "</head>");
+        html = html.replace("<body class=\"pd-designer\">", open);
+        html = html.replace("</body>", close + "</body>");
+        return html;
     }
 
     private static void sendJson(HttpExchange exchange, Object body) throws IOException {

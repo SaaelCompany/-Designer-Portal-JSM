@@ -4,10 +4,13 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Конструктор портала</title>
+    <meta name="decorator" content="atl.admin"/>
+    <meta name="admin.active.section" content="admin_plugins_menu/portal-designer-section"/>
+    <meta name="admin.active.tab" content="portal-designer-admin-link"/>
     <link rel="stylesheet" href="@@CONTEXT@@/download/resources/@@PLUGIN_KEY@@:designer-ui/designer.css"/>
 </head>
-<body>
-<div id="app"></div>
+<body class="pd-designer">
+<div id="pd-app"></div>
 <script>
     window.PD_CONTEXT = @@CONTEXT_JSON@@;
     window.PD_PLUGIN_KEY = @@KEY_JSON@@;

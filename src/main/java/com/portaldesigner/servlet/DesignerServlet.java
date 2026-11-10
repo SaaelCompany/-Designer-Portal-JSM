@@ -35,7 +35,7 @@ public class DesignerServlet extends HttpServlet {
 
     @Override
     public void init() {
-        log.info("Portal Designer editor is at /plugins/servlet/portal-designer");
+        log.info("Portal Designer editor is at /plugins/servlet/portal-designer inside the Jira admin decorator");
     }
 
     @Override
@@ -48,8 +48,13 @@ public class DesignerServlet extends HttpServlet {
         if (AdminGuard.requireAdmin(auth, permissions) == null) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/html; charset=UTF-8");
-            response.getWriter().write("<!DOCTYPE html><meta charset=\"utf-8\"><title>Portal Designer</title>"
-                    + "<p>Нужны права администратора Jira, чтобы открыть конструктор портала.</p>");
+            response.getWriter().write("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                    + "<title>Конструктор портала</title>"
+                    + "<meta name=\"decorator\" content=\"atl.admin\"/>"
+                    + "<meta name=\"admin.active.section\" content=\"admin_plugins_menu/portal-designer-section\"/>"
+                    + "<meta name=\"admin.active.tab\" content=\"portal-designer-admin-link\"/>"
+                    + "</head><body><p>Нужны права администратора Jira, чтобы открыть конструктор портала.</p>"
+                    + "</body></html>");
             return;
         }
         String html = template();

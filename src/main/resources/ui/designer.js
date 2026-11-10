@@ -704,12 +704,47 @@
         frame.onload = function () {
             state.frameReady = true;
             paintPreview();
+            fitChrome();
             layoutDevice();
         };
     }
 
+    function fitChrome() {
+        var app = document.getElementById("pd-app");
+        if (!app) {
+            return;
+        }
+        var panel = app.parentNode;
+        var steps = 0;
+        while (panel && steps < 6) {
+            if (panel.classList && panel.classList.contains("aui-page-panel-content")) {
+                break;
+            }
+            panel = panel.parentNode;
+            steps++;
+        }
+        if (panel && panel.classList && panel.classList.contains("aui-page-panel-content")) {
+            var cs = window.getComputedStyle(panel);
+            app.style.marginTop = "-" + (parseFloat(cs.paddingTop) || 0) + "px";
+            app.style.marginRight = "-" + (parseFloat(cs.paddingRight) || 0) + "px";
+            app.style.marginBottom = "-" + (parseFloat(cs.paddingBottom) || 0) + "px";
+            app.style.marginLeft = "-" + (parseFloat(cs.paddingLeft) || 0) + "px";
+        }
+        var top = app.getBoundingClientRect().top;
+        if (top < 0) {
+            top = 0;
+        }
+        var footer = document.getElementById("footer");
+        var footerH = footer ? footer.offsetHeight : 0;
+        var height = window.innerHeight - top - footerH;
+        if (height < 420) {
+            height = Math.max(420, window.innerHeight - top);
+        }
+        app.style.height = Math.floor(height) + "px";
+    }
+
     function renderShell() {
-        var app = document.getElementById("app");
+        var app = document.getElementById("pd-app");
         app.innerHTML = "";
         var save = h("button", {id: "save", class: "save", type: "button", text: t("save"), onclick: saveTheme});
         var root = h("div", {class: "shell"}, [
@@ -752,8 +787,12 @@
         app.appendChild(root);
         renderSegments();
         renderNav();
+        fitChrome();
         bootFrame();
-        window.addEventListener("resize", layoutDevice);
+        window.addEventListener("resize", function () {
+            fitChrome();
+            layoutDevice();
+        });
     }
 
     function renderSegments() {
