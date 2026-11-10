@@ -30,6 +30,24 @@
             requests: "Карточки",
             announcement: "Объявление",
             footer: "Подвал",
+            canvas: "Холст",
+            canvasHint: "Потяните сам блок или синюю плашку над ним. Угол меняет размер. У компьютера, планшета и телефона положение своё. Скрытый блок на портале не показывается.",
+            addBlock: "Блок",
+            addText: "Текст",
+            addImage: "Картинка",
+            addButton: "Кнопка",
+            addHtml: "Свой HTML",
+            resetFlow: "Вернуть в поток",
+            freePos: "Свободное положение",
+            hideBlock: "Скрыть на портале",
+            widgetText: "Текст",
+            widgetHref: "Ссылка",
+            widgetImage: "Картинка",
+            widgetHtml: "HTML",
+            deleteWidget: "Удалить блок",
+            dragHandle: "Переместить",
+            resizeHandle: "Размер",
+            blocks: "Блоки портала",
             screens: "Экраны",
             css: "Свой CSS",
             presets: "Готовые стили",
@@ -182,6 +200,24 @@
             requests: "Cards",
             announcement: "Announcement",
             footer: "Footer",
+            canvas: "Canvas",
+            canvasHint: "Drag a block itself, or the blue bar above it. The corner changes its size. Desktop, tablet and phone each keep their own layout. A hidden block is not shown on the portal.",
+            addBlock: "Block",
+            addText: "Text",
+            addImage: "Image",
+            addButton: "Button",
+            addHtml: "Custom HTML",
+            resetFlow: "Back to flow",
+            freePos: "Free position",
+            hideBlock: "Hide on the portal",
+            widgetText: "Text",
+            widgetHref: "Link",
+            widgetImage: "Image",
+            widgetHtml: "HTML",
+            deleteWidget: "Delete block",
+            dragHandle: "Move",
+            resizeHandle: "Resize",
+            blocks: "Portal blocks",
             screens: "Screens",
             css: "Custom CSS",
             presets: "Presets",
@@ -336,6 +372,7 @@
         device: "desktop",
         page: "home",
         section: "hero",
+        widgetId: "",
         dirty: false,
         past: [],
         future: [],
@@ -502,6 +539,11 @@
         theme.responsive = theme.responsive || {};
         theme.responsive.mobile = theme.responsive.mobile || {};
         theme.responsive.tablet = theme.responsive.tablet || {};
+        theme.canvas = theme.canvas || {};
+        theme.canvas.desktop = theme.canvas.desktop || {};
+        theme.canvas.tablet = theme.canvas.tablet || {};
+        theme.canvas.mobile = theme.canvas.mobile || {};
+        theme.canvas.widgets = theme.canvas.widgets || [];
         return theme;
     }
 
@@ -568,8 +610,8 @@
         frame.style.transform = "scale(" + scale + ")";
         frame.style.transformOrigin = "top left";
         var device = document.getElementById("device");
-        device.style.width = Math.round(w * scale + 20) + "px";
-        device.style.height = Math.round(availH + 20) + "px";
+        device.style.width = Math.round(w * scale) + "px";
+        device.style.height = Math.round(availH) + "px";
     }
 
     function frameDoc() {
@@ -663,8 +705,7 @@
             link.href = "/servicedesk/customer/portal/1/create/" + encodeURIComponent(type.id);
             link.setAttribute("data-pd-card", "1");
             link.setAttribute("data-pd-type", String(type.id));
-            link.draggable = true;
-            link.style.cursor = "grab";
+            link.draggable = false;
             var icon = doc.createElement("span");
             icon.className = "pd-card-icon";
             icon.textContent = (type.name || "?").charAt(0).toUpperCase();
@@ -695,6 +736,9 @@
                 event.preventDefault();
             }
             while (node && node !== doc) {
+                if (node.getAttribute && node.getAttribute("data-pd-widget")) {
+                    state.widgetId = node.getAttribute("data-pd-widget");
+                }
                 if (node.getAttribute && node.getAttribute("data-pd-select")) {
                     state.section = node.getAttribute("data-pd-select");
                     renderNav();
@@ -757,6 +801,18 @@
             dragId = "";
         });
         doc.addEventListener("input", function (event) {
+            var widgetField = event.target.getAttribute && event.target.getAttribute("data-pd-widget-field");
+            if (widgetField && state.theme) {
+                var host = event.target.closest ? event.target.closest("[data-pd-widget]") : null;
+                var widget = host && widgetById(host.getAttribute("data-pd-widget"));
+                if (widget) {
+                    remember();
+                    widget[widgetField] = event.target.textContent;
+                    markDirty();
+                    scheduleCompile();
+                }
+                return;
+            }
             var path = event.target.getAttribute && event.target.getAttribute("data-pd-bind");
             if (!path || !state.theme) {
                 return;
@@ -786,15 +842,17 @@
             contextPath: window.PD_CONTEXT || "",
             portalId: state.portalId,
             page: state.page,
+            device: state.device,
             preview: true,
             onRender: function (rendered) {
-                var bound = rendered.querySelectorAll("[data-pd-bind]");
+                var bound = rendered.querySelectorAll("[data-pd-bind], [data-pd-widget-field]");
                 for (var i = 0; i < bound.length; i++) {
                     bound[i].setAttribute("contenteditable", "true");
                 }
             }
         });
         armPreview(doc);
+        armCanvas(doc);
     }
 
     function paintBanner() {
@@ -891,6 +949,7 @@
                     h("button", {type: "button", class: "ghost", text: t("redo"), onclick: redo}),
                     h("button", {type: "button", class: "ghost", id: "lang", text: t("lang"), onclick: toggleLang}),
                     h("button", {type: "button", class: "ghost", text: t("import"), onclick: importTheme}),
+                    h("button", {type: "button", class: "ghost", text: t("addBlock"), onclick: function () { addWidget("text"); }}),
                     h("button", {type: "button", class: "ghost", text: t("export"), onclick: exportTheme}),
                     h("label", {class: "publish"}, [
                         h("input", {id: "enabled", type: "checkbox", onchange: onEnabled}),
@@ -935,6 +994,7 @@
             renderSegments();
             renderInspector();
             layoutDevice();
+            paintPreview();
         });
     }
 
@@ -954,7 +1014,7 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "screens", "css"].forEach(function (id) {
+        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "canvas", "screens", "css"].forEach(function (id) {
             host.appendChild(h("button", {
                 type: "button",
                 class: state.section === id ? "active" : "",
@@ -1124,6 +1184,506 @@
         return wrap;
     }
 
+    var CANVAS_BLOCKS = [
+        ["header", "header"],
+        ["hero", "hero"],
+        ["announcement", "announcement"],
+        ["search", "search"],
+        ["requests", "requests"],
+        ["footer", "footer"],
+        ["login", "login"],
+        ["form", "create"]
+    ];
+
+    function deviceKey() {
+        return state.device || "desktop";
+    }
+
+    function widgetById(id) {
+        ensureShape(state.theme);
+        var list = state.theme.canvas.widgets;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function blankSpot(free) {
+        return {free: !!free, hidden: false, x: 0, y: 0, w: 0, h: 0};
+    }
+
+    function screenSpots(theme) {
+        ensureShape(theme);
+        var key = deviceKey();
+        if (!theme.canvas[key] || typeof theme.canvas[key] !== "object") {
+            theme.canvas[key] = {};
+        }
+        return theme.canvas[key];
+    }
+
+    function readSpot(key) {
+        if (key.indexOf("widget-") === 0) {
+            var widget = widgetById(key.substring(7));
+            if (!widget) {
+                return blankSpot(true);
+            }
+            widget[deviceKey()] = widget[deviceKey()] || blankSpot(true);
+            return widget[deviceKey()];
+        }
+        var spots = screenSpots(state.theme);
+        spots[key] = spots[key] || blankSpot(false);
+        return spots[key];
+    }
+
+    function writeSpot(key, spot) {
+        var themes = [state.theme, state.previewTheme];
+        for (var i = 0; i < themes.length; i++) {
+            var theme = themes[i];
+            if (!theme) {
+                continue;
+            }
+            if (key.indexOf("widget-") === 0) {
+                ensureShape(theme);
+                var list = theme.canvas.widgets;
+                for (var w = 0; w < list.length; w++) {
+                    if (list[w].id === key.substring(7)) {
+                        list[w][deviceKey()] = spot;
+                    }
+                }
+            } else {
+                screenSpots(theme)[key] = spot;
+            }
+        }
+    }
+
+    function boxOf(node) {
+        var rect = node.getBoundingClientRect();
+        var body = node.ownerDocument.body.getBoundingClientRect();
+        return {
+            x: rect.left - body.left,
+            y: rect.top - body.top,
+            w: rect.width,
+            h: rect.height
+        };
+    }
+
+    function canvasNode(doc, key) {
+        var nodes = doc.querySelectorAll("[data-pd-canvas]");
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].getAttribute("data-pd-canvas") === key) {
+                return nodes[i];
+            }
+        }
+        return null;
+    }
+
+    function addWidget(type) {
+        remember();
+        ensureShape(state.theme);
+        var id = "w" + Math.floor(Math.random() * 1e9).toString(36);
+        var y = 160 + state.theme.canvas.widgets.length * 28;
+        var spot = {
+            free: true,
+            hidden: false,
+            x: 48,
+            y: y,
+            w: type === "button" ? 180 : 320,
+            h: type === "button" ? 52 : (type === "image" ? 180 : 96)
+        };
+        state.theme.canvas.widgets.push({
+            id: id,
+            type: type,
+            text: type === "button" ? "Открыть" : "Новый блок",
+            href: type === "button" ? "#" : "",
+            imageUrl: "",
+            html: "<p>Свой блок</p>",
+            desktop: clone(spot),
+            tablet: clone(spot),
+            mobile: {free: true, hidden: false, x: 16, y: y, w: 300, h: spot.h}
+        });
+        state.widgetId = id;
+        state.section = "canvas";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function deleteWidget(id) {
+        remember();
+        ensureShape(state.theme);
+        var next = [];
+        var list = state.theme.canvas.widgets;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id !== id) {
+                next.push(list[i]);
+            }
+        }
+        state.theme.canvas.widgets = next;
+        if (state.widgetId === id) {
+            state.widgetId = "";
+        }
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function resetFlow() {
+        remember();
+        ensureShape(state.theme);
+        state.theme.canvas[deviceKey()] = {};
+        var widgets = state.theme.canvas.widgets;
+        for (var i = 0; i < widgets.length; i++) {
+            if (widgets[i][deviceKey()]) {
+                widgets[i][deviceKey()].free = false;
+            }
+        }
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function toggleSpot(key, field, on) {
+        remember();
+        var spot = readSpot(key);
+        if (field === "free" && on) {
+            var doc = frameDoc();
+            var node = doc && canvasNode(doc, key);
+            if (doc && doc.documentElement.className.indexOf("pd-free") < 0) {
+                doc.documentElement.className += " pd-free";
+            }
+            if (node) {
+                var box = boxOf(node);
+                spot.x = Math.round(box.x);
+                spot.y = Math.round(box.y);
+                spot.w = Math.max(40, Math.round(box.w));
+                spot.h = Math.max(24, Math.round(box.h));
+            } else if (!spot.w) {
+                spot.x = 48;
+                spot.y = 160;
+                spot.w = 320;
+                spot.h = 80;
+            }
+        }
+        spot[field] = on;
+        writeSpot(key, spot);
+        markDirty();
+        scheduleCompile();
+    }
+
+    function hitLabel(key) {
+        if (key.indexOf("widget-") === 0) {
+            var widget = widgetById(key.substring(7));
+            var type = widget && widget.type;
+            if (type === "image") {
+                return t("addImage");
+            }
+            if (type === "button") {
+                return t("addButton");
+            }
+            if (type === "html") {
+                return t("addHtml");
+            }
+            return t("addText");
+        }
+        if (key.indexOf("card-") === 0) {
+            return t("requests") + " " + key.substring(5);
+        }
+        if (key === "form") {
+            return t("create");
+        }
+        return t(key);
+    }
+
+    function injectEditorStyle(doc) {
+        if (doc.getElementById("pd-editor-style")) {
+            return;
+        }
+        var style = doc.createElement("style");
+        style.id = "pd-editor-style";
+        style.textContent = "#pd-editor-layer{position:absolute;left:0;top:0;width:100%;pointer-events:none;z-index:80}"
+            + ".pd-hit{position:absolute;pointer-events:none;outline:1px dashed rgba(0,82,204,.55)}"
+            + ".pd-hit-label{position:absolute;left:8px;top:-18px;background:#0052CC;color:#fff;font:11px/16px 'Segoe UI',sans-serif;padding:0 6px;border-radius:2px;white-space:nowrap;pointer-events:none}"
+            + ".pd-drag,.pd-resize{pointer-events:auto;position:absolute;padding:0;border:0}"
+            + ".pd-drag{left:0;top:-20px;width:64px;height:18px;background:#0052CC;border-radius:2px;cursor:move}"
+            + ".pd-resize{right:-8px;bottom:-8px;width:18px;height:18px;background:#fff;border:2px solid #0052CC;border-radius:2px;cursor:nwse-resize}";
+        (doc.head || doc.documentElement).appendChild(style);
+    }
+
+    function armCanvas(doc) {
+        if (!doc || !doc.body || !state.theme) {
+            return;
+        }
+        var runtime = doc.defaultView && doc.defaultView.PortalDesigner;
+        if (!runtime || !runtime.place) {
+            return;
+        }
+        injectEditorStyle(doc);
+        if (!doc.__pdMove) {
+            doc.__pdMove = true;
+            doc.addEventListener("pointerdown", function (event) {
+                if (event.button !== 0) {
+                    return;
+                }
+                var target = event.target;
+                if (!target || !target.closest) {
+                    return;
+                }
+                if (target.closest("#pd-editor-layer, [contenteditable='true'], input, textarea, select, button")) {
+                    return;
+                }
+                var node = target.closest("[data-pd-canvas]");
+                var live = doc.defaultView && doc.defaultView.PortalDesigner;
+                if (!node || !live || !live.place) {
+                    return;
+                }
+                var key = node.getAttribute("data-pd-canvas");
+                var handle = null;
+                var hits = doc.querySelectorAll(".pd-hit");
+                for (var n = 0; n < hits.length; n++) {
+                    if (hits[n].getAttribute("data-pd-hit") === key) {
+                        handle = hits[n];
+                        break;
+                    }
+                }
+                startCanvasDrag(event, doc, node, key, handle, false, live);
+            }, true);
+        }
+        var layer = doc.getElementById("pd-editor-layer");
+        if (!layer) {
+            layer = doc.createElement("div");
+            layer.id = "pd-editor-layer";
+            doc.body.appendChild(layer);
+        }
+        while (layer.firstChild) {
+            layer.removeChild(layer.firstChild);
+        }
+        var nodes = doc.querySelectorAll("[data-pd-canvas]");
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].offsetWidth < 2 && nodes[i].offsetHeight < 2) {
+                continue;
+            }
+            addHit(doc, layer, nodes[i], runtime);
+        }
+        layer.style.height = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight) + "px";
+    }
+
+    function addHit(doc, layer, node, runtime) {
+        var key = node.getAttribute("data-pd-canvas");
+        var box = boxOf(node);
+        var hit = doc.createElement("div");
+        hit.className = "pd-hit";
+        hit.setAttribute("data-pd-hit", key);
+        hit.style.left = Math.round(box.x) + "px";
+        hit.style.top = Math.round(box.y) + "px";
+        hit.style.width = Math.max(8, Math.round(box.w)) + "px";
+        hit.style.height = Math.max(8, Math.round(box.h)) + "px";
+        var label = doc.createElement("span");
+        label.className = "pd-hit-label";
+        label.textContent = hitLabel(key);
+        var drag = doc.createElement("button");
+        drag.type = "button";
+        drag.className = "pd-drag";
+        drag.title = t("dragHandle");
+        drag.addEventListener("pointerdown", function (event) {
+            startCanvasDrag(event, doc, node, key, hit, false, runtime);
+        });
+        var resize = doc.createElement("button");
+        resize.type = "button";
+        resize.className = "pd-resize";
+        resize.title = t("resizeHandle");
+        resize.addEventListener("pointerdown", function (event) {
+            startCanvasDrag(event, doc, node, key, hit, true, runtime);
+        });
+        hit.appendChild(label);
+        hit.appendChild(drag);
+        hit.appendChild(resize);
+        layer.appendChild(hit);
+    }
+
+    function startCanvasDrag(event, doc, node, key, hit, resizing, runtime) {
+        event.preventDefault();
+        event.stopPropagation();
+        var spot = readSpot(key);
+        var originX = event.clientX;
+        var originY = event.clientY;
+        var start = null;
+        var moved = false;
+        function begin() {
+            if (moved) {
+                return;
+            }
+            moved = true;
+            if (doc.documentElement.className.indexOf("pd-free") < 0) {
+                doc.documentElement.className += " pd-free";
+            }
+            if (!spot.free) {
+                var box = boxOf(node);
+                spot.free = true;
+                spot.x = Math.round(box.x);
+                spot.y = Math.round(box.y);
+                spot.w = Math.max(40, Math.round(box.w));
+                spot.h = Math.max(24, Math.round(box.h));
+            }
+            start = {x: spot.x, y: spot.y, w: spot.w, h: spot.h};
+        }
+        function move(ev) {
+            var dx = ev.clientX - originX;
+            var dy = ev.clientY - originY;
+            if (!moved && Math.abs(dx) + Math.abs(dy) < 3) {
+                return;
+            }
+            begin();
+            if (resizing) {
+                spot.w = Math.max(40, Math.min(2400, Math.round(start.w + dx)));
+                spot.h = Math.max(24, Math.min(2400, Math.round(start.h + dy)));
+            } else {
+                spot.x = Math.max(-2000, Math.min(4000, Math.round(start.x + dx)));
+                spot.y = Math.max(-2000, Math.min(8000, Math.round(start.y + dy)));
+            }
+            spot.free = true;
+            writeSpot(key, spot);
+            runtime.place(node, spot);
+            if (!hit) {
+                return;
+            }
+            var next = boxOf(node);
+            hit.style.left = Math.round(next.x) + "px";
+            hit.style.top = Math.round(next.y) + "px";
+            hit.style.width = Math.max(8, Math.round(next.w)) + "px";
+            hit.style.height = Math.max(8, Math.round(next.h)) + "px";
+        }
+        function up() {
+            doc.removeEventListener("pointermove", move);
+            doc.removeEventListener("pointerup", up);
+            if (!moved) {
+                return;
+            }
+            remember();
+            markDirty();
+            if (state.section === "canvas") {
+                renderInspector();
+            }
+            scheduleCompile();
+        }
+        doc.addEventListener("pointermove", move);
+        doc.addEventListener("pointerup", up);
+    }
+
+    function renderCanvas(host) {
+        ensureShape(state.theme);
+        host.appendChild(h("p", {class: "hint", text: t("canvasHint")}));
+        var row = h("div", {class: "grid-2"});
+        [["text", "addText"], ["image", "addImage"], ["button", "addButton"], ["html", "addHtml"]].forEach(function (item) {
+            row.appendChild(h("button", {
+                type: "button",
+                class: "ghost",
+                text: t(item[1]),
+                onclick: function () { addWidget(item[0]); }
+            }));
+        });
+        host.appendChild(row);
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("resetFlow"), onclick: resetFlow}));
+        host.appendChild(h("p", {class: "block-label", text: t("blocks")}));
+        CANVAS_BLOCKS.forEach(function (item) {
+            host.appendChild(spotRow(item[0], t(item[1])));
+        });
+        catalogTypes().forEach(function (type) {
+            host.appendChild(spotRow("card-" + type.id, type.name || String(type.id)));
+        });
+        state.theme.canvas.widgets.forEach(function (widget) {
+            var selected = widget.id === state.widgetId;
+            host.appendChild(h("div", {class: "column-card"}, [
+                h("button", {
+                    type: "button",
+                    class: "text-btn",
+                    text: t(widget.type || "text"),
+                    onclick: function () {
+                        state.widgetId = widget.id;
+                        renderInspector();
+                    }
+                }),
+                selected ? widgetEditor(widget) : null
+            ]));
+        });
+    }
+
+    function spotRow(key, label) {
+        var spot = readSpot(key);
+        var free = h("input", {type: "checkbox", checked: !!spot.free});
+        free.addEventListener("change", function () { toggleSpot(key, "free", free.checked); });
+        var hidden = h("input", {type: "checkbox", checked: !!spot.hidden});
+        hidden.addEventListener("change", function () { toggleSpot(key, "hidden", hidden.checked); });
+        return h("div", {class: "column-card"}, [
+            h("strong", {text: label}),
+            h("label", {class: "check"}, [free, document.createTextNode(t("freePos"))]),
+            h("label", {class: "check"}, [hidden, document.createTextNode(t("hideBlock"))])
+        ]);
+    }
+
+    function widgetField(label, value, onInput) {
+        var input = h("input", {type: "text", value: value || ""});
+        input.addEventListener("input", function () { onInput(input.value); });
+        return field("", label, input);
+    }
+
+    function editWidget(widget, prop, value) {
+        remember();
+        widget[prop] = value;
+        markDirty();
+        scheduleCompile();
+    }
+
+    function widgetEditor(widget) {
+        var box = h("div", {});
+        if (widget.type === "html") {
+            var html = h("textarea", {value: widget.html || ""});
+            html.addEventListener("input", function () { editWidget(widget, "html", html.value); });
+            box.appendChild(field("", t("widgetHtml"), html));
+        } else if (widget.type !== "image") {
+            box.appendChild(widgetField(t("widgetText"), widget.text, function (value) {
+                editWidget(widget, "text", value);
+            }));
+        }
+        if (widget.type === "button") {
+            box.appendChild(widgetField(t("widgetHref"), widget.href, function (value) {
+                editWidget(widget, "href", value);
+            }));
+        }
+        if (widget.type === "image") {
+            var image = h("input", {type: "text", value: widget.imageUrl || ""});
+            image.addEventListener("input", function () { editWidget(widget, "imageUrl", image.value); });
+            var file = h("input", {type: "file", accept: "image/png,image/jpeg,image/gif,image/webp"});
+            file.addEventListener("change", function () {
+                var picked = file.files && file.files[0];
+                if (!picked) {
+                    return;
+                }
+                if (picked.size > 270 * 1024) {
+                    toast(t("fileBig"));
+                    file.value = "";
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    editWidget(widget, "imageUrl", String(reader.result || ""));
+                    renderInspector();
+                };
+                reader.readAsDataURL(picked);
+            });
+            box.appendChild(field("", t("widgetImage"), h("div", {}, [image, file])));
+        }
+        box.appendChild(h("button", {
+            type: "button",
+            class: "text-btn",
+            text: t("deleteWidget"),
+            onclick: function () { deleteWidget(widget.id); }
+        }));
+        return box;
+    }
+
     function renderInspector() {
         var host = document.getElementById("inspector");
         if (!host || !state.theme) {
@@ -1149,6 +1709,8 @@
             renderAnnouncement(host);
         } else if (state.section === "footer") {
             renderFooter(host);
+        } else if (state.section === "canvas") {
+            renderCanvas(host);
         } else if (state.section === "screens") {
             renderScreens(host);
         } else if (state.section === "css") {

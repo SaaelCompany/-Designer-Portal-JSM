@@ -122,6 +122,7 @@ public final class ThemeMapper {
         }
         theme.responsive.mobile = screen(map(responsive.get("mobile")), PortalTheme.Screen.mobile(), warnings, "mobile");
         theme.responsive.tablet = screen(map(responsive.get("tablet")), PortalTheme.Screen.tablet(), warnings, "tablet");
+        theme.canvas = canvas(raw.get("canvas"), warnings);
 
         String custom = str(raw.get("customCss"));
         String cleanCss = CssSanitizer.sanitize(custom);
@@ -243,8 +244,140 @@ public final class ThemeMapper {
         responsive.put("mobile", screenMap(theme.responsive.mobile));
         responsive.put("tablet", screenMap(theme.responsive.tablet));
         root.put("responsive", responsive);
+        root.put("canvas", canvasMap(theme.canvas));
         root.put("customCss", theme.customCss);
         return root;
+    }
+
+    private static PortalTheme.Canvas canvas(Object raw, List<String> warnings) {
+        PortalTheme.Canvas canvas = new PortalTheme.Canvas();
+        Map<String, Object> map = map(raw);
+        canvas.desktop = spots(map.get("desktop"));
+        canvas.tablet = spots(map.get("tablet"));
+        canvas.mobile = spots(map.get("mobile"));
+        canvas.widgets = widgets(map.get("widgets"), warnings);
+        return canvas;
+    }
+
+    private static Map<String, PortalTheme.Spot> spots(Object raw) {
+        Map<String, PortalTheme.Spot> spots = new LinkedHashMap<String, PortalTheme.Spot>();
+        Map<String, Object> map = map(raw);
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (!canvasKey(entry.getKey()) || spots.size() >= 80) {
+                continue;
+            }
+            spots.put(entry.getKey(), spot(entry.getValue()));
+        }
+        return spots;
+    }
+
+    private static boolean canvasKey(String key) {
+        if ("header".equals(key) || "hero".equals(key) || "search".equals(key)
+                || "requests".equals(key) || "announcement".equals(key) || "footer".equals(key)
+                || "login".equals(key) || "form".equals(key)) {
+            return true;
+        }
+        return key.startsWith("card-") && key.substring(5).matches("[A-Za-z0-9_\\-]{1,40}");
+    }
+
+    private static PortalTheme.Spot spot(Object raw) {
+        PortalTheme.Spot spot = new PortalTheme.Spot();
+        Map<String, Object> map = map(raw);
+        spot.free = bool(map.get("free"), false);
+        spot.hidden = bool(map.get("hidden"), false);
+        spot.x = clampSilent(intVal(map.get("x"), 0), -2000, 4000);
+        spot.y = clampSilent(intVal(map.get("y"), 0), -2000, 8000);
+        spot.w = clampSilent(intVal(map.get("w"), 0), 0, 2400);
+        spot.h = clampSilent(intVal(map.get("h"), 0), 0, 2400);
+        return spot;
+    }
+
+    private static int clampSilent(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static List<PortalTheme.Widget> widgets(Object raw, List<String> warnings) {
+        List<PortalTheme.Widget> widgets = new ArrayList<PortalTheme.Widget>();
+        if (!(raw instanceof List)) {
+            return widgets;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && widgets.size() < 24; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String id = str(item.get("id")).trim();
+            if (!id.matches("[A-Za-z][A-Za-z0-9]{0,19}")) {
+                warnings.add("canvas.widgets");
+                continue;
+            }
+            PortalTheme.Widget widget = new PortalTheme.Widget();
+            widget.id = id;
+            widget.type = oneOf(str(item.get("type")), "text", "text", "image", "button", "html");
+            widget.text = text(item.get("text"), "", 500);
+            String href = Urls.safeHref(str(item.get("href")));
+            if (!str(item.get("href")).trim().isEmpty() && href.isEmpty()) {
+                warnings.add("canvas.widgets");
+            }
+            widget.href = href;
+            widget.imageUrl = asset(str(item.get("imageUrl")), warnings, "canvas.widgets");
+            widget.html = html(str(item.get("html")), warnings, "canvas.widgets");
+            widget.desktop = spot(item.get("desktop"));
+            widget.tablet = spot(item.get("tablet"));
+            widget.mobile = spot(item.get("mobile"));
+            widgets.add(widget);
+        }
+        if (list.size() > 24) {
+            warnings.add("canvas.widgets");
+        }
+        return widgets;
+    }
+
+    private static Map<String, Object> canvasMap(PortalTheme.Canvas canvas) {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        PortalTheme.Canvas source = canvas == null ? new PortalTheme.Canvas() : canvas;
+        map.put("desktop", spotMap(source.desktop));
+        map.put("tablet", spotMap(source.tablet));
+        map.put("mobile", spotMap(source.mobile));
+        List<Map<String, Object>> widgets = new ArrayList<Map<String, Object>>();
+        if (source.widgets != null) {
+            for (PortalTheme.Widget widget : source.widgets) {
+                Map<String, Object> item = new LinkedHashMap<String, Object>();
+                item.put("id", widget.id);
+                item.put("type", widget.type);
+                item.put("text", widget.text);
+                item.put("href", widget.href);
+                item.put("imageUrl", widget.imageUrl);
+                item.put("html", widget.html);
+                item.put("desktop", spotMapOne(widget.desktop));
+                item.put("tablet", spotMapOne(widget.tablet));
+                item.put("mobile", spotMapOne(widget.mobile));
+                widgets.add(item);
+            }
+        }
+        map.put("widgets", widgets);
+        return map;
+    }
+
+    private static Map<String, Object> spotMap(Map<String, PortalTheme.Spot> spots) {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        if (spots == null) {
+            return map;
+        }
+        for (Map.Entry<String, PortalTheme.Spot> entry : spots.entrySet()) {
+            map.put(entry.getKey(), spotMapOne(entry.getValue()));
+        }
+        return map;
+    }
+
+    private static Map<String, Object> spotMapOne(PortalTheme.Spot spot) {
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        PortalTheme.Spot source = spot == null ? new PortalTheme.Spot() : spot;
+        map.put("free", source.free);
+        map.put("hidden", source.hidden);
+        map.put("x", source.x);
+        map.put("y", source.y);
+        map.put("w", source.w);
+        map.put("h", source.h);
+        return map;
     }
 
     private static Map<String, Object> screenMap(PortalTheme.Screen screen) {

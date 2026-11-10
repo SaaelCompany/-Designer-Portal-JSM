@@ -1,7 +1,9 @@
 package com.portaldesigner.theme;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Visual theme applied to one customer portal, or to every portal when stored as {@code global}. */
 public final class PortalTheme {
@@ -20,6 +22,7 @@ public final class PortalTheme {
     public Announcement announcement = new Announcement();
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
+    public Canvas canvas = new Canvas();
     public String customCss = "";
 
     public static final class Colors {
@@ -165,6 +168,36 @@ public final class PortalTheme {
             this.label = label;
             this.href = href;
         }
+    }
+
+    /** Optional absolute placement. Free stays off until a block is dragged, so older themes keep their flow. */
+    public static final class Spot {
+        public boolean free;
+        public boolean hidden;
+        public int x;
+        public int y;
+        public int w;
+        public int h;
+    }
+
+    /** Per-screen positions of built-in regions and the custom blocks a designer adds. */
+    public static final class Canvas {
+        public Map<String, Spot> desktop = new LinkedHashMap<String, Spot>();
+        public Map<String, Spot> tablet = new LinkedHashMap<String, Spot>();
+        public Map<String, Spot> mobile = new LinkedHashMap<String, Spot>();
+        public List<Widget> widgets = new ArrayList<Widget>();
+    }
+
+    public static final class Widget {
+        public String id = "";
+        public String type = "text";
+        public String text = "";
+        public String href = "";
+        public String imageUrl = "";
+        public String html = "";
+        public Spot desktop = new Spot();
+        public Spot tablet = new Spot();
+        public Spot mobile = new Spot();
     }
 
     public static final class Column {

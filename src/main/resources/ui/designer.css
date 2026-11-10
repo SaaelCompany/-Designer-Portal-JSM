@@ -1,14 +1,14 @@
 #pd-app {
-    --ink: #1c1915;
-    --muted: #6d655c;
-    --line: #e3dcd2;
-    --paper: #f6f3ee;
-    --paper-2: #fffdf9;
-    --stage: #e7e1d8;
-    --accent: #0f6b5c;
-    --accent-ink: #f4fbf8;
-    --warn: #9a4318;
-    --shadow: 0 18px 50px rgba(40, 32, 22, 0.12);
+    --ink: #172B4D;
+    --muted: #6B778C;
+    --line: #DFE1E6;
+    --paper: #F4F5F7;
+    --paper-2: #FFFFFF;
+    --stage: #F4F5F7;
+    --accent: #0052CC;
+    --accent-ink: #FFFFFF;
+    --warn: #DE350B;
+    --shadow: 0 1px 1px rgba(9, 30, 66, 0.25);
     color: var(--ink);
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 14px;
@@ -50,8 +50,8 @@
 #pd-app .brand { display: flex; align-items: center; gap: 10px; margin-right: 8px; min-width: 190px; }
 
 #pd-app .mark {
-    width: 28px; height: 28px; border-radius: 8px;
-    background: var(--ink); color: #f6f3ee;
+    width: 28px; height: 28px; border-radius: 3px;
+    background: var(--accent); color: #fff;
     display: inline-flex; align-items: center; justify-content: center;
     font-weight: 700;
 }
@@ -66,25 +66,35 @@
 #pd-app .field textarea {
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 3px;
     padding: 7px 9px;
 }
 
 #pd-app .portal-id { width: 88px; }
 
-#pd-app .seg { display: inline-flex; background: #efeae3; border-radius: 999px; padding: 3px; }
+#pd-app .seg { display: inline-flex; background: #F4F5F7; border: 1px solid var(--line); border-radius: 3px; padding: 2px; }
 
 #pd-app .seg button,
-#pd-app .ghost,
 #pd-app .text-btn,
 #pd-app .icon-btn {
     border: 0;
     background: transparent;
-    border-radius: 999px;
+    border-radius: 3px;
     padding: 6px 10px;
 }
 
-#pd-app .seg button.active { background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+#pd-app .ghost {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 6px 10px;
+    color: var(--ink);
+}
+
+#pd-app .ghost:hover,
+#pd-app .text-btn:hover { background: #F4F5F7; }
+
+#pd-app .seg button.active { background: #fff; color: var(--accent); box-shadow: 0 1px 1px rgba(9, 30, 66, 0.15); }
 
 #pd-app .grow {
     margin-left: auto;
@@ -98,13 +108,15 @@
 
 #pd-app .publish {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 10px; border-radius: 999px; background: #efeae3;
+    padding: 6px 10px; border-radius: 3px; background: #fff; border: 1px solid var(--line);
 }
 
 #pd-app .save {
     background: var(--accent); color: var(--accent-ink);
-    border: 0; border-radius: 999px; padding: 8px 14px; font-weight: 650;
+    border: 0; border-radius: 3px; padding: 8px 14px; font-weight: 650;
 }
+
+#pd-app .save:hover { background: #0065FF; }
 
 #pd-app .save.dirty { background: var(--warn); }
 
@@ -124,19 +136,20 @@
 
 #pd-app .nav button {
     width: 100%; text-align: left; border: 0; background: transparent;
-    border-radius: 10px; padding: 9px 10px; margin-bottom: 4px;
+    border-radius: 3px; padding: 9px 10px; margin-bottom: 2px; color: var(--ink);
 }
 
-#pd-app .nav button.active { background: #efeae3; }
+#pd-app .nav button.active { background: #DEEBFF; color: #0052CC; font-weight: 650; }
 
 #pd-app .stage-wrap { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 #pd-app .banner {
     margin: 10px 16px 0;
     padding: 8px 12px;
-    border-radius: 10px;
-    background: #fff6e8;
-    color: #6d4a16;
+    border-radius: 3px;
+    background: #FFFAE6;
+    color: #172B4D;
+    border: 1px solid #FFE380;
     display: none;
 }
 
@@ -154,16 +167,17 @@
 }
 
 #pd-app .device {
-    background: #1c1915;
-    border-radius: 18px;
-    padding: 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0;
     box-shadow: var(--shadow);
 }
 
 #pd-app .device iframe {
     border: 0;
     background: white;
-    border-radius: 10px;
+    border-radius: 3px;
     display: block;
 }
 
@@ -174,7 +188,7 @@
 
 #pd-app .field { margin: 0 0 12px; }
 #pd-app .field label,
-#pd-app .block-label { display: block; margin-bottom: 5px; color: #3f3a34; font-size: 12px; }
+#pd-app .block-label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 12px; font-weight: 650; }
 #pd-app .field input[type="text"],
 #pd-app .field input[type="number"],
 #pd-app .field select,
@@ -182,27 +196,27 @@
 #pd-app input[type="file"] { display: block; margin-top: 6px; max-width: 100%; font-size: 12px; }
 #pd-app .field textarea { min-height: 88px; resize: vertical; }
 #pd-app .color-row { display: flex; gap: 8px; align-items: center; }
-#pd-app .color-row input[type="color"] { width: 42px; height: 32px; border: 1px solid var(--line); background: #fff; padding: 2px; border-radius: 8px; }
+#pd-app .color-row input[type="color"] { width: 42px; height: 32px; border: 1px solid var(--line); background: #fff; padding: 2px; border-radius: 3px; }
 #pd-app .color-row input[type="text"] { flex: 1; }
 #pd-app .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #pd-app .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
 
 #pd-app .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
 #pd-app .preset {
-    border: 1px solid var(--line); background: #fff; border-radius: 12px;
+    border: 1px solid var(--line); background: #fff; border-radius: 3px;
     padding: 8px; text-align: left;
 }
-#pd-app .swatch { height: 28px; border-radius: 8px; margin-bottom: 6px; display: flex; overflow: hidden; }
+#pd-app .swatch { height: 28px; border-radius: 3px; margin-bottom: 6px; display: flex; overflow: hidden; }
 #pd-app .swatch i { display: block; flex: 1; }
 #pd-app .preset small { color: var(--muted); }
 
 #pd-app .link-row { display: grid; grid-template-columns: 1fr 1fr 28px; gap: 6px; margin-bottom: 6px; }
-#pd-app .column-card { border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 8px; background: #fff; }
+#pd-app .column-card { border: 1px solid var(--line); border-radius: 3px; padding: 8px; margin-bottom: 8px; background: #fff; }
 #pd-app .warn-list { color: var(--warn); font-size: 12px; padding-left: 16px; }
 
 #pd-app .toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--ink); color: #f6f3ee; padding: 10px 14px; border-radius: 999px;
+    background: #253858; color: #fff; padding: 10px 14px; border-radius: 3px;
     display: none;
     z-index: 20;
 }

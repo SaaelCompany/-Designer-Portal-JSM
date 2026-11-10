@@ -9,7 +9,10 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -101,6 +104,79 @@ public class ThemePipelineTest {
         theme.typography.customFont = "Arial;background:url(http://evil)";
         MappedTheme mapped = ThemeMapper.fromMap(ThemeMapper.toMap(theme));
         assertEquals("", mapped.theme.typography.customFont);
+    }
+
+    @Test
+    public void canvasPlacementAndWidgetsRoundTrip() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> canvas = new LinkedHashMap<String, Object>();
+        Map<String, Object> desktop = new LinkedHashMap<String, Object>();
+        Map<String, Object> header = new LinkedHashMap<String, Object>();
+        header.put("free", Boolean.TRUE);
+        header.put("x", Integer.valueOf(12));
+        header.put("y", Integer.valueOf(40));
+        header.put("w", Integer.valueOf(480));
+        header.put("h", Integer.valueOf(72));
+        desktop.put("header", header);
+        desktop.put("card-4", header);
+        desktop.put("nope", header);
+        canvas.put("desktop", desktop);
+
+        List<Map<String, Object>> widgets = new ArrayList<Map<String, Object>>();
+        Map<String, Object> widget = new LinkedHashMap<String, Object>();
+        widget.put("id", "w1");
+        widget.put("type", "html");
+        widget.put("html", "<p>ok</p><script>alert(1)</script>");
+        widget.put("href", "javascript:alert(1)");
+        widget.put("imageUrl", "https://cdn.example/a.png");
+        Map<String, Object> spot = new LinkedHashMap<String, Object>();
+        spot.put("free", Boolean.TRUE);
+        spot.put("x", Integer.valueOf(30));
+        spot.put("y", Integer.valueOf(200));
+        spot.put("w", Integer.valueOf(280));
+        spot.put("h", Integer.valueOf(120));
+        widget.put("desktop", spot);
+        widgets.add(widget);
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "bad id");
+        evil.put("type", "text");
+        evil.put("text", "nope");
+        widgets.add(evil);
+        canvas.put("widgets", widgets);
+        raw.put("canvas", canvas);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertTrue(theme.canvas.desktop.get("header").free);
+        assertEquals(12, theme.canvas.desktop.get("header").x);
+        assertTrue(theme.canvas.desktop.containsKey("card-4"));
+        assertFalse(theme.canvas.desktop.containsKey("nope"));
+        assertEquals(1, theme.canvas.widgets.size());
+        assertFalse(theme.canvas.widgets.get(0).html.toLowerCase().contains("script"));
+        assertTrue(theme.canvas.widgets.get(0).html.contains("ok"));
+        assertEquals("", theme.canvas.widgets.get(0).href);
+        assertEquals("https://cdn.example/a.png", theme.canvas.widgets.get(0).imageUrl);
+        assertEquals(30, theme.canvas.widgets.get(0).desktop.x);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(12, again.canvas.desktop.get("header").x);
+        assertEquals(480, again.canvas.desktop.get("header").w);
+        assertEquals(30, again.canvas.widgets.get(0).desktop.x);
+        assertEquals("html", again.canvas.widgets.get(0).type);
+
+        String js = readQuiet("/js/portal.js");
+        assertTrue(js.contains("data-pd-canvas"));
+        assertTrue(js.contains("pd-widgets"));
+        String css = readQuiet("/css/portal.css");
+        assertTrue(css.contains("pd-free"));
+        assertTrue(css.contains("pd-widget"));
+    }
+
+    private static String readQuiet(String path) {
+        try {
+            return read(path);
+        } catch (Exception ex) {
+            throw new AssertionError(ex);
+        }
     }
 
     @Test
