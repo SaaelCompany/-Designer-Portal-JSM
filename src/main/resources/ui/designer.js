@@ -21,7 +21,7 @@
             lang: "EN",
             import: "Импорт",
             export: "Экспорт",
-            published: "Опубликовано",
+            published: "Новый дизайн",
             save: "Сохранить",
             saving: "Сохраняем…",
             saved: "Сохранено",
@@ -78,8 +78,6 @@
             formLabel: "Цвет подписи",
             browse: "Переход",
             browseOn: "Режим перехода: ссылки открывают страницы портала. Нажмите «Переход» ещё раз, чтобы выбирать объекты.",
-            restore: "Стандартный портал",
-            restored: "Посетители снова видят обычный портал. Обновите его страницу. Черновик сохранён.",
             removeTheme: "Удалить оформление",
             removedTheme: "Оформление удалено. Портал снова стандартный.",
             liveHint: "В макете ваш портал. «Переход» открывает проекты и запросы. Без него клик выбирает объект: размер, скругление, шрифт, цвет и положение.",
@@ -89,7 +87,9 @@
             colors: "Цвета",
             type: "Типографика",
             layout: "Сетка",
-            unpublished: "Посетители портала этого не видят, пока стиль не опубликован.",
+            unpublished: "Новый дизайн выключен. Посетители видят обычный портал.",
+            designOn: "Новый дизайн включён. Обновите страницу портала.",
+            designOff: "Новый дизайн выключен. Посетители видят обычный портал. Обновите его страницу.",
             inherited: "Этот портал показывает общий стиль. Включите свой стиль, чтобы править только его.",
             ownStyle: "Свой стиль этого портала",
             editGlobal: "Править общий стиль",
@@ -226,7 +226,7 @@
             lang: "RU",
             import: "Import",
             export: "Export",
-            published: "Published",
+            published: "New design",
             save: "Save",
             saving: "Saving…",
             saved: "Saved",
@@ -283,8 +283,6 @@
             formLabel: "Label color",
             browse: "Browse",
             browseOn: "Browse mode: links open portal pages. Press Browse again to select objects.",
-            restore: "Standard portal",
-            restored: "Visitors see the standard portal again. Refresh it. The draft is kept.",
             removeTheme: "Delete styling",
             removedTheme: "Styling deleted. The portal is standard again.",
             liveHint: "The preview is your portal. Browse opens projects and requests. Without it, a click selects an object: size, corners, font, color and position.",
@@ -294,7 +292,9 @@
             colors: "Colors",
             type: "Type",
             layout: "Layout",
-            unpublished: "Visitors will not see this until you publish it.",
+            unpublished: "The new design is off. Visitors see the standard portal.",
+            designOn: "The new design is on. Refresh the portal.",
+            designOff: "The new design is off. Visitors see the standard portal. Refresh it.",
             inherited: "This portal uses the shared theme. Turn on its own theme to edit it separately.",
             ownStyle: "Own theme for this portal",
             editGlobal: "Edit the shared theme",
@@ -984,7 +984,7 @@
             return;
         }
         var messages = [];
-        if (!state.theme.enabled) {
+        if (!effectiveEnabled()) {
             messages.push(t("unpublished"));
         }
         if (state.portalId !== "global" && state.theme.useGlobal) {
@@ -1146,7 +1146,6 @@
                         h("span", {id: "published-label", text: t("published")})
                     ]),
                     h("button", {type: "button", class: "ghost", id: "browse", text: t("browse"), onclick: toggleBrowse}),
-                    h("button", {type: "button", class: "ghost", text: t("restore"), onclick: restoreStandard}),
                     h("button", {type: "button", class: "ghost", text: t("removeTheme"), onclick: removeTheme}),
                     save
                 ])
@@ -1978,7 +1977,7 @@
         paintContrast();
         var enabled = document.getElementById("enabled");
         if (enabled) {
-            enabled.checked = !!state.theme.enabled;
+            enabled.checked = effectiveEnabled();
         }
         paintBanner();
     }
@@ -2453,22 +2452,11 @@
         paintBanner();
     }
 
-    function restoreStandard() {
-        if (state.portalId !== "global" && state.theme && state.theme.useGlobal) {
-            state.portalId = "global";
-            var portal = document.getElementById("portal");
-            if (portal) {
-                portal.value = "global";
-            }
-            state.restoreAfterLoad = true;
-            loadPortal("global");
-            return;
+    function effectiveEnabled() {
+        if (state.portalId !== "global" && state.theme && state.theme.useGlobal && state.globalTheme) {
+            return !!state.globalTheme.enabled;
         }
-        remember();
-        state.theme.enabled = false;
-        markDirty();
-        saveTheme();
-        toast(t("restored"));
+        return !!(state.theme && state.theme.enabled);
     }
 
     function removeTheme() {
@@ -2483,10 +2471,26 @@
     }
 
     function onEnabled(event) {
+        var on = event.target.checked;
+        if (state.portalId !== "global" && state.theme && state.theme.useGlobal && state.globalTheme) {
+            var theme = clone(state.globalTheme);
+            theme.enabled = on;
+            api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=global", theme, function (err, data) {
+                if (err || !data || !data.theme) {
+                    event.target.checked = !on;
+                    toast(t("saveError"));
+                    return;
+                }
+                state.globalTheme = data.theme;
+                toast(on ? t("designOn") : t("designOff"));
+                paintBanner();
+            });
+            return;
+        }
         remember();
-        state.theme.enabled = event.target.checked;
-        markDirty();
-        scheduleCompile();
+        state.theme.enabled = on;
+        state.designToggle = on;
+        saveTheme();
     }
 
     function onPortal(event) {
@@ -2579,6 +2583,7 @@
         api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), state.theme, function (err, data) {
             if (err || !data) {
                 button.textContent = t("save");
+                state.designToggle = null;
                 toast(t("saveError"));
                 return;
             }
@@ -2591,6 +2596,10 @@
             state.future = [];
             button.className = "save";
             button.textContent = t("saved");
+            if (state.designToggle != null) {
+                toast(state.designToggle ? t("designOn") : t("designOff"));
+                state.designToggle = null;
+            }
             renderInspector();
             paintPreview();
             setTimeout(function () {
@@ -2644,12 +2653,6 @@
             loadRequestTypes();
             renderInspector();
             scheduleCompile();
-            if (state.restoreAfterLoad) {
-                state.restoreAfterLoad = false;
-                state.theme.enabled = false;
-                saveTheme();
-                toast(t("restored"));
-            }
             if (state.liveFrame && !state.mockFallback) {
                 var frame = document.getElementById("preview");
                 if (frame) {
