@@ -51,6 +51,7 @@ public final class DesignPreviewServer {
                         .replace("@@CONTEXT_JSON@@", "\"\"")
                         .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
                         .replace("@@PROJECT_JSON@@", "\"IT\"");
+                html = withAdminChrome(html);
                 send(exchange, 200, "text/html; charset=UTF-8", html.getBytes(StandardCharsets.UTF_8));
                 return;
             }
@@ -90,6 +91,10 @@ public final class DesignPreviewServer {
                 routeTheme(exchange, themes, path, query);
                 return;
             }
+            if (path.startsWith("/servicedesk/customer/")) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerPage(path).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             send(exchange, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
         } catch (ThemeException ex) {
             sendJson(exchange, 400, error(ex.code()));
@@ -118,6 +123,67 @@ public final class DesignPreviewServer {
         } else {
             send(exchange, 404, "text/plain", "no route".getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    private static String customerPage(String path) {
+        String body;
+        if (path.matches(".*/[A-Z][A-Z0-9]*-\\d+$")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/user/requests\">Запросы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-request\"><h1>IT-15</h1>"
+                    + "<table><tr><td class=\"cv-request-summary\">Не работает почта</td></tr></table>"
+                    + "<form><label>Комментарий<input type=\"text\"></label><button type=\"submit\">Отправить</button></form></div>";
+        } else if (path.contains("/user/requests")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portals\">Порталы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-requests\"><h1>Запросы</h1>"
+                    + "<input type=\"search\" class=\"cv-request-search\" placeholder=\"Найти заявку\">"
+                    + "<a href=\"/servicedesk/customer/portal/1\">К порталу</a>"
+                    + "<table><tr><td><a href=\"/servicedesk/customer/portal/1/IT-15\">IT-15</a></td>"
+                    + "<td class=\"cv-request-summary\">Не работает почта</td></tr>"
+                    + "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td>"
+                    + "<td class=\"cv-request-summary\">Доступ для нового сотрудника</td></tr></table></div>";
+        } else if (path.contains("/user/profile")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/user/requests\">Запросы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-profile\"><h1>Профиль</h1>"
+                    + "<form><label>Имя<input name=\"fullName\" type=\"text\" value=\"Анна\"></label>"
+                    + "<label>Почта<input name=\"email\" type=\"email\" value=\"anna@example.com\"></label>"
+                    + "<button type=\"submit\">Сохранить</button></form>"
+                    + "<a href=\"/servicedesk/customer/portal/1\">Мой портал</a></div>";
+        } else if (path.endsWith("/portals")) {
+            body = "<header class=\"cv-smart-portal-header\">Порталы</header>"
+                    + "<nav class=\"cv-nav\"><a href=\"/servicedesk/customer/portals\">Порталы</a>"
+                    + "<a href=\"/servicedesk/customer/user/requests\">Запросы</a></nav>"
+                    + "<div id=\"cv-content\">"
+                    + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/1\">IT поддержка</a>"
+                    + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/4\">Кадры</a></div>";
+        } else if (path.contains("/create/")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portal/1\">Назад</a></header>"
+                    + "<nav class=\"cv-project-nav\"><a href=\"/servicedesk/customer/portal/1\">Портал</a></nav>"
+                    + "<div id=\"cv-content\"><form class=\"cv-create\"><h1>Новая заявка</h1>"
+                    + "<label>Тема<input name=\"summary\" type=\"text\"></label>"
+                    + "<label>Описание<textarea name=\"description\"></textarea></label>"
+                    + "<button type=\"submit\">Отправить</button></form></div>";
+        } else if (path.endsWith("/login")) {
+            body = "<div id=\"cv-content\"><form class=\"cv-login\"><h1>Вход</h1><input type=\"email\"><button type=\"submit\">Войти</button></form></div>";
+        } else {
+            body = "<div id=\"jsd-portal-container\"><header class=\"cv-smart-portal-header\">"
+                    + "<a class=\"cv-brand\" href=\"/servicedesk/customer/portal/1\">Центр поддержки</a></header>"
+                    + "<nav class=\"cv-project-nav\"><a href=\"/servicedesk/customer/portal/1\">Портал</a>"
+                    + "<a href=\"/servicedesk/customer/user/requests\">Запросы</a></nav>"
+                    + "<div id=\"cv-content\" class=\"cv-smart-portal\"><h1>Чем мы можем помочь?</h1>"
+                    + "<div class=\"cv-search\"><input type=\"search\" placeholder=\"Поиск\"></div>"
+                    + "<div class=\"cv-request-types\">"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/10\">Доступ к системе</a>"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/11\">Не работает сервис</a>"
+                    + "<a class=\"cv-request-type\" href=\"/servicedesk/customer/portal/1/create/12\">Новый сотрудник</a>"
+                    + "</div></div></div>";
+        }
+        return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                + "<meta name=\"ajs-remote-user\" content=\"anna\"/>"
+                + "<meta name=\"ajs-remote-user-fullname\" content=\"Анна Соколова\"/>"
+                + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
+                + "</head><body>" + body
+                + "<script src=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js\"></script>"
+                + "</body></html>";
     }
 
     private static Map<String, Object> samplePortals() {
@@ -191,6 +257,85 @@ public final class DesignPreviewServer {
             out.write(buffer, 0, n);
         }
         return out.toByteArray();
+    }
+
+    /**
+     * Local stand-in for Jira's {@code atl.admin} decorator. The plugin page only asks for that
+     * decorator; this wrapper is not packaged and is here so the editor can be viewed beside a
+     * header and an administration sidebar without a Jira process.
+     */
+    private static String withAdminChrome(String html) {
+        String chrome = ""
+                + "<style id=\"pd-jira-chrome\">"
+                + "html,body#jira{height:100%;margin:0;}"
+                + "body#jira{display:flex;flex-direction:column;background:#f4f5f7;color:#172b4b;"
+                + "font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif;font-size:14px;}"
+                + "#header{flex:0 0 56px;background:#0747a6;color:#fff;}"
+                + ".jira-header-inner{height:56px;display:flex;align-items:center;padding:0 12px 0 8px;gap:8px;}"
+                + ".jira-logo{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none;font-weight:700;padding:0 10px;}"
+                + ".jira-logo i{width:24px;height:24px;border-radius:4px;background:#fff;color:#0747a6;display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;}"
+                + ".jira-nav{display:flex;align-items:center;gap:2px;list-style:none;margin:0;padding:0;}"
+                + ".jira-nav a{color:#fff;text-decoration:none;padding:8px 10px;border-radius:3px;}"
+                + ".jira-nav a:hover{background:rgba(255,255,255,.16);}"
+                + ".jira-spacer{margin-left:auto;display:flex;align-items:center;gap:10px;}"
+                + ".jira-search{background:rgba(255,255,255,.16);color:#fff;border-radius:3px;padding:6px 10px;min-width:180px;}"
+                + ".jira-create{background:#fff;color:#0747a6;border:0;border-radius:3px;padding:6px 10px;font-weight:600;}"
+                + ".jira-avatar{width:28px;height:28px;border-radius:50%;background:#6554c0;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}"
+                + "#content{flex:1;min-height:0;display:flex;}"
+                + ".aui-page-panel{flex:1;display:flex;min-width:0;background:#fff;}"
+                + ".aui-page-panel-inner{display:flex;flex:1;min-width:0;min-height:0;}"
+                + ".aui-page-panel-nav{width:240px;flex:0 0 240px;background:#f4f5f7;border-right:1px solid #dfe1e6;overflow:auto;padding:16px 0;}"
+                + ".aui-page-panel-content{flex:1;min-width:0;padding:20px;background:#fff;overflow:hidden;}"
+                + ".admin-section{margin:0;padding:14px 16px 4px;color:#6b778c;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}"
+                + ".admin-links{list-style:none;margin:0;padding:0;}"
+                + ".admin-links a{display:block;padding:7px 16px 7px 20px;color:#172b4b;text-decoration:none;border-left:3px solid transparent;}"
+                + ".admin-links a:hover{background:#ebecf0;}"
+                + ".admin-links .is-selected a{background:#deebff;color:#0052cc;font-weight:600;border-left-color:#0052cc;}"
+                + "#footer{flex:0 0 40px;display:flex;align-items:center;padding:0 16px;background:#f4f5f7;border-top:1px solid #dfe1e6;color:#6b778c;font-size:12px;}"
+                + "</style>";
+        String open = "<body id=\"jira\" class=\"pd-designer\">"
+                + "<header id=\"header\" role=\"banner\">"
+                + "<div class=\"jira-header-inner\">"
+                + "<a class=\"jira-logo\" href=\"#\"><i>J</i>Jira</a>"
+                + "<ul class=\"jira-nav\">"
+                + "<li><a href=\"#\">Дашборды</a></li>"
+                + "<li><a href=\"#\">Проекты</a></li>"
+                + "<li><a href=\"#\">Задачи</a></li>"
+                + "</ul>"
+                + "<div class=\"jira-spacer\">"
+                + "<div class=\"jira-search\">Поиск</div>"
+                + "<button class=\"jira-create\" type=\"button\">Создать</button>"
+                + "<span class=\"jira-avatar\">А</span>"
+                + "</div></div></header>"
+                + "<div id=\"content\"><div class=\"aui-page-panel\"><div class=\"aui-page-panel-inner\">"
+                + "<aside class=\"aui-page-panel-nav\" aria-label=\"Администрирование\">"
+                + "<div class=\"admin-section\">Приложения</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Версии и лицензии</a></li><li><a href=\"#\">Свойства приложения</a></li></ul>"
+                + "<div class=\"admin-section\">Проекты</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Проекты</a></li></ul>"
+                + "<div class=\"admin-section\">Задачи</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Типы задач</a></li></ul>"
+                + "<div class=\"admin-section\">Управление приложениями</div>"
+                + "<ul class=\"admin-links\">"
+                + "<li><a href=\"#\">Найти приложения</a></li>"
+                + "<li><a href=\"#\">Управление приложениями</a></li>"
+                + "<li><a href=\"#\">Клиентский портал</a></li>"
+                + "<li class=\"is-selected\"><a id=\"portal-designer-admin-link\" href=\"/plugins/servlet/portal-designer\">Конструктор портала</a></li>"
+                + "</ul>"
+                + "<div class=\"admin-section\">Пользователи</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Пользователи</a></li><li><a href=\"#\">Группы</a></li></ul>"
+                + "<div class=\"admin-section\">Система</div>"
+                + "<ul class=\"admin-links\"><li><a href=\"#\">Общие настройки</a></li><li><a href=\"#\">Системная информация</a></li></ul>"
+                + "</aside><section class=\"aui-page-panel-content\">";
+        String close = "</section></div></div></div>"
+                + "<footer id=\"footer\">Jira</footer>";
+        if (!html.contains("<body class=\"pd-designer\">") || !html.contains("</body>")) {
+            return html;
+        }
+        html = html.replace("</head>", chrome + "</head>");
+        html = html.replace("<body class=\"pd-designer\">", open);
+        html = html.replace("</body>", close + "</body>");
+        return html;
     }
 
     private static void sendJson(HttpExchange exchange, Object body) throws IOException {

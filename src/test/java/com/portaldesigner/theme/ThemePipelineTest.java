@@ -9,6 +9,10 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -19,6 +23,83 @@ import static org.junit.Assert.assertTrue;
 
 public class ThemePipelineTest {
     private final ThemeService service = new ThemeService(new MemoryThemeRepository(), new ThemeCompiler());
+
+    @Test
+    public void savedThemeWithoutSkinFlagLeavesThePortalAlone() {
+        Map<String, Object> raw = ThemeMapper.toMap(ThemePresets.classic());
+        raw.remove("skin");
+        PortalTheme migrated = ThemeMapper.fromMap(raw).theme;
+        assertFalse(migrated.skin);
+        assertEquals("keep", migrated.header.mode);
+        assertEquals("keep", migrated.footer.mode);
+        assertEquals("keep", migrated.portalMenu.mode);
+        assertEquals("keep", migrated.projectMenu.mode);
+        assertFalse(migrated.hero.visible);
+
+        PortalTheme fresh = new PortalTheme();
+        assertFalse(fresh.skin);
+        assertEquals("keep", fresh.header.mode);
+        assertFalse(fresh.hero.visible);
+
+        PortalTheme classic = ThemeMapper.fromMap(ThemeMapper.toMap(ThemePresets.classic())).theme;
+        assertTrue(classic.skin);
+        assertEquals("replace", classic.header.mode);
+        assertTrue(classic.hero.visible);
+        assertTrue(ThemePresets.nativePortal().header.mode.equals("keep"));
+        assertFalse(ThemePresets.nativePortal().skin);
+    }
+
+    @Test
+    public void buttonOrderRoundTrips() {
+        Map<String, Object> group = new LinkedHashMap<String, Object>();
+        group.put("page", "portals");
+        group.put("keys", Arrays.asList("h:/servicedesk/customer/portal/4", "h:/servicedesk/customer/portal/1"));
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        raw.put("skin", Boolean.FALSE);
+        raw.put("arrange", Arrays.asList(group));
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals(1, theme.arrange.size());
+        assertEquals("portals", theme.arrange.get(0).page);
+        assertEquals("h:/servicedesk/customer/portal/4", theme.arrange.get(0).keys.get(0));
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(theme.arrange.get(0).keys, again.arrange.get(0).keys);
+        assertTrue(readQuiet("/js/portal.js").contains("function applyArrange"));
+        assertTrue(readQuiet("/css/portal.css").contains("data-pd-skin=\"on\""));
+    }
+
+    @Test
+    public void milkPageBackgroundBecomesWhite() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> colors = new LinkedHashMap<String, Object>();
+        colors.put("background", "#F4F1EA");
+        raw.put("colors", colors);
+        assertEquals("#FFFFFF", ThemeMapper.fromMap(raw).theme.colors.background);
+        assertEquals("#FFFFFF", new PortalTheme().colors.background);
+    }
+
+    @Test
+    public void objectPathSurvivesSave() {
+        StringBuilder path = new StringBuilder();
+        for (int i = 1; i <= 12; i++) {
+            if (i > 1) {
+                path.append(" > ");
+            }
+            path.append("div:nth-of-type(").append(i).append(")");
+        }
+        Map<String, Object> rule = new LinkedHashMap<String, Object>();
+        rule.put("id", "e1");
+        rule.put("page", "portals");
+        rule.put("selector", path.toString());
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        raw.put("elements", Arrays.asList(rule));
+        MappedTheme mapped = ThemeMapper.fromMap(raw);
+        assertEquals(path.toString(), mapped.theme.elements.get(0).selector);
+        assertTrue(mapped.warnings.isEmpty());
+
+        rule.put("selector", "[data-pd-id=\"eomf84\"]");
+        MappedTheme stale = ThemeMapper.fromMap(raw);
+        assertEquals("[data-pd-id=\"eomf84\"]", stale.theme.elements.get(0).selector);
+    }
 
     @Test
     public void unpublishedPortalStaysUnthemed() {
@@ -76,6 +157,197 @@ public class ThemePipelineTest {
         assertTrue(css.contains(".pd-brand-title{display:none !important;}"));
         assertTrue(css.contains("--pd-cols:" + theme.requests.columns));
         assertTrue(css.contains("min-height:48px"));
+    }
+
+    @Test
+    public void customFontCardShapeAndOrderAreKept() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.typography.customFont = "Manrope, \"Segoe UI\"";
+        theme.requests.radius = 28;
+        theme.requests.size = "l";
+        theme.requests.order.add("4");
+        theme.requests.order.add("1");
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        String css = String.valueOf(saved.get("css"));
+        assertTrue(css.contains("--pd-font:Manrope, \"Segoe UI\""));
+        assertTrue(css.contains("--pd-card-radius:28px"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> stored = (Map<String, Object>) saved.get("theme");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requests = (Map<String, Object>) stored.get("requests");
+        assertEquals("l", requests.get("size"));
+        assertEquals(Arrays.asList("4", "1"), requests.get("order"));
+
+        theme.typography.customFont = "Arial;background:url(http://evil)";
+        MappedTheme mapped = ThemeMapper.fromMap(ThemeMapper.toMap(theme));
+        assertEquals("", mapped.theme.typography.customFont);
+    }
+
+    @Test
+    public void canvasPlacementAndWidgetsRoundTrip() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> canvas = new LinkedHashMap<String, Object>();
+        Map<String, Object> desktop = new LinkedHashMap<String, Object>();
+        Map<String, Object> header = new LinkedHashMap<String, Object>();
+        header.put("free", Boolean.TRUE);
+        header.put("x", Integer.valueOf(12));
+        header.put("y", Integer.valueOf(40));
+        header.put("w", Integer.valueOf(480));
+        header.put("h", Integer.valueOf(72));
+        desktop.put("header", header);
+        desktop.put("card-4", header);
+        desktop.put("nope", header);
+        canvas.put("desktop", desktop);
+
+        List<Map<String, Object>> widgets = new ArrayList<Map<String, Object>>();
+        Map<String, Object> widget = new LinkedHashMap<String, Object>();
+        widget.put("id", "w1");
+        widget.put("type", "html");
+        widget.put("html", "<p>ok</p><script>alert(1)</script>");
+        widget.put("href", "javascript:alert(1)");
+        widget.put("imageUrl", "https://cdn.example/a.png");
+        Map<String, Object> spot = new LinkedHashMap<String, Object>();
+        spot.put("free", Boolean.TRUE);
+        spot.put("x", Integer.valueOf(30));
+        spot.put("y", Integer.valueOf(200));
+        spot.put("w", Integer.valueOf(280));
+        spot.put("h", Integer.valueOf(120));
+        widget.put("desktop", spot);
+        widgets.add(widget);
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "bad id");
+        evil.put("type", "text");
+        evil.put("text", "nope");
+        widgets.add(evil);
+        canvas.put("widgets", widgets);
+        raw.put("canvas", canvas);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertTrue(theme.canvas.desktop.get("header").free);
+        assertEquals(12, theme.canvas.desktop.get("header").x);
+        assertTrue(theme.canvas.desktop.containsKey("card-4"));
+        assertFalse(theme.canvas.desktop.containsKey("nope"));
+        assertEquals(1, theme.canvas.widgets.size());
+        assertFalse(theme.canvas.widgets.get(0).html.toLowerCase().contains("script"));
+        assertTrue(theme.canvas.widgets.get(0).html.contains("ok"));
+        assertEquals("", theme.canvas.widgets.get(0).href);
+        assertEquals("https://cdn.example/a.png", theme.canvas.widgets.get(0).imageUrl);
+        assertEquals(30, theme.canvas.widgets.get(0).desktop.x);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(12, again.canvas.desktop.get("header").x);
+        assertEquals(480, again.canvas.desktop.get("header").w);
+        assertEquals(30, again.canvas.widgets.get(0).desktop.x);
+        assertEquals("html", again.canvas.widgets.get(0).type);
+
+        assertTrue(ThemePresets.classic().header.allPages);
+        String js = readQuiet("/js/portal.js");
+        assertTrue(js.contains("if (surface(page)) {\n            markCards(doc);"));
+        assertTrue(js.contains("data-pd-canvas"));
+        assertTrue(js.contains("pd-widgets"));
+        assertTrue(js.contains("pdPreview=1"));
+        assertTrue(js.contains("clearTouched"));
+        String scoped = readQuiet("/css/portal.css");
+        assertTrue(scoped.contains("data-pd-page=\"project\"] [data-pd-region=\"requests\"]"));
+        assertTrue(scoped.contains("data-pd-chrome=\"quiet\""));
+        assertTrue(scoped.contains("pd-tip-bubble"));
+        String css = readQuiet("/css/portal.css");
+        assertTrue(css.contains("pd-free"));
+        assertTrue(css.contains("pd-widget"));
+    }
+
+    private static String readQuiet(String path) {
+        try {
+            return read(path);
+        } catch (Exception ex) {
+            throw new AssertionError(ex);
+        }
+    }
+
+    @Test
+    public void elementRulesAndTooltipsStaySanitized() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        List<Map<String, Object>> elements = new ArrayList<Map<String, Object>>();
+        Map<String, Object> rule = new LinkedHashMap<String, Object>();
+        rule.put("id", "e1");
+        rule.put("page", "requests");
+        rule.put("selector", ".cv-request-summary");
+        rule.put("label", "Тема");
+        Map<String, Object> look = new LinkedHashMap<String, Object>();
+        look.put("color", "#172B4D");
+        look.put("background", "#FFFFFF");
+        look.put("fontSize", Integer.valueOf(18));
+        look.put("radius", Integer.valueOf(6));
+        look.put("fontFamily", "Manrope, Segoe UI");
+        rule.put("look", look);
+        elements.add(rule);
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "e2");
+        evil.put("selector", "div;background:expression(1)");
+        evil.put("label", "bad");
+        elements.add(evil);
+        raw.put("elements", elements);
+
+        List<Map<String, Object>> widgets = new ArrayList<Map<String, Object>>();
+        Map<String, Object> tip = new LinkedHashMap<String, Object>();
+        tip.put("id", "wtip");
+        tip.put("type", "tooltip");
+        tip.put("page", "requests");
+        tip.put("text", "Как открыть заявку");
+        tip.put("target", ".cv-request-summary");
+        widgets.add(tip);
+        Map<String, Object> canvas = new LinkedHashMap<String, Object>();
+        canvas.put("widgets", widgets);
+        raw.put("canvas", canvas);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals(1, theme.elements.size());
+        assertEquals("requests", theme.elements.get(0).page);
+        assertEquals(".cv-request-summary", theme.elements.get(0).selector);
+        assertEquals(18, theme.elements.get(0).look.fontSize);
+        assertEquals(6, theme.elements.get(0).look.radius);
+        assertEquals("#172B4D", theme.elements.get(0).look.color);
+        assertEquals(1, theme.canvas.widgets.size());
+        assertEquals("tooltip", theme.canvas.widgets.get(0).type);
+        assertEquals("requests", theme.canvas.widgets.get(0).page);
+        assertEquals(".cv-request-summary", theme.canvas.widgets.get(0).target);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(18, again.elements.get(0).look.fontSize);
+        assertEquals("tooltip", again.canvas.widgets.get(0).type);
+    }
+
+    @Test
+    public void menusAndFormRadiusRoundTrip() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> menu = new LinkedHashMap<String, Object>();
+        menu.put("mode", "replace");
+        menu.put("direction", "column");
+        menu.put("radius", Integer.valueOf(0));
+        menu.put("color", "#172B4D");
+        List<Map<String, Object>> items = new ArrayList<Map<String, Object>>();
+        Map<String, Object> item = new LinkedHashMap<String, Object>();
+        item.put("label", "Порталы");
+        item.put("href", "{portals}");
+        items.add(item);
+        menu.put("items", items);
+        raw.put("portalMenu", menu);
+        Map<String, Object> form = new LinkedHashMap<String, Object>();
+        form.put("radius", Integer.valueOf(0));
+        form.put("fontFamily", "Segoe UI");
+        raw.put("form", form);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals("column", theme.portalMenu.direction);
+        assertEquals(0, theme.portalMenu.radius);
+        assertEquals(1, theme.portalMenu.items.size());
+        assertEquals("{portals}", theme.portalMenu.items.get(0).href);
+        assertEquals(0, theme.form.radius);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(0, again.portalMenu.radius);
+        assertEquals(0, again.form.radius);
+        assertEquals("column", again.portalMenu.direction);
     }
 
     @Test

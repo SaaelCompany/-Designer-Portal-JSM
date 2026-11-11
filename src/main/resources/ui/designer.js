@@ -8,6 +8,9 @@
             all: "Все порталы",
             portalPh: "ID",
             home: "Главная",
+            pagePortals: "Порталы",
+            pageProject: "Проект",
+            pageRequests: "Запросы",
             login: "Вход",
             create: "Заявка",
             desktop: "Компьютер",
@@ -18,7 +21,7 @@
             lang: "EN",
             import: "Импорт",
             export: "Экспорт",
-            published: "Опубликовано",
+            published: "Новый дизайн",
             save: "Сохранить",
             saving: "Сохраняем…",
             saved: "Сохранено",
@@ -30,13 +33,63 @@
             requests: "Карточки",
             announcement: "Объявление",
             footer: "Подвал",
+            canvas: "Холст",
+            canvasHint: "Потяните сам блок или синюю плашку над ним. Угол меняет размер. У компьютера, планшета и телефона положение своё. Скрытый блок на портале не показывается.",
+            addBlock: "Блок",
+            addText: "Текст",
+            addImage: "Картинка",
+            addButton: "Кнопка",
+            addHtml: "Свой HTML",
+            resetFlow: "Вернуть в поток",
+            freePos: "Свободное положение",
+            hideBlock: "Скрыть на портале",
+            widgetText: "Текст",
+            widgetHref: "Ссылка",
+            widgetImage: "Картинка",
+            widgetHtml: "HTML",
+            deleteWidget: "Удалить блок",
+            dragHandle: "Переместить",
+            resizeHandle: "Размер",
+            blocks: "Блоки портала",
+            object: "Объект",
+            objectHint: "Кликните по любому объекту живого портала. Ниже меняются его размер, скругление, шрифт, цвет и положение.",
+            objectEmpty: "Объект ещё не выбран.",
+            selector: "Какие объекты",
+            fontSize: "Размер шрифта",
+            fontWeight: "Насыщенность",
+            padding: "Внутренние поля",
+            blockW: "Ширина",
+            blockH: "Высота",
+            objectColor: "Цвет текста",
+            fillColor: "Заливка",
+            addTip: "Подсказка",
+            tipText: "Текст подсказки",
+            tipTarget: "К какому объекту",
+            chromeAll: "Та же шапка и подвал на запросах и в профиле",
+            portalMenu: "Меню портала",
+            projectMenu: "Меню проекта",
+            requestForm: "Форма заявки",
+            menuRow: "В строку",
+            menuColumn: "Столбцом",
+            menuDirection: "Как расположено",
+            radiusOff: "0 отключает скругление.",
+            menuHint: "Это меню рисуется вместо штатного. Пункты можно переименовать, переставить и удалить. Само меню перетаскивается по странице.",
+            formHint: "Кликните поле, подпись или кнопку и перетащите их. Ниже общий вид формы: цвет, шрифт и скругление. 0 у скругления делает углы прямыми.",
+            formLabel: "Цвет подписи",
+            browse: "Переход",
+            browseOn: "Режим перехода: ссылки открывают страницы портала. Нажмите «Переход» ещё раз, чтобы выбирать объекты.",
+            removeTheme: "Удалить оформление",
+            removedTheme: "Оформление удалено. Портал снова стандартный.",
+            liveHint: "В макете ваш портал. «Переход» открывает проекты и запросы. Без него клик выбирает объект: размер, скругление, шрифт, цвет и положение.",
             screens: "Экраны",
             css: "Свой CSS",
             presets: "Готовые стили",
             colors: "Цвета",
             type: "Типографика",
             layout: "Сетка",
-            unpublished: "Посетители портала этого не видят, пока стиль не опубликован.",
+            unpublished: "Новый дизайн выключен. Посетители видят обычный портал.",
+            designOn: "Новый дизайн включён. Обновите страницу портала.",
+            designOff: "Новый дизайн выключен. Посетители видят обычный портал. Обновите его страницу.",
             inherited: "Этот портал показывает общий стиль. Включите свой стиль, чтобы править только его.",
             ownStyle: "Свой стиль этого портала",
             editGlobal: "Править общий стиль",
@@ -58,7 +111,20 @@
             weight: "Насыщенность заголовков",
             line: "Интерлиньяж",
             width: "Ширина содержимого",
-            radius: "Скругление",
+            radius: "Скругление блоков",
+            cardRadius: "Скругление карточек",
+            cardSize: "Размер карточек",
+            sizeS: "Меньше",
+            sizeM: "Обычный",
+            sizeL: "Больше",
+            cardOrder: "Порядок карточек",
+            cardOrderHint: "Перетащите кнопку на другую кнопку в том же ряду. Так меняется их порядок на вашем портале.",
+            moveUp: "Выше",
+            moveDown: "Ниже",
+            customFont: "Свой шрифт",
+            customFontHint: "Имя шрифта, который уже установлен у посетителя. Например: Manrope, Segoe UI",
+            upload: "Загрузить",
+            fileBig: "Изображение больше 270 КБ. Сожмите его или вставьте адрес.",
             shadow: "Тень",
             pad: "Поля страницы",
             pageImage: "Фон страницы, URL",
@@ -96,6 +162,9 @@
             showTitleMobile: "Название в шапке на телефоне",
             showHeroTablet: "Обложка на планшете",
             showTitleTablet: "Название в шапке на планшете",
+            keep: "Не менять",
+            skin: "Заменить оформление",
+            skinHint: "Пока галочка снята, посетитель видит свой портал. Перетащите кнопку или ссылку на другую в том же ряду — они поменяются местами. Галочка включает цвета, шрифт, шапку и карточки из конструктора. Готовый стиль ниже делает то же самое.",
             replace: "Собрать заново",
             themeMode: "Перекрасить штатную",
             hidden: "Скрыть",
@@ -147,6 +216,9 @@
             all: "All portals",
             portalPh: "ID",
             home: "Home",
+            pagePortals: "Portals",
+            pageProject: "Project",
+            pageRequests: "Requests",
             login: "Login",
             create: "Request",
             desktop: "Desktop",
@@ -157,7 +229,7 @@
             lang: "RU",
             import: "Import",
             export: "Export",
-            published: "Published",
+            published: "New design",
             save: "Save",
             saving: "Saving…",
             saved: "Saved",
@@ -169,13 +241,63 @@
             requests: "Cards",
             announcement: "Announcement",
             footer: "Footer",
+            canvas: "Canvas",
+            canvasHint: "Drag a block itself, or the blue bar above it. The corner changes its size. Desktop, tablet and phone each keep their own layout. A hidden block is not shown on the portal.",
+            addBlock: "Block",
+            addText: "Text",
+            addImage: "Image",
+            addButton: "Button",
+            addHtml: "Custom HTML",
+            resetFlow: "Back to flow",
+            freePos: "Free position",
+            hideBlock: "Hide on the portal",
+            widgetText: "Text",
+            widgetHref: "Link",
+            widgetImage: "Image",
+            widgetHtml: "HTML",
+            deleteWidget: "Delete block",
+            dragHandle: "Move",
+            resizeHandle: "Resize",
+            blocks: "Portal blocks",
+            object: "Object",
+            objectHint: "Click any object in the live portal. Size, corners, font, color and position are edited below.",
+            objectEmpty: "No object selected yet.",
+            selector: "Which objects",
+            fontSize: "Font size",
+            fontWeight: "Weight",
+            padding: "Padding",
+            blockW: "Width",
+            blockH: "Height",
+            objectColor: "Text color",
+            fillColor: "Fill",
+            addTip: "Tooltip",
+            tipText: "Tooltip text",
+            tipTarget: "Attached to",
+            chromeAll: "The same header and footer on requests and the profile",
+            portalMenu: "Portal menu",
+            projectMenu: "Project menu",
+            requestForm: "Request form",
+            menuRow: "Row",
+            menuColumn: "Column",
+            menuDirection: "Direction",
+            radiusOff: "0 turns rounding off.",
+            menuHint: "This menu replaces the standard one. Rename, reorder and remove items. Drag the menu itself around the page.",
+            formHint: "Click a field, label or button and drag it. The settings below cover the whole form: color, font and corners. 0 makes the corners square.",
+            formLabel: "Label color",
+            browse: "Browse",
+            browseOn: "Browse mode: links open portal pages. Press Browse again to select objects.",
+            removeTheme: "Delete styling",
+            removedTheme: "Styling deleted. The portal is standard again.",
+            liveHint: "The preview is your portal. Browse opens projects and requests. Without it, a click selects an object: size, corners, font, color and position.",
             screens: "Screens",
             css: "Custom CSS",
             presets: "Presets",
             colors: "Colors",
             type: "Type",
             layout: "Layout",
-            unpublished: "Visitors will not see this until you publish it.",
+            unpublished: "The new design is off. Visitors see the standard portal.",
+            designOn: "The new design is on. Refresh the portal.",
+            designOff: "The new design is off. Visitors see the standard portal. Refresh it.",
             inherited: "This portal uses the shared theme. Turn on its own theme to edit it separately.",
             ownStyle: "Own theme for this portal",
             editGlobal: "Edit the shared theme",
@@ -198,6 +320,19 @@
             line: "Line height",
             width: "Content width",
             radius: "Corner radius",
+            cardRadius: "Card corners",
+            cardSize: "Card size",
+            sizeS: "Smaller",
+            sizeM: "Regular",
+            sizeL: "Larger",
+            cardOrder: "Card order",
+            cardOrderHint: "Drag one button onto another in the same row. That is the order visitors see.",
+            moveUp: "Up",
+            moveDown: "Down",
+            customFont: "Custom font",
+            customFontHint: "A font already installed for the visitor. For example: Manrope, Segoe UI",
+            upload: "Upload",
+            fileBig: "Image is over 270 KB. Compress it or paste a URL.",
             shadow: "Shadow",
             pad: "Page padding",
             pageImage: "Page background URL",
@@ -235,6 +370,9 @@
             showTitleMobile: "Header title on a phone",
             showHeroTablet: "Hero on a tablet",
             showTitleTablet: "Header title on a tablet",
+            keep: "Leave as it is",
+            skin: "Replace the portal look",
+            skinHint: "While this is off, visitors see their own portal. Drag a button or link onto another in the same row to swap them. The checkbox applies the colors, type, header and cards from the designer. A preset below does the same.",
             replace: "Rebuild",
             themeMode: "Recolor the native one",
             hidden: "Hide",
@@ -308,8 +446,9 @@
         globalTheme: null,
         presets: [],
         device: "desktop",
-        page: "home",
+        page: "project",
         section: "hero",
+        widgetId: "",
         dirty: false,
         past: [],
         future: [],
@@ -320,7 +459,11 @@
         req: 0,
         compileTimer: 0,
         compileDirty: false,
-        frameReady: false
+        frameReady: false,
+        liveFrame: false,
+        mockFallback: false,
+        browse: false,
+        picked: null
     };
 
     function t(key) {
@@ -476,6 +619,20 @@
         theme.responsive = theme.responsive || {};
         theme.responsive.mobile = theme.responsive.mobile || {};
         theme.responsive.tablet = theme.responsive.tablet || {};
+        theme.canvas = theme.canvas || {};
+        theme.canvas.desktop = theme.canvas.desktop || {};
+        theme.canvas.tablet = theme.canvas.tablet || {};
+        theme.canvas.mobile = theme.canvas.mobile || {};
+        theme.canvas.widgets = theme.canvas.widgets || [];
+        theme.elements = theme.elements || [];
+        theme.header = theme.header || {};
+        theme.portalMenu = theme.portalMenu || {mode: "keep", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.projectMenu = theme.projectMenu || {mode: "keep", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.arrange = theme.arrange || [];
+        theme.skin = !!theme.skin;
+        theme.portalMenu.items = theme.portalMenu.items || [];
+        theme.projectMenu.items = theme.projectMenu.items || [];
+        theme.form = theme.form || {radius: -1, gap: 16, fontSize: 0, color: "", background: "", labelColor: "", fontFamily: ""};
         return theme;
     }
 
@@ -542,8 +699,8 @@
         frame.style.transform = "scale(" + scale + ")";
         frame.style.transformOrigin = "top left";
         var device = document.getElementById("device");
-        device.style.width = Math.round(w * scale + 20) + "px";
-        device.style.height = Math.round(availH + 20) + "px";
+        device.style.width = Math.round(w * scale) + "px";
+        device.style.height = Math.round(availH) + "px";
     }
 
     function frameDoc() {
@@ -564,9 +721,59 @@
             "<label>Пароль<input type=\"password\"/></label><button type=\"submit\">Войти</button></form></div>" +
             "<div id=\"mock-create\"><form><h2>Новая заявка</h2><label>Тема<input type=\"text\"/></label>" +
             "<label>Описание<textarea rows=\"4\"></textarea></label><button type=\"submit\">Отправить</button></form></div>" +
+            "<div id=\"mock-requests-page\"><header>Запросы</header><table class=\"cv-requests\"><tr><td><a href=\"/servicedesk/customer/portal/1/IT-15\">IT-15</a></td><td>Не работает почта</td></tr>" +
+            "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td><td>Доступ для нового сотрудника</td></tr></table></div>" +
             "<footer data-pd-region=\"footer\">Jira Service Management</footer>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
+    }
+
+    function catalogTypes() {
+        return state.requestTypes.length ? state.requestTypes : SAMPLE;
+    }
+
+    function orderedTypes(types) {
+        var order = (state.theme && state.theme.requests && state.theme.requests.order) || [];
+        var copy = types.slice();
+        if (!order.length) {
+            return copy;
+        }
+        var rank = {};
+        order.forEach(function (id, index) { rank[String(id)] = index; });
+        copy.sort(function (a, b) {
+            var ia = rank[String(a.id)];
+            var ib = rank[String(b.id)];
+            if (ia == null) {
+                ia = 1000;
+            }
+            if (ib == null) {
+                ib = 1000;
+            }
+            return ia - ib;
+        });
+        return copy;
+    }
+
+    function moveCard(id, delta) {
+        var types = orderedTypes(catalogTypes());
+        var ids = types.map(function (type) { return String(type.id); });
+        var index = ids.indexOf(String(id));
+        var next = index + delta;
+        if (index < 0 || next < 0 || next >= ids.length) {
+            return;
+        }
+        var swap = ids[index];
+        ids[index] = ids[next];
+        ids[next] = swap;
+        remember();
+        state.theme.requests.order = ids;
+        markDirty();
+        var box = frameDoc() && frameDoc().getElementById("mock-requests");
+        if (box) {
+            box.removeAttribute("data-sig");
+        }
+        renderInspector();
+        scheduleCompile();
     }
 
     function fillCards(doc) {
@@ -574,8 +781,9 @@
         if (!box) {
             return;
         }
-        var types = state.requestTypes.length ? state.requestTypes : SAMPLE;
-        var sig = state.portalId + ":" + types.map(function (item) { return item.name; }).join("|");
+        var types = orderedTypes(catalogTypes());
+        var orderKey = ((state.theme && state.theme.requests && state.theme.requests.order) || []).join(",");
+        var sig = state.portalId + ":" + orderKey + ":" + types.map(function (item) { return item.name; }).join("|");
         if (box.getAttribute("data-sig") === sig) {
             return;
         }
@@ -583,11 +791,12 @@
         while (box.firstChild) {
             box.removeChild(box.firstChild);
         }
-        var portal = state.portalId === "global" ? "1" : state.portalId;
-        types.forEach(function (type, index) {
+        types.forEach(function (type) {
             var link = doc.createElement("a");
-            link.href = "#";
+            link.href = "/servicedesk/customer/portal/1/create/" + encodeURIComponent(type.id);
             link.setAttribute("data-pd-card", "1");
+            link.setAttribute("data-pd-type", String(type.id));
+            link.draggable = false;
             var icon = doc.createElement("span");
             icon.className = "pd-card-icon";
             icon.textContent = (type.name || "?").charAt(0).toUpperCase();
@@ -613,21 +822,125 @@
         }
         doc.__pdBound = true;
         doc.addEventListener("click", function (event) {
+            if (state.browse && state.liveFrame) {
+                var link = event.target && event.target.closest && event.target.closest("a[href]");
+                var raw = link ? (link.getAttribute("href") || "") : "";
+                if (link && raw && raw.indexOf("javascript:") !== 0 && raw.charAt(0) !== "#") {
+                    event.preventDefault();
+                    var view = doc.defaultView;
+                    var abs = raw;
+                    try {
+                        abs = new view.URL(raw, view.location.href).href;
+                    } catch (e) {
+                        abs = raw;
+                    }
+                    var hashless = String(abs).split("#")[0];
+                    if (hashless.indexOf("pdPreview=1") < 0) {
+                        hashless += (hashless.indexOf("?") >= 0 ? "&" : "?") + "pdPreview=1";
+                    }
+                    document.getElementById("preview").src = hashless;
+                }
+                return;
+            }
             var node = event.target;
             if (node && node.closest && node.closest("a,button")) {
                 event.preventDefault();
             }
             while (node && node !== doc) {
-                if (node.getAttribute && node.getAttribute("data-pd-select")) {
-                    state.section = node.getAttribute("data-pd-select");
+                if (node.getAttribute && node.getAttribute("data-pd-widget")) {
+                    state.widgetId = node.getAttribute("data-pd-widget");
+                    state.section = "canvas";
                     renderNav();
                     renderInspector();
                     return;
                 }
                 node = node.parentNode;
             }
+            var picked = event.target;
+            if (!picked || !picked.closest || picked.closest("#pd-editor-layer, #pd-chrome, #pd-widgets")) {
+                return;
+            }
+            if (picked === doc.body || picked === doc.documentElement) {
+                return;
+            }
+            state.picked = {
+                selector: selectorFor(picked),
+                label: (picked.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60)
+            };
+            if (state.picked.selector) {
+                ruleForPicked(true);
+                markDirty();
+                scheduleCompile();
+            }
+            state.section = "object";
+            renderNav();
+            renderInspector();
         }, true);
+        var dragId = "";
+        doc.addEventListener("dragstart", function (event) {
+            var card = event.target.closest ? event.target.closest("[data-pd-card]") : null;
+            if (!card) {
+                return;
+            }
+            dragId = card.getAttribute("data-pd-type") || "";
+            if (event.dataTransfer) {
+                event.dataTransfer.setData("text/plain", dragId);
+                event.dataTransfer.effectAllowed = "move";
+            }
+        });
+        doc.addEventListener("dragover", function (event) {
+            if (event.target.closest && event.target.closest("[data-pd-card]")) {
+                event.preventDefault();
+            }
+        });
+        doc.addEventListener("drop", function (event) {
+            var card = event.target.closest ? event.target.closest("[data-pd-card]") : null;
+            var box = doc.getElementById("mock-requests");
+            if (!card || !box || !dragId) {
+                return;
+            }
+            event.preventDefault();
+            var dragged = null;
+            var cards = box.children;
+            for (var i = 0; i < cards.length; i++) {
+                if (cards[i].getAttribute && cards[i].getAttribute("data-pd-type") === dragId) {
+                    dragged = cards[i];
+                    break;
+                }
+            }
+            if (dragged && dragged !== card) {
+                box.insertBefore(dragged, card);
+            }
+            var ids = [];
+            for (var n = 0; n < box.children.length; n++) {
+                var typed = box.children[n].getAttribute && box.children[n].getAttribute("data-pd-type");
+                if (typed) {
+                    ids.push(typed);
+                }
+            }
+            remember();
+            state.theme.requests.order = ids;
+            markDirty();
+            box.setAttribute("data-sig", state.portalId + ":" + ids.join(",") + ":" + catalogTypes().map(function (item) { return item.name; }).join("|"));
+            if (state.section === "requests") {
+                renderInspector();
+            }
+            scheduleCompile();
+            dragId = "";
+        });
         doc.addEventListener("input", function (event) {
+            var widgetField = event.target.getAttribute && event.target.getAttribute("data-pd-widget-field");
+            if (widgetField && state.theme) {
+                var host = event.target.closest ? event.target.closest("[data-pd-widget]") : null;
+                var widget = host && widgetById(host.getAttribute("data-pd-widget"));
+                if (widget) {
+                    remember();
+                    widget[widgetField] = event.target.textContent;
+                    markDirty();
+                    scheduleCompile();
+                }
+                return;
+            }
             var path = event.target.getAttribute && event.target.getAttribute("data-pd-bind");
             if (!path || !state.theme) {
                 return;
@@ -649,7 +962,9 @@
         if (!doc || !doc.documentElement || !runtime || !state.previewTheme) {
             return;
         }
-        fillCards(doc);
+        if (!state.liveFrame) {
+            fillCards(doc);
+        }
         runtime.apply({
             document: doc,
             theme: state.previewTheme,
@@ -657,15 +972,18 @@
             contextPath: window.PD_CONTEXT || "",
             portalId: state.portalId,
             page: state.page,
+            device: state.device,
             preview: true,
+            mock: !state.liveFrame,
             onRender: function (rendered) {
-                var bound = rendered.querySelectorAll("[data-pd-bind]");
+                var bound = rendered.querySelectorAll("[data-pd-bind], [data-pd-widget-field]");
                 for (var i = 0; i < bound.length; i++) {
                     bound[i].setAttribute("contenteditable", "true");
                 }
             }
         });
         armPreview(doc);
+        armCanvas(doc);
     }
 
     function paintBanner() {
@@ -674,11 +992,14 @@
             return;
         }
         var messages = [];
-        if (!state.theme.enabled) {
+        if (!effectiveEnabled()) {
             messages.push(t("unpublished"));
         }
         if (state.portalId !== "global" && state.theme.useGlobal) {
             messages.push(t("inherited"));
+        }
+        if (state.liveFrame) {
+            messages.push(state.browse ? t("browseOn") : t("liveHint"));
         }
         banner.textContent = messages.join(" ");
         banner.className = messages.length ? "banner show" : "banner";
@@ -698,18 +1019,117 @@
         list.appendChild(h("li", {text: t("warnings")}));
     }
 
+    function liveSrc() {
+        var id = state.portalId;
+        var base = (window.PD_CONTEXT || "") + "/servicedesk/customer";
+        var q = "pdPreview=1";
+        if (state.page === "portals") {
+            return base + "/portals?" + q;
+        }
+        if (state.page === "requests") {
+            return base + "/user/requests?" + q;
+        }
+        if (state.page === "login") {
+            return /^[0-9]+$/.test(id) ? base + "/portal/" + id + "/user/login?" + q : base + "/user/login?" + q;
+        }
+        if (/^[0-9]+$/.test(id)) {
+            if (state.page === "create") {
+                return base + "/portal/" + id + "/create/10?" + q;
+            }
+            return base + "/portal/" + id + "?" + q;
+        }
+        return base + "/portals?" + q;
+    }
+
     function bootFrame() {
         var frame = document.getElementById("preview");
-        frame.srcdoc = previewHtml();
         frame.onload = function () {
+            var doc = frame.contentDocument;
+            var view = doc && doc.defaultView;
+            var runtime = view && view.PortalDesigner;
+            var href = view && view.location ? view.location.href : "";
+            if (!runtime && !state.mockFallback) {
+                state.mockFallback = true;
+                state.liveFrame = false;
+                frame.removeAttribute("src");
+                frame.srcdoc = previewHtml();
+                return;
+            }
+            state.liveFrame = href.indexOf("pdPreview=1") >= 0;
+            if (state.liveFrame && runtime && runtime.pageKind) {
+                state.page = runtime.pageKind(view.location.pathname);
+                renderSegments();
+            }
             state.frameReady = true;
             paintPreview();
+            watchFrame(doc);
+            fitChrome();
             layoutDevice();
         };
+        if (!state.mockFallback) {
+            frame.removeAttribute("srcdoc");
+            frame.src = liveSrc();
+        } else {
+            frame.srcdoc = previewHtml();
+        }
+    }
+
+    function watchFrame(doc) {
+        if (!doc || doc.__pdWatch || !state.liveFrame) {
+            return;
+        }
+        doc.__pdWatch = true;
+        var view = doc.defaultView;
+        var last = view.location.pathname;
+        setInterval(function () {
+            if (!view.location || view.location.pathname === last) {
+                return;
+            }
+            last = view.location.pathname;
+            if (view.PortalDesigner && view.PortalDesigner.pageKind) {
+                state.page = view.PortalDesigner.pageKind(last);
+                renderSegments();
+            }
+            paintPreview();
+        }, 500);
+    }
+
+    function fitChrome() {
+        var app = document.getElementById("pd-app");
+        if (!app) {
+            return;
+        }
+        var panel = app.parentNode;
+        var steps = 0;
+        while (panel && steps < 6) {
+            if (panel.classList && panel.classList.contains("aui-page-panel-content")) {
+                break;
+            }
+            panel = panel.parentNode;
+            steps++;
+        }
+        if (panel && panel.classList && panel.classList.contains("aui-page-panel-content")) {
+            var cs = window.getComputedStyle(panel);
+            app.style.marginTop = "-" + (parseFloat(cs.paddingTop) || 0) + "px";
+            app.style.marginRight = "-" + (parseFloat(cs.paddingRight) || 0) + "px";
+            app.style.marginBottom = "-" + (parseFloat(cs.paddingBottom) || 0) + "px";
+            app.style.marginLeft = "-" + (parseFloat(cs.paddingLeft) || 0) + "px";
+        }
+        var top = app.getBoundingClientRect().top;
+        if (top < 0) {
+            top = 0;
+        }
+        var footer = document.getElementById("footer");
+        var footerH = footer ? footer.offsetHeight : 0;
+        var height = window.innerHeight - top - footerH;
+        if (height < 420) {
+            height = Math.max(420, window.innerHeight - top);
+        }
+        app.style.height = Math.floor(height) + "px";
     }
 
     function renderShell() {
-        var app = document.getElementById("app");
+        var app = document.getElementById("pd-app");
         app.innerHTML = "";
         var save = h("button", {id: "save", class: "save", type: "button", text: t("save"), onclick: saveTheme});
         var root = h("div", {class: "shell"}, [
@@ -727,11 +1147,14 @@
                     h("button", {type: "button", class: "ghost", text: t("redo"), onclick: redo}),
                     h("button", {type: "button", class: "ghost", id: "lang", text: t("lang"), onclick: toggleLang}),
                     h("button", {type: "button", class: "ghost", text: t("import"), onclick: importTheme}),
+                    h("button", {type: "button", class: "ghost", text: t("addBlock"), onclick: function () { addWidget("text"); }}),
                     h("button", {type: "button", class: "ghost", text: t("export"), onclick: exportTheme}),
                     h("label", {class: "publish"}, [
                         h("input", {id: "enabled", type: "checkbox", onchange: onEnabled}),
                         h("span", {id: "published-label", text: t("published")})
                     ]),
+                    h("button", {type: "button", class: "ghost", id: "browse", text: t("browse"), onclick: toggleBrowse}),
+                    h("button", {type: "button", class: "ghost", text: t("removeTheme"), onclick: removeTheme}),
                     save
                 ])
             ]),
@@ -752,21 +1175,31 @@
         app.appendChild(root);
         renderSegments();
         renderNav();
+        fitChrome();
         bootFrame();
-        window.addEventListener("resize", layoutDevice);
+        window.addEventListener("resize", function () {
+            fitChrome();
+            layoutDevice();
+        });
     }
 
     function renderSegments() {
-        fillSeg("pages", [["home", "home"], ["login", "login"], ["create", "create"]], state.page, function (id) {
+        fillSeg("pages", [["portals", "pagePortals"], ["project", "pageProject"], ["create", "create"], ["requests", "pageRequests"], ["login", "login"]], state.page, function (id) {
             state.page = id;
+            state.picked = null;
             renderSegments();
-            paintPreview();
+            if (state.liveFrame && !state.mockFallback) {
+                document.getElementById("preview").src = liveSrc();
+            } else {
+                paintPreview();
+            }
         });
         fillSeg("devices", [["desktop", "desktop"], ["tablet", "tablet"], ["mobile", "mobile"]], state.device, function (id) {
             state.device = id;
             renderSegments();
             renderInspector();
             layoutDevice();
+            paintPreview();
         });
     }
 
@@ -786,7 +1219,7 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "screens", "css"].forEach(function (id) {
+        ["theme", "header", "portalMenu", "projectMenu", "requestForm", "hero", "search", "requests", "announcement", "footer", "canvas", "object", "screens", "css"].forEach(function (id) {
             host.appendChild(h("button", {
                 type: "button",
                 class: state.section === id ? "active" : "",
@@ -828,6 +1261,34 @@
 
     function textInput(path) {
         return bind(path, h("input", {type: "text", value: getPath(state.theme, path) || ""}));
+    }
+
+    function imageInput(path) {
+        var wrap = h("div", {});
+        wrap.appendChild(textInput(path));
+        var file = h("input", {type: "file", accept: "image/png,image/jpeg,image/gif,image/webp"});
+        file.addEventListener("change", function () {
+            var picked = file.files && file.files[0];
+            if (!picked) {
+                return;
+            }
+            if (picked.size > 270 * 1024) {
+                toast(t("fileBig"));
+                file.value = "";
+                return;
+            }
+            var reader = new FileReader();
+            reader.onload = function () {
+                remember();
+                setPath(state.theme, path, String(reader.result || ""));
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            };
+            reader.readAsDataURL(picked);
+        });
+        wrap.appendChild(file);
+        return wrap;
     }
 
     function area(path, rows) {
@@ -928,6 +1389,687 @@
         return wrap;
     }
 
+    var CANVAS_BLOCKS = [
+        ["header", "header"],
+        ["hero", "hero"],
+        ["announcement", "announcement"],
+        ["search", "search"],
+        ["requests", "requests"],
+        ["footer", "footer"],
+        ["login", "login"],
+        ["form", "create"]
+    ];
+
+    function deviceKey() {
+        return state.device || "desktop";
+    }
+
+    function widgetById(id) {
+        ensureShape(state.theme);
+        var list = state.theme.canvas.widgets;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function blankSpot(free) {
+        return {free: !!free, hidden: false, x: 0, y: 0, w: 0, h: 0};
+    }
+
+    function screenSpots(theme) {
+        ensureShape(theme);
+        var key = deviceKey();
+        if (!theme.canvas[key] || typeof theme.canvas[key] !== "object") {
+            theme.canvas[key] = {};
+        }
+        return theme.canvas[key];
+    }
+
+    function readSpot(key) {
+        if (key.indexOf("widget-") === 0) {
+            var widget = widgetById(key.substring(7));
+            if (!widget) {
+                return blankSpot(true);
+            }
+            widget[deviceKey()] = widget[deviceKey()] || blankSpot(true);
+            return widget[deviceKey()];
+        }
+        if (key === "portal-menu" || key === "project-menu") {
+            ensureShape(state.theme);
+            var menu = key === "portal-menu" ? state.theme.portalMenu : state.theme.projectMenu;
+            menu[deviceKey()] = menu[deviceKey()] || blankSpot(false);
+            return menu[deviceKey()];
+        }
+        if (key.indexOf("el-") === 0) {
+            var rule = elementById(key.substring(3));
+            if (!rule) {
+                return blankSpot(false);
+            }
+            rule[deviceKey()] = rule[deviceKey()] || blankSpot(false);
+            return rule[deviceKey()];
+        }
+        var spots = screenSpots(state.theme);
+        spots[key] = spots[key] || blankSpot(false);
+        return spots[key];
+    }
+
+    function writeSpot(key, spot) {
+        var themes = [state.theme, state.previewTheme];
+        for (var i = 0; i < themes.length; i++) {
+            var theme = themes[i];
+            if (!theme) {
+                continue;
+            }
+            if (key.indexOf("widget-") === 0) {
+                ensureShape(theme);
+                var list = theme.canvas.widgets;
+                for (var w = 0; w < list.length; w++) {
+                    if (list[w].id === key.substring(7)) {
+                        list[w][deviceKey()] = spot;
+                    }
+                }
+            } else if (key === "portal-menu" || key === "project-menu") {
+                ensureShape(theme);
+                var menu = key === "portal-menu" ? theme.portalMenu : theme.projectMenu;
+                menu[deviceKey()] = spot;
+            } else if (key.indexOf("el-") === 0) {
+                ensureShape(theme);
+                var rules = theme.elements;
+                for (var r = 0; r < rules.length; r++) {
+                    if (rules[r].id === key.substring(3)) {
+                        rules[r][deviceKey()] = spot;
+                    }
+                }
+            } else {
+                screenSpots(theme)[key] = spot;
+            }
+        }
+    }
+
+    function boxOf(node) {
+        var rect = node.getBoundingClientRect();
+        var body = node.ownerDocument.body.getBoundingClientRect();
+        return {
+            x: rect.left - body.left,
+            y: rect.top - body.top,
+            w: rect.width,
+            h: rect.height
+        };
+    }
+
+    function canvasNode(doc, key) {
+        var nodes = doc.querySelectorAll("[data-pd-canvas]");
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].getAttribute("data-pd-canvas") === key) {
+                return nodes[i];
+            }
+        }
+        return null;
+    }
+
+    function addWidget(type) {
+        remember();
+        ensureShape(state.theme);
+        var id = "w" + Math.floor(Math.random() * 1e9).toString(36);
+        var y = 160 + state.theme.canvas.widgets.length * 28;
+        var spot = {
+            free: true,
+            hidden: false,
+            x: 48,
+            y: y,
+            w: type === "button" ? 180 : (type === "tooltip" ? 36 : 320),
+            h: type === "button" ? 52 : (type === "image" ? 180 : (type === "tooltip" ? 36 : 96))
+        };
+        state.theme.canvas.widgets.push({
+            id: id,
+            type: type,
+            text: type === "button" ? "Открыть" : "Новый блок",
+            href: type === "button" ? "#" : "",
+            imageUrl: "",
+            html: "<p>Свой блок</p>",
+            page: state.page || "home",
+            target: "",
+            desktop: clone(spot),
+            tablet: clone(spot),
+            mobile: {free: true, hidden: false, x: 16, y: y, w: 300, h: spot.h}
+        });
+        state.widgetId = id;
+        state.section = "canvas";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function deleteWidget(id) {
+        remember();
+        ensureShape(state.theme);
+        var next = [];
+        var list = state.theme.canvas.widgets;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id !== id) {
+                next.push(list[i]);
+            }
+        }
+        state.theme.canvas.widgets = next;
+        if (state.widgetId === id) {
+            state.widgetId = "";
+        }
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function resetFlow() {
+        remember();
+        ensureShape(state.theme);
+        state.theme.canvas[deviceKey()] = {};
+        var widgets = state.theme.canvas.widgets;
+        for (var i = 0; i < widgets.length; i++) {
+            if (widgets[i][deviceKey()]) {
+                widgets[i][deviceKey()].free = false;
+            }
+        }
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function toggleSpot(key, field, on) {
+        remember();
+        var spot = readSpot(key);
+        if (field === "free" && on) {
+            var doc = frameDoc();
+            var node = doc && canvasNode(doc, key);
+            if (node) {
+                var box = boxOf(node);
+                spot.x = Math.round(box.x);
+                spot.y = Math.round(box.y);
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
+                spot.w = Math.max(40, Math.round(box.w));
+                spot.h = Math.max(24, Math.round(box.h));
+            } else if (!spot.w) {
+                spot.x = 48;
+                spot.y = 160;
+                spot.w = 320;
+                spot.h = 80;
+            }
+        }
+        spot[field] = on;
+        writeSpot(key, spot);
+        markDirty();
+        scheduleCompile();
+    }
+
+    function hitLabel(key) {
+        if (key.indexOf("widget-") === 0) {
+            var widget = widgetById(key.substring(7));
+            var type = widget && widget.type;
+            if (type === "image") {
+                return t("addImage");
+            }
+            if (type === "button") {
+                return t("addButton");
+            }
+            if (type === "html") {
+                return t("addHtml");
+            }
+            if (type === "tooltip") {
+                return t("addTip");
+            }
+            return t("addText");
+        }
+        if (key.indexOf("card-") === 0) {
+            return t("requests") + " " + key.substring(5);
+        }
+        if (key === "form") {
+            return t("create");
+        }
+        return t(key);
+    }
+
+    function injectEditorStyle(doc) {
+        if (doc.getElementById("pd-editor-style")) {
+            return;
+        }
+        var style = doc.createElement("style");
+        style.id = "pd-editor-style";
+        style.textContent = "#pd-editor-layer{position:absolute;left:0;top:0;width:100%;pointer-events:none;z-index:80}"
+            + ".pd-hit{position:absolute;pointer-events:none;outline:1px dashed rgba(0,82,204,.55)}"
+            + ".pd-hit-label{position:absolute;left:8px;top:-18px;background:#0052CC;color:#fff;font:11px/16px 'Segoe UI',sans-serif;padding:0 6px;border-radius:2px;white-space:nowrap;pointer-events:none}"
+            + ".pd-drag,.pd-resize{pointer-events:auto;position:absolute;padding:0;border:0}"
+            + ".pd-drag{left:0;top:-20px;width:64px;height:18px;background:#0052CC;border-radius:2px;cursor:move}"
+            + ".pd-resize{right:-8px;bottom:-8px;width:18px;height:18px;background:#fff;border:2px solid #0052CC;border-radius:2px;cursor:nwse-resize}";
+        (doc.head || doc.documentElement).appendChild(style);
+    }
+
+    function buttonKey(node) {
+        if (!node || node.nodeType !== 1 || (node.id && node.id.indexOf("pd-") === 0)) {
+            return "";
+        }
+        var href = (node.getAttribute("href") || "").split("?")[0];
+        if (href) {
+            return "h:" + href.slice(0, 140);
+        }
+        if (node.id) {
+            return "i:" + String(node.id).slice(0, 40);
+        }
+        var text = String(node.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+        return text ? "t:" + text.slice(0, 48) : "";
+    }
+
+    function swapNode(target) {
+        if (!target || !target.closest) {
+            return null;
+        }
+        if (target.closest("#pd-editor-layer, #pd-chrome, #pd-widgets, #pd-footer, #pd-announcement")) {
+            return null;
+        }
+        var node = target.closest("button, a, [data-pd-card]");
+        if (!node || node.closest("#pd-editor-layer, #pd-chrome, #pd-widgets")) {
+            return null;
+        }
+        return node;
+    }
+
+    function saveArrange(parent) {
+        ensureShape(state.theme);
+        var keys = [];
+        var children = parent.children;
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            var key = buttonKey(child);
+            if (!key) {
+                continue;
+            }
+            if (child.tagName === "A" || child.tagName === "BUTTON" || child.getAttribute("data-pd-card")) {
+                keys.push(key);
+            }
+        }
+        if (keys.length < 2) {
+            return;
+        }
+        var page = editingPage();
+        var groups = state.theme.arrange;
+        var found = null;
+        for (var g = 0; g < groups.length; g++) {
+            var known = groups[g].keys || [];
+            var same = (groups[g].page || "home") === page;
+            for (var k = 0; same && k < known.length; k++) {
+                if (keys.indexOf(known[k]) >= 0) {
+                    found = groups[g];
+                    break;
+                }
+            }
+            if (found) {
+                break;
+            }
+        }
+        if (found) {
+            found.keys = keys;
+        } else {
+            groups.push({page: page, keys: keys});
+        }
+    }
+
+    function exchangeNodes(a, b) {
+        var parent = a.parentNode;
+        if (!parent || parent !== b.parentNode) {
+            return;
+        }
+        var mark = parent.ownerDocument.createComment("pd");
+        parent.insertBefore(mark, a);
+        parent.insertBefore(a, b);
+        parent.insertBefore(b, mark);
+        parent.removeChild(mark);
+    }
+
+    function spotIsFree(key) {
+        if (!key || !state.theme || !state.theme.canvas) {
+            return false;
+        }
+        var screen = state.theme.canvas[deviceKey()] || {};
+        var spot = screen[key];
+        if (key.indexOf("el-") === 0) {
+            var rule = elementById(key.substring(3));
+            spot = rule ? rule[deviceKey()] : null;
+        }
+        return !!(spot && spot.free);
+    }
+
+    function startSwap(event, doc, node) {
+        var originX = event.clientX;
+        var originY = event.clientY;
+        var moved = false;
+        function move(ev) {
+            if (Math.abs(ev.clientX - originX) + Math.abs(ev.clientY - originY) > 6) {
+                moved = true;
+            }
+        }
+        function up(ev) {
+            doc.removeEventListener("pointermove", move);
+            doc.removeEventListener("pointerup", up);
+            if (!moved) {
+                return;
+            }
+            ev.preventDefault();
+            node.addEventListener("click", function stop(click) {
+                click.preventDefault();
+                click.stopPropagation();
+                node.removeEventListener("click", stop, true);
+            }, true);
+            var under = doc.elementFromPoint(ev.clientX, ev.clientY);
+            var other = under && swapNode(under);
+            if (!other || other === node || other.parentNode !== node.parentNode) {
+                return;
+            }
+            remember();
+            exchangeNodes(node, other);
+            saveArrange(node.parentNode);
+            markDirty();
+            scheduleCompile();
+        }
+        doc.addEventListener("pointermove", move);
+        doc.addEventListener("pointerup", up);
+    }
+
+    function armCanvas(doc) {
+        if (!doc || !doc.body || !state.theme) {
+            return;
+        }
+        var runtime = doc.defaultView && doc.defaultView.PortalDesigner;
+        if (!runtime || !runtime.place) {
+            return;
+        }
+        injectEditorStyle(doc);
+        if (!doc.__pdMove) {
+            doc.__pdMove = true;
+            doc.addEventListener("pointerdown", function (event) {
+                if (state.browse && state.liveFrame) {
+                    return;
+                }
+                if (event.button !== 0) {
+                    return;
+                }
+                var target = event.target;
+                if (!target || !target.closest) {
+                    return;
+                }
+                if (target.closest("#pd-editor-layer, [contenteditable='true'], input, textarea, select")) {
+                    return;
+                }
+                var swappable = swapNode(target);
+                if (swappable && !spotIsFree(swappable.getAttribute("data-pd-canvas"))) {
+                    startSwap(event, doc, swappable);
+                    return;
+                }
+                if (target.closest("button")) {
+                    return;
+                }
+                var node = target.closest("[data-pd-canvas]");
+                var live = doc.defaultView && doc.defaultView.PortalDesigner;
+                if (!node || !live || !live.place) {
+                    return;
+                }
+                var key = node.getAttribute("data-pd-canvas");
+                var handle = null;
+                var hits = doc.querySelectorAll(".pd-hit");
+                for (var n = 0; n < hits.length; n++) {
+                    if (hits[n].getAttribute("data-pd-hit") === key) {
+                        handle = hits[n];
+                        break;
+                    }
+                }
+                startCanvasDrag(event, doc, node, key, handle, false, live);
+            }, true);
+        }
+        var layer = doc.getElementById("pd-editor-layer");
+        if (!layer) {
+            layer = doc.createElement("div");
+            layer.id = "pd-editor-layer";
+            doc.body.appendChild(layer);
+        }
+        while (layer.firstChild) {
+            layer.removeChild(layer.firstChild);
+        }
+        var nodes = doc.querySelectorAll("[data-pd-canvas]");
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].offsetWidth < 2 && nodes[i].offsetHeight < 2) {
+                continue;
+            }
+            addHit(doc, layer, nodes[i], runtime);
+        }
+        layer.style.height = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight) + "px";
+    }
+
+    function addHit(doc, layer, node, runtime) {
+        var key = node.getAttribute("data-pd-canvas");
+        var box = boxOf(node);
+        var hit = doc.createElement("div");
+        hit.className = "pd-hit";
+        hit.setAttribute("data-pd-hit", key);
+        hit.style.left = Math.round(box.x) + "px";
+        hit.style.top = Math.round(box.y) + "px";
+        hit.style.width = Math.max(8, Math.round(box.w)) + "px";
+        hit.style.height = Math.max(8, Math.round(box.h)) + "px";
+        var label = doc.createElement("span");
+        label.className = "pd-hit-label";
+        label.textContent = hitLabel(key);
+        var drag = doc.createElement("button");
+        drag.type = "button";
+        drag.className = "pd-drag";
+        drag.title = t("dragHandle");
+        drag.addEventListener("pointerdown", function (event) {
+            startCanvasDrag(event, doc, node, key, hit, false, runtime);
+        });
+        var resize = doc.createElement("button");
+        resize.type = "button";
+        resize.className = "pd-resize";
+        resize.title = t("resizeHandle");
+        resize.addEventListener("pointerdown", function (event) {
+            startCanvasDrag(event, doc, node, key, hit, true, runtime);
+        });
+        hit.appendChild(label);
+        hit.appendChild(drag);
+        hit.appendChild(resize);
+        layer.appendChild(hit);
+    }
+
+    function startCanvasDrag(event, doc, node, key, hit, resizing, runtime) {
+        event.preventDefault();
+        event.stopPropagation();
+        var spot = readSpot(key);
+        var originX = event.clientX;
+        var originY = event.clientY;
+        var start = null;
+        var moved = false;
+        function begin() {
+            if (moved) {
+                return;
+            }
+            moved = true;
+            if (!spot.free) {
+                var box = boxOf(node);
+                spot.free = true;
+                spot.x = Math.round(box.x);
+                spot.y = Math.round(box.y);
+                spot.w = Math.max(40, Math.round(box.w));
+                spot.h = Math.max(24, Math.round(box.h));
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
+            } else if (typeof spot.originX !== "number") {
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
+            }
+            start = {x: spot.x, y: spot.y, w: spot.w, h: spot.h};
+        }
+        function move(ev) {
+            var dx = ev.clientX - originX;
+            var dy = ev.clientY - originY;
+            if (!moved && Math.abs(dx) + Math.abs(dy) < 3) {
+                return;
+            }
+            begin();
+            if (resizing) {
+                spot.w = Math.max(40, Math.min(2400, Math.round(start.w + dx)));
+                spot.h = Math.max(24, Math.min(2400, Math.round(start.h + dy)));
+            } else {
+                spot.x = Math.max(-2000, Math.min(4000, Math.round(start.x + dx)));
+                spot.y = Math.max(-2000, Math.min(8000, Math.round(start.y + dy)));
+            }
+            spot.free = true;
+            writeSpot(key, spot);
+            runtime.place(node, spot);
+            if (!hit) {
+                return;
+            }
+            var next = boxOf(node);
+            hit.style.left = Math.round(next.x) + "px";
+            hit.style.top = Math.round(next.y) + "px";
+            hit.style.width = Math.max(8, Math.round(next.w)) + "px";
+            hit.style.height = Math.max(8, Math.round(next.h)) + "px";
+        }
+        function up() {
+            doc.removeEventListener("pointermove", move);
+            doc.removeEventListener("pointerup", up);
+            if (!moved) {
+                return;
+            }
+            remember();
+            markDirty();
+            if (state.section === "canvas") {
+                renderInspector();
+            }
+            scheduleCompile();
+        }
+        doc.addEventListener("pointermove", move);
+        doc.addEventListener("pointerup", up);
+    }
+
+    function renderCanvas(host) {
+        ensureShape(state.theme);
+        host.appendChild(h("p", {class: "hint", text: t("canvasHint")}));
+        var row = h("div", {class: "grid-2"});
+        [["text", "addText"], ["image", "addImage"], ["button", "addButton"], ["html", "addHtml"], ["tooltip", "addTip"]].forEach(function (item) {
+            row.appendChild(h("button", {
+                type: "button",
+                class: "ghost",
+                text: t(item[1]),
+                onclick: function () { addWidget(item[0]); }
+            }));
+        });
+        host.appendChild(row);
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("resetFlow"), onclick: resetFlow}));
+        host.appendChild(h("p", {class: "block-label", text: t("blocks")}));
+        CANVAS_BLOCKS.forEach(function (item) {
+            host.appendChild(spotRow(item[0], t(item[1])));
+        });
+        catalogTypes().forEach(function (type) {
+            host.appendChild(spotRow("card-" + type.id, type.name || String(type.id)));
+        });
+        state.theme.canvas.widgets.forEach(function (widget) {
+            var selected = widget.id === state.widgetId;
+            host.appendChild(h("div", {class: "column-card"}, [
+                h("button", {
+                    type: "button",
+                    class: "text-btn",
+                    text: t(widget.type || "text"),
+                    onclick: function () {
+                        state.widgetId = widget.id;
+                        renderInspector();
+                    }
+                }),
+                selected ? widgetEditor(widget) : null
+            ]));
+        });
+    }
+
+    function spotRow(key, label) {
+        var spot = readSpot(key);
+        var free = h("input", {type: "checkbox", checked: !!spot.free});
+        free.addEventListener("change", function () { toggleSpot(key, "free", free.checked); });
+        var hidden = h("input", {type: "checkbox", checked: !!spot.hidden});
+        hidden.addEventListener("change", function () { toggleSpot(key, "hidden", hidden.checked); });
+        return h("div", {class: "column-card"}, [
+            h("strong", {text: label}),
+            h("label", {class: "check"}, [free, document.createTextNode(t("freePos"))]),
+            h("label", {class: "check"}, [hidden, document.createTextNode(t("hideBlock"))])
+        ]);
+    }
+
+    function widgetField(label, value, onInput) {
+        var input = h("input", {type: "text", value: value || ""});
+        input.addEventListener("input", function () { onInput(input.value); });
+        return field("", label, input);
+    }
+
+    function editWidget(widget, prop, value) {
+        remember();
+        widget[prop] = value;
+        markDirty();
+        scheduleCompile();
+    }
+
+    function widgetEditor(widget) {
+        var box = h("div", {});
+        if (widget.type === "html") {
+            var html = h("textarea", {value: widget.html || ""});
+            html.addEventListener("input", function () { editWidget(widget, "html", html.value); });
+            box.appendChild(field("", t("widgetHtml"), html));
+        } else if (widget.type !== "image") {
+            box.appendChild(widgetField(t("widgetText"), widget.text, function (value) {
+                editWidget(widget, "text", value);
+            }));
+        }
+        if (widget.type === "button") {
+            box.appendChild(widgetField(t("widgetHref"), widget.href, function (value) {
+                editWidget(widget, "href", value);
+            }));
+        }
+        if (widget.type === "tooltip") {
+            box.appendChild(widgetField(t("tipTarget"), widget.target, function (value) {
+                editWidget(widget, "target", value);
+            }));
+        }
+        if (widget.type === "image") {
+            var image = h("input", {type: "text", value: widget.imageUrl || ""});
+            image.addEventListener("input", function () { editWidget(widget, "imageUrl", image.value); });
+            var file = h("input", {type: "file", accept: "image/png,image/jpeg,image/gif,image/webp"});
+            file.addEventListener("change", function () {
+                var picked = file.files && file.files[0];
+                if (!picked) {
+                    return;
+                }
+                if (picked.size > 270 * 1024) {
+                    toast(t("fileBig"));
+                    file.value = "";
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    editWidget(widget, "imageUrl", String(reader.result || ""));
+                    renderInspector();
+                };
+                reader.readAsDataURL(picked);
+            });
+            box.appendChild(field("", t("widgetImage"), h("div", {}, [image, file])));
+        }
+        box.appendChild(h("button", {
+            type: "button",
+            class: "text-btn",
+            text: t("deleteWidget"),
+            onclick: function () { deleteWidget(widget.id); }
+        }));
+        return box;
+    }
+
     function renderInspector() {
         var host = document.getElementById("inspector");
         if (!host || !state.theme) {
@@ -943,6 +2085,12 @@
             renderTheme(host);
         } else if (state.section === "header") {
             renderHeader(host);
+        } else if (state.section === "portalMenu") {
+            renderPortalMenu(host);
+        } else if (state.section === "projectMenu") {
+            renderProjectMenu(host);
+        } else if (state.section === "requestForm") {
+            renderRequestForm(host);
         } else if (state.section === "hero") {
             renderHero(host);
         } else if (state.section === "search") {
@@ -953,6 +2101,10 @@
             renderAnnouncement(host);
         } else if (state.section === "footer") {
             renderFooter(host);
+        } else if (state.section === "canvas") {
+            renderCanvas(host);
+        } else if (state.section === "object") {
+            renderObject(host);
         } else if (state.section === "screens") {
             renderScreens(host);
         } else if (state.section === "css") {
@@ -975,12 +2127,221 @@
         paintContrast();
         var enabled = document.getElementById("enabled");
         if (enabled) {
-            enabled.checked = !!state.theme.enabled;
+            enabled.checked = effectiveEnabled();
         }
         paintBanner();
     }
 
+    function elementById(id) {
+        ensureShape(state.theme);
+        var list = state.theme.elements;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function editingPage() {
+        var frame = document.getElementById("preview");
+        var view = frame && frame.contentWindow;
+        try {
+            if (view && view.PortalDesigner && view.PortalDesigner.pageKind && view.location) {
+                return view.PortalDesigner.pageKind(view.location.pathname) || state.page || "home";
+            }
+        } catch (e) {
+            return state.page || "home";
+        }
+        return state.page || "home";
+    }
+
+    function ownedNode(node) {
+        return !!(node && node.id && node.id.indexOf("pd-") === 0);
+    }
+
+    function selectorFor(el) {
+        if (!el || el.nodeType !== 1 || ownedNode(el)) {
+            return "";
+        }
+        if (el.id && /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(el.id) && el.id.indexOf("pd-") !== 0) {
+            return "#" + el.id;
+        }
+        var parts = [];
+        var node = el;
+        var guard = 0;
+        while (node && node.nodeType === 1 && node.tagName !== "BODY" && node.tagName !== "HTML" && guard < 40) {
+            if (ownedNode(node)) {
+                node = node.parentNode;
+                continue;
+            }
+            var tag = node.tagName.toLowerCase();
+            if (!/^[a-z0-9]+$/.test(tag)) {
+                break;
+            }
+            var index = 1;
+            var sib = node;
+            while (sib.previousElementSibling) {
+                sib = sib.previousElementSibling;
+                if (ownedNode(sib)) {
+                    continue;
+                }
+                if (sib.tagName === node.tagName) {
+                    index++;
+                }
+            }
+        parts.unshift(tag + ":nth-of-type(" + index + ")");
+        if (parts.join(" > ").length > 760) {
+            return "";
+        }
+        node = node.parentNode;
+        guard++;
+    }
+    if (!node || (node.tagName !== "BODY" && node.tagName !== "HTML")) {
+        return "";
+    }
+    return parts.join(" > ");
+    }
+
+    function ruleForPicked(create) {
+        ensureShape(state.theme);
+        if (!state.picked || !state.picked.selector) {
+            return null;
+        }
+        var list = state.theme.elements;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].selector === state.picked.selector && (list[i].page || "home") === editingPage()) {
+                return list[i];
+            }
+        }
+        if (!create) {
+            return null;
+        }
+        var rule = {
+            id: "e" + Math.floor(Math.random() * 1e9).toString(36),
+            page: editingPage(),
+            selector: state.picked.selector,
+            label: state.picked.label || "",
+            look: {color: "", background: "", fontFamily: "", fontSize: 0, fontWeight: 0, radius: -1, padding: -1, width: 0, height: 0},
+            desktop: blankSpot(false),
+            tablet: blankSpot(false),
+            mobile: blankSpot(false)
+        };
+        list.push(rule);
+        return rule;
+    }
+
+    function editLook(prop, value) {
+        var rule = ruleForPicked(true);
+        if (!rule) {
+            return;
+        }
+        remember();
+        rule.look[prop] = value;
+        markDirty();
+        scheduleCompile();
+    }
+
+    function renderObject(host) {
+        host.appendChild(h("p", {class: "hint", text: t("objectHint")}));
+        if (!state.picked || !state.picked.selector) {
+            host.appendChild(h("p", {class: "hint", text: t("objectEmpty")}));
+            return;
+        }
+        var rule = ruleForPicked(false);
+        var look = (rule && rule.look) || {};
+        host.appendChild(h("p", {class: "hint", text: state.picked.label || state.picked.selector}));
+        var selector = h("input", {type: "text", value: (rule && rule.selector) || state.picked.selector});
+        selector.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            current.selector = selector.value.trim();
+            state.picked.selector = current.selector;
+            markDirty();
+            scheduleCompile();
+        });
+        host.appendChild(field("", t("selector"), selector));
+        host.appendChild(lookColor(t("objectColor"), look.color, "color"));
+        host.appendChild(lookColor(t("fillColor"), look.background, "background"));
+        host.appendChild(field("", t("fontSize"), lookNumber(look.fontSize, 0, 72, "fontSize")));
+        host.appendChild(field("", t("fontWeight"), lookNumber(look.fontWeight, 0, 800, "fontWeight")));
+        host.appendChild(field("", t("radius"), lookNumber(look.radius < 0 ? 0 : look.radius, 0, 48, "radius")));
+        host.appendChild(field("", t("padding"), lookNumber(look.padding < 0 ? 0 : look.padding, 0, 80, "padding")));
+        host.appendChild(field("", t("blockW"), lookNumber(look.width, 0, 2400, "width")));
+        host.appendChild(field("", t("blockH"), lookNumber(look.height, 0, 2400, "height")));
+        var spot = (rule && rule[deviceKey()]) || blankSpot(false);
+        var free = h("input", {type: "checkbox", checked: !!spot.free});
+        free.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            var next = clone(current[deviceKey()] || blankSpot(false));
+            next.free = free.checked;
+            writeSpot("el-" + current.id, next);
+            markDirty();
+            scheduleCompile();
+        });
+        host.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePos"))]));
+        host.appendChild(field("", "X", spotNumber(spot.x, "x")));
+        host.appendChild(field("", "Y", spotNumber(spot.y, "y")));
+        var font = h("input", {type: "text", value: look.fontFamily || "", placeholder: "Manrope, Segoe UI"});
+        font.addEventListener("change", function () { editLook("fontFamily", font.value); });
+        host.appendChild(field("", t("customFont"), font));
+        host.appendChild(h("button", {
+            type: "button",
+            class: "ghost",
+            text: t("addTip"),
+            onclick: function () {
+                addWidget("tooltip");
+                var widget = state.theme.canvas.widgets[state.theme.canvas.widgets.length - 1];
+                widget.target = state.picked.selector;
+                widget.text = "Подсказка";
+                widget.page = state.page || "home";
+                scheduleCompile();
+            }
+        }));
+    }
+
+    function lookColor(label, value, prop) {
+        var input = h("input", {type: "color", value: /^#[0-9a-fA-F]{6}$/.test(value || "") ? value : "#172B4D"});
+        var text = h("input", {type: "text", value: value || ""});
+        input.addEventListener("input", function () {
+            text.value = input.value;
+            editLook(prop, input.value);
+        });
+        text.addEventListener("change", function () { editLook(prop, text.value); });
+        return field("", label, h("div", {class: "color-row"}, [input, text]));
+    }
+
+    function spotNumber(value, prop) {
+        var input = h("input", {type: "number", value: value || 0});
+        input.addEventListener("change", function () {
+            var current = ruleForPicked(true);
+            remember();
+            var next = clone(current[deviceKey()] || blankSpot(false));
+            next[prop] = parseInt(input.value, 10) || 0;
+            next.free = true;
+            writeSpot("el-" + current.id, next);
+            markDirty();
+            scheduleCompile();
+        });
+        return input;
+    }
+
+    function lookNumber(value, min, max, prop) {
+        var input = h("input", {type: "number", min: String(min), max: String(max), value: value || 0});
+        input.addEventListener("change", function () {
+            var number = parseInt(input.value, 10);
+            if (isNaN(number)) {
+                number = 0;
+            }
+            editLook(prop, number);
+        });
+        return input;
+    }
+
     function renderTheme(host) {
+        host.appendChild(h("p", {class: "hint", text: t("skinHint")}));
+        host.appendChild(checkInput("skin", t("skin")));
         host.appendChild(h("div", {class: "block-label", text: t("presets")}));
         var presets = h("div", {class: "presets"});
         state.presets.forEach(function (preset) {
@@ -1009,6 +2370,8 @@
         host.appendChild(field("typography.font", t("font"), selectInput("typography.font", [
             ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
         ])));
+        host.appendChild(field("typography.customFont", t("customFont"), textInput("typography.customFont")));
+        host.appendChild(h("p", {class: "hint", text: t("customFontHint")}));
         host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 13, 22)));
         host.appendChild(field("typography.headingWeight", t("weight"), selectInput("typography.headingWeight", [
             ["400", "400"], ["500", "500"], ["600", "600"], ["700", "700"], ["800", "800"]
@@ -1016,21 +2379,115 @@
         host.appendChild(field("typography.lineHeight", t("line"), numberInput("typography.lineHeight", 1.15, 1.9, 0.05)));
         host.appendChild(h("div", {class: "block-label", text: t("layout")}));
         host.appendChild(field("layout.contentWidth", t("width"), numberInput("layout.contentWidth", 640, 1440, 10)));
-        host.appendChild(field("layout.radius", t("radius"), numberInput("layout.radius", 0, 32)));
+        host.appendChild(field("layout.radius", t("radius"), numberInput("layout.radius", 0, 48)));
         host.appendChild(field("layout.shadow", t("shadow"), selectInput("layout.shadow", [["none", "none"], ["soft", "soft"], ["strong", "strong"]])));
         host.appendChild(field(pathFor("layout.pagePadding"), t("pad"), numberInput("layout.pagePadding", 0, 64)));
-        host.appendChild(field("layout.backgroundImage", t("pageImage"), textInput("layout.backgroundImage")));
+        host.appendChild(field("layout.backgroundImage", t("pageImage"), imageInput("layout.backgroundImage")));
+    }
+
+    function menuItems(list) {
+        var wrap = h("div");
+        (list || []).forEach(function (link, index) {
+            var label = h("input", {type: "text", value: link.label || ""});
+            var href = h("input", {type: "text", value: link.href || ""});
+            label.addEventListener("input", function () {
+                remember();
+                link.label = label.value;
+                markDirty();
+                scheduleCompile();
+            });
+            href.addEventListener("input", function () {
+                remember();
+                link.href = href.value;
+                markDirty();
+                scheduleCompile();
+            });
+            var up = h("button", {type: "button", class: "text-btn", text: t("moveUp"), onclick: function () {
+                if (index < 1) return;
+                remember();
+                var swap = list[index - 1];
+                list[index - 1] = list[index];
+                list[index] = swap;
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            var down = h("button", {type: "button", class: "text-btn", text: t("moveDown"), onclick: function () {
+                if (index >= list.length - 1) return;
+                remember();
+                var swap = list[index + 1];
+                list[index + 1] = list[index];
+                list[index] = swap;
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            var remove = h("button", {type: "button", class: "icon-btn", text: "×", onclick: function () {
+                remember();
+                list.splice(index, 1);
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            wrap.appendChild(h("div", {class: "link-row"}, [label, href, up, down, remove]));
+        });
+        wrap.appendChild(h("button", {type: "button", class: "text-btn", text: t("addLink"), onclick: function () {
+            remember();
+            list.push({label: t("newLink"), href: "/"});
+            markDirty();
+            renderInspector();
+            scheduleCompile();
+        }}));
+        return wrap;
+    }
+
+    function renderMenuEditor(host, path) {
+        ensureShape(state.theme);
+        var menu = getPath(state.theme, path);
+        host.appendChild(h("p", {class: "hint", text: t("menuHint")}));
+        host.appendChild(field(path + ".mode", t("mode"), selectInput(path + ".mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field(path + ".direction", t("menuDirection"), selectInput(path + ".direction", [["row", "menuRow"], ["column", "menuColumn"]])));
+        host.appendChild(field(path + ".color", t("objectColor"), textInput(path + ".color")));
+        host.appendChild(field(path + ".background", t("fillColor"), textInput(path + ".background")));
+        host.appendChild(field(path + ".fontFamily", t("customFont"), textInput(path + ".fontFamily")));
+        host.appendChild(field(path + ".fontSize", t("fontSize"), numberInput(path + ".fontSize", 0, 72)));
+        host.appendChild(field(path + ".radius", t("radius"), numberInput(path + ".radius", 0, 48)));
+        host.appendChild(h("p", {class: "hint", text: t("radiusOff")}));
+        host.appendChild(field(path + ".gap", t("gap"), numberInput(path + ".gap", 0, 48)));
+        host.appendChild(menuItems(menu.items));
+    }
+
+    function renderPortalMenu(host) {
+        renderMenuEditor(host, "portalMenu");
+    }
+
+    function renderProjectMenu(host) {
+        renderMenuEditor(host, "projectMenu");
+    }
+
+    function renderRequestForm(host) {
+        ensureShape(state.theme);
+        host.appendChild(h("p", {class: "hint", text: t("formHint")}));
+        host.appendChild(field("form.radius", t("radius"), numberInput("form.radius", -1, 48)));
+        host.appendChild(h("p", {class: "hint", text: t("radiusOff")}));
+        host.appendChild(field("form.gap", t("gap"), numberInput("form.gap", 0, 64)));
+        host.appendChild(field("form.fontSize", t("fontSize"), numberInput("form.fontSize", 0, 72)));
+        host.appendChild(field("form.fontFamily", t("customFont"), textInput("form.fontFamily")));
+        host.appendChild(field("form.color", t("objectColor"), textInput("form.color")));
+        host.appendChild(field("form.background", t("fillColor"), textInput("form.background")));
+        host.appendChild(field("form.labelColor", t("formLabel"), textInput("form.labelColor")));
     }
 
     function renderHeader(host) {
-        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(checkInput("header.allPages", t("chromeAll")));
+        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));
         host.appendChild(checkInput("header.showTitle", t("showTitle")));
         host.appendChild(checkInput("header.sticky", t("sticky")));
         host.appendChild(checkInput("header.showLogin", t("showLogin")));
         host.appendChild(field("header.loginLabel", t("loginLabel"), textInput("header.loginLabel")));
         host.appendChild(field(pathFor("header.height"), t("headerH"), numberInput("header.height", 48, 140)));
-        host.appendChild(field("header.logoUrl", t("logo"), textInput("header.logoUrl")));
+        host.appendChild(field("header.logoUrl", t("logo"), imageInput("header.logoUrl")));
         host.appendChild(field("header.logoAlt", t("logoAlt"), textInput("header.logoAlt")));
         host.appendChild(field("header.logoHeight", t("logoH"), numberInput("header.logoHeight", 16, 96)));
         host.appendChild(h("div", {class: "block-label", text: t("links")}));
@@ -1047,7 +2504,7 @@
         host.appendChild(field("hero.subtitle", t("heroSub"), area("hero.subtitle", 3)));
         host.appendChild(field("hero.align", t("align"), selectInput("hero.align", [["start", "start"], ["center", "center"]])));
         host.appendChild(field(pathFor("hero.height"), t("heroH"), numberInput("hero.height", 0, 640, 10)));
-        host.appendChild(field("hero.backgroundImage", t("heroImage"), textInput("hero.backgroundImage")));
+        host.appendChild(field("hero.backgroundImage", t("heroImage"), imageInput("hero.backgroundImage")));
         host.appendChild(field("hero.overlay", t("overlay"), numberInput("hero.overlay", 0, 0.8, 0.05)));
     }
 
@@ -1062,7 +2519,18 @@
         host.appendChild(field(pathFor("requests.columns"), t("columns"), numberInput("requests.columns", 1, 4)));
         host.appendChild(field("requests.gap", t("gap"), numberInput("requests.gap", 0, 40)));
         host.appendChild(field("requests.cardStyle", t("cardStyle"), selectInput("requests.cardStyle", [["elevated", "elevated"], ["outline", "outline"], ["flat", "flat"]])));
+        host.appendChild(field("requests.radius", t("cardRadius"), numberInput("requests.radius", 0, 48)));
+        host.appendChild(field("requests.size", t("cardSize"), selectInput("requests.size", [["s", "sizeS"], ["m", "sizeM"], ["l", "sizeL"]])));
         host.appendChild(checkInput("requests.showDescription", t("descriptions")));
+        host.appendChild(h("div", {class: "block-label", text: t("cardOrder")}));
+        host.appendChild(h("p", {class: "hint", text: t("cardOrderHint")}));
+        orderedTypes(catalogTypes()).forEach(function (type) {
+            host.appendChild(h("div", {class: "link-row"}, [
+                h("span", {text: type.name || type.id}),
+                h("button", {type: "button", class: "text-btn", text: t("moveUp"), onclick: function () { moveCard(type.id, -1); }}),
+                h("button", {type: "button", class: "text-btn", text: t("moveDown"), onclick: function () { moveCard(type.id, 1); }})
+            ]));
+        });
     }
 
     function renderAnnouncement(host) {
@@ -1072,7 +2540,7 @@
     }
 
     function renderFooter(host) {
-        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("footer.copyright", t("copyright"), textInput("footer.copyright")));
         host.appendChild(h("div", {class: "block-label", text: t("columnsTitle")}));
         state.theme.footer.columns = state.theme.footer.columns || [];
@@ -1158,11 +2626,54 @@
         scheduleCompile();
     }
 
+    function toggleBrowse() {
+        state.browse = !state.browse;
+        var button = document.getElementById("browse");
+        if (button) {
+            button.className = state.browse ? "ghost active" : "ghost";
+        }
+        paintBanner();
+    }
+
+    function effectiveEnabled() {
+        if (state.portalId !== "global" && state.theme && state.theme.useGlobal && state.globalTheme) {
+            return !!state.globalTheme.enabled;
+        }
+        return !!(state.theme && state.theme.enabled);
+    }
+
+    function removeTheme() {
+        api("DELETE", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), null, function (err) {
+            if (err) {
+                toast(t("saveError"));
+                return;
+            }
+            toast(t("removedTheme"));
+            loadPortal(state.portalId);
+        });
+    }
+
     function onEnabled(event) {
+        var on = event.target.checked;
+        if (state.portalId !== "global" && state.theme && state.theme.useGlobal && state.globalTheme) {
+            var theme = clone(state.globalTheme);
+            theme.enabled = on;
+            api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=global", theme, function (err, data) {
+                if (err || !data || !data.theme) {
+                    event.target.checked = !on;
+                    toast(t("saveError"));
+                    return;
+                }
+                state.globalTheme = data.theme;
+                toast(on ? t("designOn") : t("designOff"));
+                paintBanner();
+            });
+            return;
+        }
         remember();
-        state.theme.enabled = event.target.checked;
-        markDirty();
-        scheduleCompile();
+        state.theme.enabled = on;
+        state.designToggle = on;
+        saveTheme();
     }
 
     function onPortal(event) {
@@ -1255,6 +2766,7 @@
         api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), state.theme, function (err, data) {
             if (err || !data) {
                 button.textContent = t("save");
+                state.designToggle = null;
                 toast(t("saveError"));
                 return;
             }
@@ -1267,6 +2779,10 @@
             state.future = [];
             button.className = "save";
             button.textContent = t("saved");
+            if (state.designToggle != null) {
+                toast(state.designToggle ? t("designOn") : t("designOff"));
+                state.designToggle = null;
+            }
             renderInspector();
             paintPreview();
             setTimeout(function () {
@@ -1281,6 +2797,25 @@
         api("DELETE", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), null, function () {
             loadPortal(state.portalId);
         });
+    }
+
+    function nativeTheme() {
+        return {
+            name: "Мой портал",
+            enabled: false,
+            skin: false,
+            useGlobal: false,
+            header: {mode: "keep", title: "", showTitle: false, showLogin: false, links: [], allPages: false},
+            hero: {visible: false, title: "", subtitle: "", pages: "home"},
+            footer: {mode: "keep", copyright: "", columns: []},
+            portalMenu: {mode: "keep", items: []},
+            projectMenu: {mode: "keep", items: []},
+            announcement: {visible: false, text: ""},
+            search: {visible: true},
+            elements: [],
+            arrange: [],
+            canvas: {widgets: [], desktop: {}, tablet: {}, mobile: {}}
+        };
     }
 
     function loadPortal(id) {
@@ -1298,15 +2833,7 @@
             if (data.theme) {
                 state.theme = data.theme;
             } else {
-                var classic = null;
-                state.presets.forEach(function (preset) {
-                    if (preset.id === "classic") {
-                        classic = preset.theme;
-                    }
-                });
-                state.theme = clone(classic || {name: "Черновик", enabled: false});
-                ensureShape(state.theme);
-                state.theme.enabled = false;
+                state.theme = nativeTheme();
                 state.theme.useGlobal = state.portalId !== "global" && !!data.global;
             }
             state.dirty = false;
@@ -1320,6 +2847,12 @@
             loadRequestTypes();
             renderInspector();
             scheduleCompile();
+            if (state.liveFrame && !state.mockFallback) {
+                var frame = document.getElementById("preview");
+                if (frame) {
+                    frame.src = liveSrc();
+                }
+            }
         });
     }
 
