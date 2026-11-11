@@ -25,6 +25,49 @@ public class ThemePipelineTest {
     private final ThemeService service = new ThemeService(new MemoryThemeRepository(), new ThemeCompiler());
 
     @Test
+    public void savedThemeWithoutSkinFlagLeavesThePortalAlone() {
+        Map<String, Object> raw = ThemeMapper.toMap(ThemePresets.classic());
+        raw.remove("skin");
+        PortalTheme migrated = ThemeMapper.fromMap(raw).theme;
+        assertFalse(migrated.skin);
+        assertEquals("keep", migrated.header.mode);
+        assertEquals("keep", migrated.footer.mode);
+        assertEquals("keep", migrated.portalMenu.mode);
+        assertEquals("keep", migrated.projectMenu.mode);
+        assertFalse(migrated.hero.visible);
+
+        PortalTheme fresh = new PortalTheme();
+        assertFalse(fresh.skin);
+        assertEquals("keep", fresh.header.mode);
+        assertFalse(fresh.hero.visible);
+
+        PortalTheme classic = ThemeMapper.fromMap(ThemeMapper.toMap(ThemePresets.classic())).theme;
+        assertTrue(classic.skin);
+        assertEquals("replace", classic.header.mode);
+        assertTrue(classic.hero.visible);
+        assertTrue(ThemePresets.nativePortal().header.mode.equals("keep"));
+        assertFalse(ThemePresets.nativePortal().skin);
+    }
+
+    @Test
+    public void buttonOrderRoundTrips() {
+        Map<String, Object> group = new LinkedHashMap<String, Object>();
+        group.put("page", "portals");
+        group.put("keys", Arrays.asList("h:/servicedesk/customer/portal/4", "h:/servicedesk/customer/portal/1"));
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        raw.put("skin", Boolean.FALSE);
+        raw.put("arrange", Arrays.asList(group));
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals(1, theme.arrange.size());
+        assertEquals("portals", theme.arrange.get(0).page);
+        assertEquals("h:/servicedesk/customer/portal/4", theme.arrange.get(0).keys.get(0));
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(theme.arrange.get(0).keys, again.arrange.get(0).keys);
+        assertTrue(readQuiet("/js/portal.js").contains("function applyArrange"));
+        assertTrue(readQuiet("/css/portal.css").contains("data-pd-skin=\"on\""));
+    }
+
+    @Test
     public void milkPageBackgroundBecomesWhite() {
         Map<String, Object> raw = new LinkedHashMap<String, Object>();
         Map<String, Object> colors = new LinkedHashMap<String, Object>();

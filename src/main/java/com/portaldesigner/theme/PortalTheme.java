@@ -7,8 +7,10 @@ import java.util.Map;
 
 /** Visual theme applied to one customer portal, or to every portal when stored as {@code global}. */
 public final class PortalTheme {
-    public String name = "Классика";
+    public String name = "Мой портал";
     public boolean enabled;
+    /** When false, the visitor keeps the Jira portal. Only explicit edits, such as button order, are applied. */
+    public boolean skin;
     public boolean useGlobal;
     public long updatedAt;
 
@@ -27,6 +29,8 @@ public final class PortalTheme {
     public Responsive responsive = new Responsive();
     public Canvas canvas = new Canvas();
     public List<ElementRule> elements = new ArrayList<ElementRule>();
+    /** Order of buttons and links on one page, after the visitor's own portal is left in place. */
+    public List<Arrange> arrange = new ArrayList<Arrange>();
     public String customCss = "";
 
     public static final class Colors {
@@ -65,7 +69,7 @@ public final class PortalTheme {
     }
 
     public static final class Header {
-        public String mode = "replace";
+        public String mode = "keep";
         public String logoUrl = "";
         public String logoAlt = "";
         public int logoHeight = 36;
@@ -82,7 +86,7 @@ public final class PortalTheme {
     }
 
     public static final class Hero {
-        public boolean visible = true;
+        public boolean visible;
         public String pages = "home";
         public String title = "Чем мы можем помочь?";
         public String subtitle = "Выберите услугу или опишите задачу своими словами";
@@ -116,8 +120,8 @@ public final class PortalTheme {
     }
 
     public static final class Footer {
-        public String mode = "replace";
-        public String copyright = "Служба поддержки";
+        public String mode = "keep";
+        public String copyright = "";
         public List<Column> columns = new ArrayList<Column>();
         public String customHtml = "";
     }
@@ -238,7 +242,7 @@ public final class PortalTheme {
 
     /** A menu the designer draws instead of the Jira customer navigation. */
     public static final class Menu {
-        public String mode = "replace";
+        public String mode = "keep";
         public String direction = "row";
         public String color = "";
         public String background = "";
@@ -277,6 +281,12 @@ public final class PortalTheme {
         public String background = "";
         public String labelColor = "";
         public String fontFamily = "";
+    }
+
+    /** Keys of the buttons, in the order they should appear inside their own row. */
+    public static final class Arrange {
+        public String page = "home";
+        public List<String> keys = new ArrayList<String>();
     }
 
     public static final class Column {

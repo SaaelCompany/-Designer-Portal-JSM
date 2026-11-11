@@ -118,7 +118,7 @@
             sizeM: "Обычный",
             sizeL: "Больше",
             cardOrder: "Порядок карточек",
-            cardOrderHint: "Перетащите карточку в макете или подвиньте её кнопками. Так меняется порядок услуг на портале.",
+            cardOrderHint: "Перетащите кнопку на другую кнопку в том же ряду. Так меняется их порядок на вашем портале.",
             moveUp: "Выше",
             moveDown: "Ниже",
             customFont: "Свой шрифт",
@@ -162,6 +162,9 @@
             showTitleMobile: "Название в шапке на телефоне",
             showHeroTablet: "Обложка на планшете",
             showTitleTablet: "Название в шапке на планшете",
+            keep: "Не менять",
+            skin: "Заменить оформление",
+            skinHint: "Пока галочка снята, посетитель видит свой портал. Перетащите кнопку или ссылку на другую в том же ряду — они поменяются местами. Галочка включает цвета, шрифт, шапку и карточки из конструктора. Готовый стиль ниже делает то же самое.",
             replace: "Собрать заново",
             themeMode: "Перекрасить штатную",
             hidden: "Скрыть",
@@ -323,7 +326,7 @@
             sizeM: "Regular",
             sizeL: "Larger",
             cardOrder: "Card order",
-            cardOrderHint: "Drag a card in the preview, or move it with the buttons. This is the order visitors see.",
+            cardOrderHint: "Drag one button onto another in the same row. That is the order visitors see.",
             moveUp: "Up",
             moveDown: "Down",
             customFont: "Custom font",
@@ -367,6 +370,9 @@
             showTitleMobile: "Header title on a phone",
             showHeroTablet: "Hero on a tablet",
             showTitleTablet: "Header title on a tablet",
+            keep: "Leave as it is",
+            skin: "Replace the portal look",
+            skinHint: "While this is off, visitors see their own portal. Drag a button or link onto another in the same row to swap them. The checkbox applies the colors, type, header and cards from the designer. A preset below does the same.",
             replace: "Rebuild",
             themeMode: "Recolor the native one",
             hidden: "Hide",
@@ -620,8 +626,10 @@
         theme.canvas.widgets = theme.canvas.widgets || [];
         theme.elements = theme.elements || [];
         theme.header = theme.header || {};
-        theme.portalMenu = theme.portalMenu || {mode: "replace", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
-        theme.projectMenu = theme.projectMenu || {mode: "replace", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.portalMenu = theme.portalMenu || {mode: "keep", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.projectMenu = theme.projectMenu || {mode: "keep", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.arrange = theme.arrange || [];
+        theme.skin = !!theme.skin;
         theme.portalMenu.items = theme.portalMenu.items || [];
         theme.projectMenu.items = theme.projectMenu.items || [];
         theme.form = theme.form || {radius: -1, gap: 16, fontSize: 0, color: "", background: "", labelColor: "", fontFamily: ""};
@@ -1640,6 +1648,136 @@
         (doc.head || doc.documentElement).appendChild(style);
     }
 
+    function buttonKey(node) {
+        if (!node || node.nodeType !== 1 || (node.id && node.id.indexOf("pd-") === 0)) {
+            return "";
+        }
+        var href = (node.getAttribute("href") || "").split("?")[0];
+        if (href) {
+            return "h:" + href.slice(0, 140);
+        }
+        if (node.id) {
+            return "i:" + String(node.id).slice(0, 40);
+        }
+        var text = String(node.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+        return text ? "t:" + text.slice(0, 48) : "";
+    }
+
+    function swapNode(target) {
+        if (!target || !target.closest) {
+            return null;
+        }
+        if (target.closest("#pd-editor-layer, #pd-chrome, #pd-widgets, #pd-footer, #pd-announcement")) {
+            return null;
+        }
+        var node = target.closest("button, a, [data-pd-card]");
+        if (!node || node.closest("#pd-editor-layer, #pd-chrome, #pd-widgets")) {
+            return null;
+        }
+        return node;
+    }
+
+    function saveArrange(parent) {
+        ensureShape(state.theme);
+        var keys = [];
+        var children = parent.children;
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            var key = buttonKey(child);
+            if (!key) {
+                continue;
+            }
+            if (child.tagName === "A" || child.tagName === "BUTTON" || child.getAttribute("data-pd-card")) {
+                keys.push(key);
+            }
+        }
+        if (keys.length < 2) {
+            return;
+        }
+        var page = editingPage();
+        var groups = state.theme.arrange;
+        var found = null;
+        for (var g = 0; g < groups.length; g++) {
+            var known = groups[g].keys || [];
+            var same = (groups[g].page || "home") === page;
+            for (var k = 0; same && k < known.length; k++) {
+                if (keys.indexOf(known[k]) >= 0) {
+                    found = groups[g];
+                    break;
+                }
+            }
+            if (found) {
+                break;
+            }
+        }
+        if (found) {
+            found.keys = keys;
+        } else {
+            groups.push({page: page, keys: keys});
+        }
+    }
+
+    function exchangeNodes(a, b) {
+        var parent = a.parentNode;
+        if (!parent || parent !== b.parentNode) {
+            return;
+        }
+        var mark = parent.ownerDocument.createComment("pd");
+        parent.insertBefore(mark, a);
+        parent.insertBefore(a, b);
+        parent.insertBefore(b, mark);
+        parent.removeChild(mark);
+    }
+
+    function spotIsFree(key) {
+        if (!key || !state.theme || !state.theme.canvas) {
+            return false;
+        }
+        var screen = state.theme.canvas[deviceKey()] || {};
+        var spot = screen[key];
+        if (key.indexOf("el-") === 0) {
+            var rule = elementById(key.substring(3));
+            spot = rule ? rule[deviceKey()] : null;
+        }
+        return !!(spot && spot.free);
+    }
+
+    function startSwap(event, doc, node) {
+        var originX = event.clientX;
+        var originY = event.clientY;
+        var moved = false;
+        function move(ev) {
+            if (Math.abs(ev.clientX - originX) + Math.abs(ev.clientY - originY) > 6) {
+                moved = true;
+            }
+        }
+        function up(ev) {
+            doc.removeEventListener("pointermove", move);
+            doc.removeEventListener("pointerup", up);
+            if (!moved) {
+                return;
+            }
+            ev.preventDefault();
+            node.addEventListener("click", function stop(click) {
+                click.preventDefault();
+                click.stopPropagation();
+                node.removeEventListener("click", stop, true);
+            }, true);
+            var under = doc.elementFromPoint(ev.clientX, ev.clientY);
+            var other = under && swapNode(under);
+            if (!other || other === node || other.parentNode !== node.parentNode) {
+                return;
+            }
+            remember();
+            exchangeNodes(node, other);
+            saveArrange(node.parentNode);
+            markDirty();
+            scheduleCompile();
+        }
+        doc.addEventListener("pointermove", move);
+        doc.addEventListener("pointerup", up);
+    }
+
     function armCanvas(doc) {
         if (!doc || !doc.body || !state.theme) {
             return;
@@ -1662,7 +1800,15 @@
                 if (!target || !target.closest) {
                     return;
                 }
-                if (target.closest("#pd-editor-layer, [contenteditable='true'], input, textarea, select, button")) {
+                if (target.closest("#pd-editor-layer, [contenteditable='true'], input, textarea, select")) {
+                    return;
+                }
+                var swappable = swapNode(target);
+                if (swappable && !spotIsFree(swappable.getAttribute("data-pd-canvas"))) {
+                    startSwap(event, doc, swappable);
+                    return;
+                }
+                if (target.closest("button")) {
                     return;
                 }
                 var node = target.closest("[data-pd-canvas]");
@@ -2194,6 +2340,8 @@
     }
 
     function renderTheme(host) {
+        host.appendChild(h("p", {class: "hint", text: t("skinHint")}));
+        host.appendChild(checkInput("skin", t("skin")));
         host.appendChild(h("div", {class: "block-label", text: t("presets")}));
         var presets = h("div", {class: "presets"});
         state.presets.forEach(function (preset) {
@@ -2297,7 +2445,7 @@
         ensureShape(state.theme);
         var menu = getPath(state.theme, path);
         host.appendChild(h("p", {class: "hint", text: t("menuHint")}));
-        host.appendChild(field(path + ".mode", t("mode"), selectInput(path + ".mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field(path + ".mode", t("mode"), selectInput(path + ".mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field(path + ".direction", t("menuDirection"), selectInput(path + ".direction", [["row", "menuRow"], ["column", "menuColumn"]])));
         host.appendChild(field(path + ".color", t("objectColor"), textInput(path + ".color")));
         host.appendChild(field(path + ".background", t("fillColor"), textInput(path + ".background")));
@@ -2332,7 +2480,7 @@
 
     function renderHeader(host) {
         host.appendChild(checkInput("header.allPages", t("chromeAll")));
-        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));
         host.appendChild(checkInput("header.showTitle", t("showTitle")));
         host.appendChild(checkInput("header.sticky", t("sticky")));
@@ -2392,7 +2540,7 @@
     }
 
     function renderFooter(host) {
-        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["keep", "keep"], ["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("footer.copyright", t("copyright"), textInput("footer.copyright")));
         host.appendChild(h("div", {class: "block-label", text: t("columnsTitle")}));
         state.theme.footer.columns = state.theme.footer.columns || [];
@@ -2651,6 +2799,25 @@
         });
     }
 
+    function nativeTheme() {
+        return {
+            name: "Мой портал",
+            enabled: false,
+            skin: false,
+            useGlobal: false,
+            header: {mode: "keep", title: "", showTitle: false, showLogin: false, links: [], allPages: false},
+            hero: {visible: false, title: "", subtitle: "", pages: "home"},
+            footer: {mode: "keep", copyright: "", columns: []},
+            portalMenu: {mode: "keep", items: []},
+            projectMenu: {mode: "keep", items: []},
+            announcement: {visible: false, text: ""},
+            search: {visible: true},
+            elements: [],
+            arrange: [],
+            canvas: {widgets: [], desktop: {}, tablet: {}, mobile: {}}
+        };
+    }
+
     function loadPortal(id) {
         state.portalId = id || "global";
         var manual = document.getElementById("portal-id");
@@ -2666,15 +2833,7 @@
             if (data.theme) {
                 state.theme = data.theme;
             } else {
-                var classic = null;
-                state.presets.forEach(function (preset) {
-                    if (preset.id === "classic") {
-                        classic = preset.theme;
-                    }
-                });
-                state.theme = clone(classic || {name: "Черновик", enabled: false});
-                ensureShape(state.theme);
-                state.theme.enabled = false;
+                state.theme = nativeTheme();
                 state.theme.useGlobal = state.portalId !== "global" && !!data.global;
             }
             state.dirty = false;

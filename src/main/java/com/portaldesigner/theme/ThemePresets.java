@@ -12,6 +12,7 @@ public final class ThemePresets {
 
     public static List<Preset> all() {
         return Collections.unmodifiableList(Arrays.asList(
+                preset("native", "Мой портал", nativePortal()),
                 preset("classic", "Классика", classic()),
                 preset("midnight", "Полночь", midnight()),
                 preset("grove", "Роща", grove()),
@@ -20,8 +21,32 @@ public final class ThemePresets {
         ));
     }
 
+    public static PortalTheme nativePortal() {
+        PortalTheme theme = new PortalTheme();
+        theme.name = "Мой портал";
+        theme.header.title = "";
+        theme.header.showTitle = false;
+        theme.hero.title = "";
+        theme.hero.subtitle = "";
+        theme.portalMenu.items.clear();
+        theme.projectMenu.items.clear();
+        return theme;
+    }
+
     public static PortalTheme classic() {
         PortalTheme theme = new PortalTheme();
+        theme.name = "Классика";
+        theme.skin = true;
+        theme.header.mode = "replace";
+        theme.header.title = "Центр поддержки";
+        theme.header.showTitle = true;
+        theme.hero.visible = true;
+        theme.hero.title = "Чем мы можем помочь?";
+        theme.hero.subtitle = "Выберите услугу или опишите задачу своими словами";
+        theme.footer.mode = "replace";
+        theme.footer.copyright = "Служба поддержки";
+        theme.portalMenu.mode = "replace";
+        theme.projectMenu.mode = "replace";
         theme.header.links.add(new PortalTheme.Link("Мои заявки", "/servicedesk/customer/user/requests"));
         theme.footer.columns.add(new PortalTheme.Column(
                 "Поддержка",

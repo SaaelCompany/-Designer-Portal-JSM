@@ -157,7 +157,7 @@
     }
 
     function showHero(theme, page) {
-        if (!theme.hero || !theme.hero.visible) {
+        if (!theme.skin || !theme.hero || !theme.hero.visible) {
             return false;
         }
         if (theme.hero.pages === "all") {
@@ -220,6 +220,13 @@
 
     function renderHeader(doc, parent, theme, ctx) {
         var header = doc.getElementById("pd-header");
+        var model = theme.header || {};
+        if (!theme.skin || model.mode === "keep") {
+            if (header && header.parentNode) {
+                header.parentNode.removeChild(header);
+            }
+            return;
+        }
         var editing = doc.activeElement && parent.contains && parent.contains(doc.activeElement);
         var person = viewer(doc);
         var sig = signature(theme) + "|" + (person.signed ? (person.name || "in") : "out");
@@ -237,7 +244,6 @@
         header.setAttribute("data-pd-sig", sig);
         header.setAttribute("data-pd-select", "header");
         header.setAttribute("data-pd-canvas", "header");
-        var model = theme.header || {};
         if (model.customHtml) {
             header.innerHTML = model.customHtml;
         } else {
@@ -289,8 +295,14 @@
         }
     }
 
-    function renderHero(doc, parent, theme) {
+    function renderHero(doc, parent, theme, page) {
         var hero = doc.getElementById("pd-hero");
+        if (!showHero(theme, page)) {
+            if (hero && hero.parentNode) {
+                hero.parentNode.removeChild(hero);
+            }
+            return;
+        }
         var model = theme.hero || {};
         if (!hero) {
             hero = el(doc, "section");
@@ -326,6 +338,13 @@
 
     function renderFooter(doc, theme, ctx) {
         var footer = doc.getElementById("pd-footer");
+        var model = theme.footer || {};
+        if (!theme.skin || model.mode === "keep") {
+            if (footer && footer.parentNode) {
+                footer.parentNode.removeChild(footer);
+            }
+            return;
+        }
         if (!footer) {
             footer = el(doc, "footer");
             footer.id = "pd-footer";
@@ -344,7 +363,6 @@
         while (footer.firstChild) {
             footer.removeChild(footer.firstChild);
         }
-        var model = theme.footer || {};
         if (model.customHtml) {
             var custom = el(doc, "div", "pd-custom-html pd-footer-inner");
             custom.innerHTML = model.customHtml;
@@ -591,11 +609,21 @@
             chrome.id = "pd-chrome";
             doc.body.insertBefore(chrome, doc.body.firstChild);
         }
-        renderAnnouncement(doc, chrome, theme);
+        if (theme.skin) {
+            renderAnnouncement(doc, chrome, theme);
+        } else {
+            var note = doc.getElementById("pd-announcement");
+            if (note && note.parentNode) {
+                note.parentNode.removeChild(note);
+            }
+        }
         renderHeader(doc, chrome, theme, ctx);
-        renderHero(doc, chrome, theme);
+        renderHero(doc, chrome, theme, page);
         renderFooter(doc, theme, ctx);
         renderMenus(doc, theme, ctx, page);
+        if (chrome.parentNode && !chrome.firstChild) {
+            chrome.parentNode.removeChild(chrome);
+        }
     }
 
     function markRegions(doc, theme, page) {
@@ -621,7 +649,7 @@
                     setAttr(input.parentNode, "data-pd-region", "search");
                     setAttr(input.parentNode, "data-pd-select", "search");
                 }
-                if (theme.search && theme.search.placeholder && input.getAttribute("placeholder") !== theme.search.placeholder) {
+                if (theme.skin && theme.search && theme.search.placeholder && input.getAttribute("placeholder") !== theme.search.placeholder) {
                     input.setAttribute("placeholder", theme.search.placeholder);
                 }
                 break;
@@ -646,6 +674,7 @@
                 orderCards(requestsRegion(doc), theme.requests.order);
             }
         }
+        applyArrange(doc, theme, page);
         hideNativeMenus(doc, theme, page);
         if (page === "create") {
             markFields(doc, theme);
@@ -712,6 +741,96 @@
             }
         }
         return null;
+    }
+
+    function nodeKey(node) {
+        if (!node || node.nodeType !== 1 || (node.id && node.id.indexOf("pd-") === 0)) {
+            return "";
+        }
+        var href = (node.getAttribute("href") || "").split("?")[0];
+        if (href) {
+            return "h:" + href.slice(0, 140);
+        }
+        if (node.id) {
+            return "i:" + String(node.id).slice(0, 40);
+        }
+        var text = String(node.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+        return text ? "t:" + text.slice(0, 48) : "";
+    }
+
+    function applyArrange(doc, theme, page) {
+        var groups = theme.arrange || [];
+        if (!doc.body || !groups.length) {
+            return;
+        }
+        for (var g = 0; g < groups.length; g++) {
+            var group = groups[g];
+            if (!group || !group.keys || group.keys.length < 2 || !samePage(group.page, page)) {
+                continue;
+            }
+            var parents = [];
+            var nodes = doc.body.getElementsByTagName("*");
+            for (var i = 0; i < nodes.length; i++) {
+                var key = nodeKey(nodes[i]);
+                if (!key || group.keys.indexOf(key) < 0 || !nodes[i].parentNode) {
+                    continue;
+                }
+                var parent = nodes[i].parentNode;
+                var bucket = null;
+                for (var p = 0; p < parents.length; p++) {
+                    if (parents[p].parent === parent) {
+                        bucket = parents[p];
+                        break;
+                    }
+                }
+                if (!bucket) {
+                    bucket = {parent: parent, nodes: []};
+                    parents.push(bucket);
+                }
+                bucket.nodes.push(nodes[i]);
+            }
+            var best = null;
+            for (var b = 0; b < parents.length; b++) {
+                if (!best || parents[b].nodes.length > best.nodes.length) {
+                    best = parents[b];
+                }
+            }
+            if (!best || best.nodes.length < 2) {
+                continue;
+            }
+            var ordered = [];
+            for (var k = 0; k < group.keys.length; k++) {
+                for (var n = 0; n < best.nodes.length; n++) {
+                    if (ordered.indexOf(best.nodes[n]) < 0 && nodeKey(best.nodes[n]) === group.keys[k]) {
+                        ordered.push(best.nodes[n]);
+                        break;
+                    }
+                }
+            }
+            for (var rest = 0; rest < best.nodes.length; rest++) {
+                if (ordered.indexOf(best.nodes[rest]) < 0) {
+                    ordered.push(best.nodes[rest]);
+                }
+            }
+            var children = [];
+            for (var c = 0; c < best.parent.children.length; c++) {
+                children.push(best.parent.children[c]);
+            }
+            var next = [];
+            var queue = ordered.slice();
+            for (var s = 0; s < children.length; s++) {
+                if (best.nodes.indexOf(children[s]) >= 0) {
+                    next.push(queue.shift());
+                } else {
+                    next.push(children[s]);
+                }
+            }
+            for (var w = 0; w < next.length; w++) {
+                if (next[w]) {
+                    best.parent.appendChild(next[w]);
+                }
+            }
+        }
     }
 
     function orderCards(parent, order) {
@@ -1196,10 +1315,13 @@
             portalId: options.portalId || "global"
         };
         addClass(html, "pd-active");
-        setAttr(html, "data-pd-header-mode", (theme.header && theme.header.mode) || "replace");
-        setAttr(html, "data-pd-footer-mode", (theme.footer && theme.footer.mode) || "replace");
+        setAttr(html, "data-pd-skin", theme.skin ? "on" : "off");
+        var headerMode = theme.skin && theme.header && theme.header.mode ? theme.header.mode : "keep";
+        var footerMode = theme.skin && theme.footer && theme.footer.mode ? theme.footer.mode : "keep";
+        setAttr(html, "data-pd-header-mode", headerMode);
+        setAttr(html, "data-pd-footer-mode", footerMode);
         setAttr(html, "data-pd-sticky", theme.header && theme.header.sticky === false ? "0" : "1");
-        setAttr(html, "data-pd-search", theme.search && theme.search.visible === false ? "off" : "on");
+        setAttr(html, "data-pd-search", theme.skin && theme.search && theme.search.visible === false ? "off" : "on");
         setAttr(html, "data-pd-layout", (theme.requests && theme.requests.layout) || "grid");
         setAttr(html, "data-pd-shadow", (theme.layout && theme.layout.shadow) || "soft");
         setAttr(html, "data-pd-cards", (theme.requests && theme.requests.cardStyle) || "elevated");
@@ -1207,7 +1329,7 @@
         setAttr(html, "data-pd-desc", theme.requests && theme.requests.showDescription === false ? "off" : "on");
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");
-        var structural = fullChrome(theme, page);
+        var structural = theme.skin && fullChrome(theme, page);
         setAttr(html, "data-pd-page", page);
         setAttr(html, "data-pd-chrome", structural ? "full" : "quiet");
         var formLook = theme.form || {};
@@ -1267,6 +1389,7 @@
         var html = doc.documentElement;
         clearTouched(doc);
         removeClass(html, "pd-active");
+        html.removeAttribute("data-pd-skin");
         html.removeAttribute("data-pd-header-mode");
         html.removeAttribute("data-pd-footer-mode");
         html.removeAttribute("data-pd-sticky");

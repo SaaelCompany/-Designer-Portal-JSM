@@ -23,6 +23,7 @@ public final class ThemeMapper {
         }
         theme.name = text(raw.get("name"), theme.name, 80);
         theme.enabled = bool(raw.get("enabled"), theme.enabled);
+        theme.skin = bool(raw.get("skin"), false);
         theme.useGlobal = bool(raw.get("useGlobal"), theme.useGlobal);
         theme.updatedAt = longVal(raw.get("updatedAt"), 0L);
 
@@ -67,7 +68,7 @@ public final class ThemeMapper {
         theme.layout.backgroundImage = asset(str(layout.get("backgroundImage")), warnings, "layout.backgroundImage");
 
         Map<String, Object> header = map(raw.get("header"));
-        theme.header.mode = oneOf(str(header.get("mode")), theme.header.mode, "replace", "theme", "hidden");
+        theme.header.mode = oneOf(str(header.get("mode")), theme.header.mode, "keep", "replace", "theme", "hidden");
         theme.header.logoUrl = asset(str(header.get("logoUrl")), warnings, "header.logoUrl");
         theme.header.logoAlt = text(header.get("logoAlt"), "", 120);
         theme.header.logoHeight = clamp(intVal(header.get("logoHeight"), theme.header.logoHeight), 16, 96, "header.logoHeight", warnings);
@@ -113,7 +114,7 @@ public final class ThemeMapper {
         theme.announcement.tone = oneOf(str(announcement.get("tone")), theme.announcement.tone, "info", "success", "warning", "critical");
 
         Map<String, Object> footer = map(raw.get("footer"));
-        theme.footer.mode = oneOf(str(footer.get("mode")), theme.footer.mode, "replace", "theme", "hidden");
+        theme.footer.mode = oneOf(str(footer.get("mode")), theme.footer.mode, "keep", "replace", "theme", "hidden");
         theme.footer.copyright = text(footer.get("copyright"), theme.footer.copyright, 160);
         theme.footer.columns = columns(footer.get("columns"), warnings);
         theme.footer.customHtml = html(str(footer.get("customHtml")), warnings, "footer.customHtml");
@@ -132,6 +133,15 @@ public final class ThemeMapper {
         theme.responsive.tablet = screen(map(responsive.get("tablet")), PortalTheme.Screen.tablet(), warnings, "tablet");
         theme.canvas = canvas(raw.get("canvas"), warnings);
         theme.elements = elements(raw.get("elements"), warnings);
+        theme.arrange = arrange(raw.get("arrange"), warnings);
+        if (!raw.containsKey("skin")) {
+            theme.skin = false;
+            theme.header.mode = "keep";
+            theme.footer.mode = "keep";
+            theme.hero.visible = false;
+            theme.portalMenu.mode = "keep";
+            theme.projectMenu.mode = "keep";
+        }
 
         String custom = str(raw.get("customCss"));
         String cleanCss = CssSanitizer.sanitize(custom);
@@ -146,6 +156,7 @@ public final class ThemeMapper {
         Map<String, Object> root = new LinkedHashMap<String, Object>();
         root.put("name", theme.name);
         root.put("enabled", theme.enabled);
+        root.put("skin", theme.skin);
         root.put("useGlobal", theme.useGlobal);
         root.put("updatedAt", theme.updatedAt);
 
@@ -260,6 +271,7 @@ public final class ThemeMapper {
         root.put("responsive", responsive);
         root.put("canvas", canvasMap(theme.canvas));
         root.put("elements", elementMaps(theme.elements));
+        root.put("arrange", arrangeMaps(theme.arrange));
         root.put("customCss", theme.customCss);
         return root;
     }
@@ -442,7 +454,7 @@ public final class ThemeMapper {
             return menu;
         }
         Map<String, Object> map = map(raw);
-        menu.mode = oneOf(str(map.get("mode")), fallback.mode, "replace", "theme", "hidden");
+        menu.mode = oneOf(str(map.get("mode")), fallback.mode, "keep", "replace", "theme", "hidden");
         menu.direction = oneOf(str(map.get("direction")), fallback.direction, "row", "column");
         if (!str(map.get("color")).trim().isEmpty()) {
             menu.color = color(map, "color", "", warnings);
@@ -519,6 +531,62 @@ public final class ThemeMapper {
         map.put("labelColor", source.labelColor);
         map.put("fontFamily", source.fontFamily);
         return map;
+    }
+
+    private static List<PortalTheme.Arrange> arrange(Object raw, List<String> warnings) {
+        List<PortalTheme.Arrange> groups = new ArrayList<PortalTheme.Arrange>();
+        if (!(raw instanceof List)) {
+            return groups;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && groups.size() < 12; i++) {
+            Map<String, Object> item = map(list.get(i));
+            PortalTheme.Arrange group = new PortalTheme.Arrange();
+            group.page = oneOf(str(item.get("page")), "home", "home", "portals", "project", "requests", "create", "login", "profile", "all");
+            Object keysRaw = item.get("keys");
+            if (keysRaw instanceof List) {
+                List<?> keys = (List<?>) keysRaw;
+                for (int k = 0; k < keys.size() && group.keys.size() < 24; k++) {
+                    String key = arrangeKey(str(keys.get(k)));
+                    if (!key.isEmpty()) {
+                        group.keys.add(key);
+                    }
+                }
+            }
+            if (group.keys.size() >= 2) {
+                groups.add(group);
+            } else if (!item.isEmpty()) {
+                warnings.add("arrange");
+            }
+        }
+        return groups;
+    }
+
+    private static List<Map<String, Object>> arrangeMaps(List<PortalTheme.Arrange> groups) {
+        List<Map<String, Object>> maps = new ArrayList<Map<String, Object>>();
+        if (groups == null) {
+            return maps;
+        }
+        for (PortalTheme.Arrange group : groups) {
+            Map<String, Object> map = new LinkedHashMap<String, Object>();
+            map.put("page", group.page);
+            map.put("keys", new ArrayList<String>(group.keys));
+            maps.add(map);
+        }
+        return maps;
+    }
+
+    private static String arrangeKey(String raw) {
+        String value = raw == null ? "" : raw.trim();
+        if (value.length() < 2 || value.length() > 160) {
+            return "";
+        }
+        String lower = value.toLowerCase(Locale.ROOT);
+        if (lower.contains("javascript") || lower.contains("url(") || value.indexOf('<') >= 0
+                || value.indexOf('>') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\\') >= 0) {
+            return "";
+        }
+        return value;
     }
 
     private static List<PortalTheme.ElementRule> elements(Object raw, List<String> warnings) {
