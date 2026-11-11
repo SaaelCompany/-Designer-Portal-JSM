@@ -163,7 +163,9 @@ public class ThemePipelineTest {
         assertEquals(30, again.canvas.widgets.get(0).desktop.x);
         assertEquals("html", again.canvas.widgets.get(0).type);
 
+        assertTrue(ThemePresets.classic().header.allPages);
         String js = readQuiet("/js/portal.js");
+        assertTrue(js.contains("if (surface(page)) {\n            markCards(doc);"));
         assertTrue(js.contains("data-pd-canvas"));
         assertTrue(js.contains("pd-widgets"));
         assertTrue(js.contains("pdPreview=1"));

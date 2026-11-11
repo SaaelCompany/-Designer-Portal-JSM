@@ -53,6 +53,9 @@
         if (/\/user\/requests(?:\/|$)/.test(clean) || /\/portal\/\d+\/[A-Z][A-Z0-9]*-\d+$/.test(clean)) {
             return "requests";
         }
+        if (/\/user\/profile(?:\/|$)/.test(clean)) {
+            return "profile";
+        }
         return "other";
     }
 
@@ -543,7 +546,7 @@
         renderMenus(doc, theme, ctx, page);
     }
 
-    function markRegions(doc, theme, page, structural) {
+    function markRegions(doc, theme, page) {
         var headers = doc.getElementsByTagName("header");
         for (var h = 0; h < headers.length; h++) {
             if (headers[h].id === "pd-header" || inChrome(headers[h])) {
@@ -561,7 +564,7 @@
             var type = (input.getAttribute("type") || "").toLowerCase();
             var placeholder = input.getAttribute("placeholder") || "";
             var className = input.className || "";
-            if (type === "search" || /search|поиск/i.test(placeholder) || /search/i.test(String(className))) {
+            if (surface(page) && (type === "search" || /search|поиск/i.test(placeholder) || /search/i.test(String(className)))) {
                 if (input.parentNode && !inChrome(input.parentNode)) {
                     setAttr(input.parentNode, "data-pd-region", "search");
                     setAttr(input.parentNode, "data-pd-select", "search");
@@ -585,7 +588,7 @@
                 setAttr(headings[t], "data-pd-region", "native-title");
             }
         }
-        if (structural) {
+        if (surface(page)) {
             markCards(doc);
             if (theme.requests && theme.requests.order) {
                 orderCards(requestsRegion(doc), theme.requests.order);
@@ -1134,7 +1137,7 @@
         }
         clearTouched(doc);
         renderChrome(doc, theme, ctx, page);
-        markRegions(doc, theme, page, structural);
+        markRegions(doc, theme, page);
         renderWidgets(doc, theme, ctx);
         tagCanvas(doc);
         var device = deviceOf(theme, options, doc);

@@ -135,10 +135,19 @@ public final class DesignPreviewServer {
         } else if (path.contains("/user/requests")) {
             body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portals\">Порталы</a></header>"
                     + "<div id=\"cv-content\" class=\"cv-requests\"><h1>Запросы</h1>"
+                    + "<input type=\"search\" class=\"cv-request-search\" placeholder=\"Найти заявку\">"
+                    + "<a href=\"/servicedesk/customer/portal/1\">К порталу</a>"
                     + "<table><tr><td><a href=\"/servicedesk/customer/portal/1/IT-15\">IT-15</a></td>"
                     + "<td class=\"cv-request-summary\">Не работает почта</td></tr>"
                     + "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td>"
                     + "<td class=\"cv-request-summary\">Доступ для нового сотрудника</td></tr></table></div>";
+        } else if (path.contains("/user/profile")) {
+            body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/user/requests\">Запросы</a></header>"
+                    + "<div id=\"cv-content\" class=\"cv-profile\"><h1>Профиль</h1>"
+                    + "<form><label>Имя<input name=\"fullName\" type=\"text\" value=\"Анна\"></label>"
+                    + "<label>Почта<input name=\"email\" type=\"email\" value=\"anna@example.com\"></label>"
+                    + "<button type=\"submit\">Сохранить</button></form>"
+                    + "<a href=\"/servicedesk/customer/portal/1\">Мой портал</a></div>";
         } else if (path.endsWith("/portals")) {
             body = "<header class=\"cv-smart-portal-header\">Порталы</header>"
                     + "<nav class=\"cv-nav\"><a href=\"/servicedesk/customer/portals\">Порталы</a>"

@@ -259,12 +259,18 @@ html.pd-active[data-pd-sticky="1"][data-pd-header-mode="theme"] [data-pd-region=
     z-index: 30;
 }
 
-html.pd-active [data-pd-region="search"] {
+html.pd-active[data-pd-page="home"] [data-pd-region="search"],
+html.pd-active[data-pd-page="project"] [data-pd-region="search"],
+html.pd-active[data-pd-page="portals"] [data-pd-region="search"] {
     padding: 22px 0 6px;
 }
 
-html.pd-active [data-pd-region="search"] input,
-html.pd-active [data-pd-region="search"] textarea {
+html.pd-active[data-pd-page="home"] [data-pd-region="search"] input,
+html.pd-active[data-pd-page="home"] [data-pd-region="search"] textarea,
+html.pd-active[data-pd-page="project"] [data-pd-region="search"] input,
+html.pd-active[data-pd-page="project"] [data-pd-region="search"] textarea,
+html.pd-active[data-pd-page="portals"] [data-pd-region="search"] input,
+html.pd-active[data-pd-page="portals"] [data-pd-region="search"] textarea {
     width: 100% !important;
     background: var(--pd-surface) !important;
     color: var(--pd-text) !important;
@@ -355,7 +361,9 @@ html.pd-active[data-pd-card-size="l"] .pd-card-title {
     font-size: 1.25rem;
 }
 
-html.pd-active[data-pd-layout="list"] [data-pd-card] {
+html.pd-active[data-pd-page="home"][data-pd-layout="list"] [data-pd-card],
+html.pd-active[data-pd-page="project"][data-pd-layout="list"] [data-pd-card],
+html.pd-active[data-pd-page="portals"][data-pd-layout="list"] [data-pd-card] {
     display: flex !important;
     align-items: center;
     gap: 14px;

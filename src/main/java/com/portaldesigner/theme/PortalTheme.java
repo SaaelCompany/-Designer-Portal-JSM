@@ -75,7 +75,7 @@ public final class PortalTheme {
         public boolean showLogin = true;
         public String loginLabel = "Войти";
         public int height = 72;
-        public boolean allPages;
+        public boolean allPages = true;
         public boolean takeover;
         public List<Link> links = new ArrayList<Link>();
         public String customHtml = "";
