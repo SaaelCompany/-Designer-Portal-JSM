@@ -221,7 +221,8 @@
     function renderHeader(doc, parent, theme, ctx) {
         var header = doc.getElementById("pd-header");
         var editing = doc.activeElement && parent.contains && parent.contains(doc.activeElement);
-        var sig = signature(theme);
+        var person = viewer(doc);
+        var sig = signature(theme) + "|" + (person.signed ? (person.name || "in") : "out");
         if (header && header.getAttribute("data-pd-sig") === sig) {
             return;
         }
@@ -266,7 +267,6 @@
                 link.href = resolveHref(links[i].href, ctx.contextPath);
                 nav.appendChild(link);
             }
-            var person = viewer(doc);
             if (person.signed) {
                 if (person.name) {
                     var account = el(doc, "a", "pd-login", person.name);
@@ -423,7 +423,24 @@
 
     function viewer(doc) {
         var name = metaContent(doc, "ajs-remote-user-fullname") || metaContent(doc, "ajs-remote-user");
-        var logout = doc.querySelector ? doc.querySelector('a[href*="logout"], a[href*="Logout"]') : null;
+        var logout = false;
+        var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
+        for (var i = 0; i < links.length; i++) {
+            var link = links[i];
+            if (inChrome(link) || (link.className && String(link.className).indexOf("pd-") >= 0)) {
+                continue;
+            }
+            var href = link.getAttribute("href") || "";
+            if (/logout/i.test(href)) {
+                logout = true;
+            }
+            if (!name && /\/user\/profile(?:\/|$|\?)/.test(href)) {
+                name = String(link.getAttribute("aria-label") || link.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            }
+        }
+        if (name.length > 48) {
+            name = name.substring(0, 48);
+        }
         return {signed: !!(name || logout), name: name};
     }
 
@@ -969,6 +986,54 @@
         el.style.height = look.height > 0 ? look.height + "px" : "";
     }
 
+    function ownedNode(node) {
+        return !!(node && node.id && node.id.indexOf("pd-") === 0);
+    }
+
+    function findOwned(doc, selector) {
+        if (!selector || !doc || !doc.body) {
+            return [];
+        }
+        if (selector.charAt(0) === "#" || selector.indexOf(":nth-of-type(") < 0) {
+            try {
+                return doc.querySelectorAll(selector);
+            } catch (e) {
+                return [];
+            }
+        }
+        var steps = selector.split(/\s*>\s*/);
+        var level = [doc.body];
+        for (var s = 0; s < steps.length; s++) {
+            var match = /^([a-z][a-z0-9]*):nth-of-type\((\d+)\)$/.exec(steps[s]);
+            if (!match) {
+                return [];
+            }
+            var tag = match[1].toUpperCase();
+            var want = parseInt(match[2], 10);
+            var next = [];
+            for (var i = 0; i < level.length; i++) {
+                var children = level[i].children || [];
+                var seen = 0;
+                for (var c = 0; c < children.length; c++) {
+                    var child = children[c];
+                    if (ownedNode(child) || child.tagName !== tag) {
+                        continue;
+                    }
+                    seen++;
+                    if (seen === want) {
+                        next.push(child);
+                        break;
+                    }
+                }
+            }
+            level = next;
+            if (!level.length) {
+                return [];
+            }
+        }
+        return level;
+    }
+
     function applyElements(doc, theme, device, page) {
         var list = theme.elements || [];
         for (var i = 0; i < list.length; i++) {
@@ -976,10 +1041,8 @@
             if (!rule || !rule.selector || !samePage(rule.page, page)) {
                 continue;
             }
-            var found;
-            try {
-                found = doc.querySelectorAll(rule.selector);
-            } catch (e) {
+            var found = findOwned(doc, rule.selector);
+            if (!found || !found.length) {
                 continue;
             }
             var spot = rule[device] || rule.desktop;
@@ -999,12 +1062,8 @@
         if (!target || node.getAttribute("data-pd-tip-bound") === target) {
             return;
         }
-        var found;
-        try {
-            found = doc.querySelector(target);
-        } catch (e) {
-            return;
-        }
+        var matches = findOwned(doc, target);
+        var found = matches && matches.length ? matches[0] : null;
         if (!found) {
             return;
         }

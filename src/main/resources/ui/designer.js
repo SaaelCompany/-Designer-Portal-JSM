@@ -1997,16 +1997,64 @@
         return null;
     }
 
+    function editingPage() {
+        var frame = document.getElementById("preview");
+        var view = frame && frame.contentWindow;
+        try {
+            if (view && view.PortalDesigner && view.PortalDesigner.pageKind && view.location) {
+                return view.PortalDesigner.pageKind(view.location.pathname) || state.page || "home";
+            }
+        } catch (e) {
+            return state.page || "home";
+        }
+        return state.page || "home";
+    }
+
+    function ownedNode(node) {
+        return !!(node && node.id && node.id.indexOf("pd-") === 0);
+    }
+
     function selectorFor(el) {
-        if (!el || el.nodeType !== 1) {
+        if (!el || el.nodeType !== 1 || ownedNode(el)) {
             return "";
         }
-        var id = el.getAttribute("data-pd-id") || "";
-        if (!/^[A-Za-z][A-Za-z0-9]{0,19}$/.test(id)) {
-            id = "e" + Math.floor(Math.random() * 1e9).toString(36);
-            el.setAttribute("data-pd-id", id);
+        if (el.id && /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(el.id) && el.id.indexOf("pd-") !== 0) {
+            return "#" + el.id;
         }
-        return "[data-pd-id=\"" + id + "\"]";
+        var parts = [];
+        var node = el;
+        var guard = 0;
+        while (node && node.nodeType === 1 && node.tagName !== "BODY" && node.tagName !== "HTML" && guard < 40) {
+            if (ownedNode(node)) {
+                node = node.parentNode;
+                continue;
+            }
+            var tag = node.tagName.toLowerCase();
+            if (!/^[a-z0-9]+$/.test(tag)) {
+                break;
+            }
+            var index = 1;
+            var sib = node;
+            while (sib.previousElementSibling) {
+                sib = sib.previousElementSibling;
+                if (ownedNode(sib)) {
+                    continue;
+                }
+                if (sib.tagName === node.tagName) {
+                    index++;
+                }
+            }
+        parts.unshift(tag + ":nth-of-type(" + index + ")");
+        if (parts.join(" > ").length > 760) {
+            return "";
+        }
+        node = node.parentNode;
+        guard++;
+    }
+    if (!node || (node.tagName !== "BODY" && node.tagName !== "HTML")) {
+        return "";
+    }
+    return parts.join(" > ");
     }
 
     function ruleForPicked(create) {
@@ -2016,7 +2064,7 @@
         }
         var list = state.theme.elements;
         for (var i = 0; i < list.length; i++) {
-            if (list[i].selector === state.picked.selector && (list[i].page || "home") === (state.page || "home")) {
+            if (list[i].selector === state.picked.selector && (list[i].page || "home") === editingPage()) {
                 return list[i];
             }
         }
@@ -2025,7 +2073,7 @@
         }
         var rule = {
             id: "e" + Math.floor(Math.random() * 1e9).toString(36),
-            page: state.page || "home",
+            page: editingPage(),
             selector: state.picked.selector,
             label: state.picked.label || "",
             look: {color: "", background: "", fontFamily: "", fontSize: 0, fontWeight: 0, radius: -1, padding: -1, width: 0, height: 0},

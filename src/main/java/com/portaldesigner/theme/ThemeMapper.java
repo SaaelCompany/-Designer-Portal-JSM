@@ -415,14 +415,14 @@ public final class ThemeMapper {
             return "";
         }
         String lower = value.toLowerCase(Locale.ROOT);
-        if (value.length() > 180 || lower.contains("url") || lower.contains("expression")
+        if (value.length() > 800 || lower.contains("url") || lower.contains("expression")
                 || lower.contains("javascript") || value.indexOf('\\') >= 0 || value.indexOf(';') >= 0
                 || value.indexOf('{') >= 0 || value.indexOf('}') >= 0) {
             warnings.add(field);
             return "";
         }
         String stripped = value.replaceAll(":nth-child\\(\\d+\\)", "").replaceAll(":nth-of-type\\(\\d+\\)", "");
-        if (!stripped.matches("[#\\.\\[\\]A-Za-z0-9_=\"':\\s>+~-]{1,180}")
+        if (!stripped.matches("[#\\.\\[\\]A-Za-z0-9_=\"':\\s>+~-]{1,800}")
                 || stripped.indexOf('(') >= 0 || stripped.indexOf(')') >= 0) {
             warnings.add(field);
             return "";
@@ -537,7 +537,7 @@ public final class ThemeMapper {
             }
             PortalTheme.ElementRule rule = new PortalTheme.ElementRule();
             rule.id = id;
-            rule.page = oneOf(str(item.get("page")), "home", "home", "portals", "project", "requests", "create", "login", "all");
+            rule.page = oneOf(str(item.get("page")), "home", "home", "portals", "project", "requests", "create", "login", "profile", "all");
             rule.selector = selector;
             rule.label = text(item.get("label"), "", 80);
             rule.look = look(map(item.get("look")), warnings);

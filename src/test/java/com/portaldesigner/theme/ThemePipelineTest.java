@@ -35,6 +35,30 @@ public class ThemePipelineTest {
     }
 
     @Test
+    public void objectPathSurvivesSave() {
+        StringBuilder path = new StringBuilder();
+        for (int i = 1; i <= 12; i++) {
+            if (i > 1) {
+                path.append(" > ");
+            }
+            path.append("div:nth-of-type(").append(i).append(")");
+        }
+        Map<String, Object> rule = new LinkedHashMap<String, Object>();
+        rule.put("id", "e1");
+        rule.put("page", "portals");
+        rule.put("selector", path.toString());
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        raw.put("elements", Arrays.asList(rule));
+        MappedTheme mapped = ThemeMapper.fromMap(raw);
+        assertEquals(path.toString(), mapped.theme.elements.get(0).selector);
+        assertTrue(mapped.warnings.isEmpty());
+
+        rule.put("selector", "[data-pd-id=\"eomf84\"]");
+        MappedTheme stale = ThemeMapper.fromMap(raw);
+        assertEquals("[data-pd-id=\"eomf84\"]", stale.theme.elements.get(0).selector);
+    }
+
+    @Test
     public void unpublishedPortalStaysUnthemed() {
         Map<String, Object> body = service.publicTheme("global");
         assertEquals(Boolean.FALSE, body.get("enabled"));
