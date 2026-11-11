@@ -1576,13 +1576,13 @@
         if (field === "free" && on) {
             var doc = frameDoc();
             var node = doc && canvasNode(doc, key);
-            if (doc && doc.documentElement.className.indexOf("pd-free") < 0) {
-                doc.documentElement.className += " pd-free";
-            }
             if (node) {
                 var box = boxOf(node);
                 spot.x = Math.round(box.x);
                 spot.y = Math.round(box.y);
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
                 spot.w = Math.max(40, Math.round(box.w));
                 spot.h = Math.max(24, Math.round(box.h));
             } else if (!spot.w) {
@@ -1747,9 +1747,6 @@
                 return;
             }
             moved = true;
-            if (doc.documentElement.className.indexOf("pd-free") < 0) {
-                doc.documentElement.className += " pd-free";
-            }
             if (!spot.free) {
                 var box = boxOf(node);
                 spot.free = true;
@@ -1757,6 +1754,13 @@
                 spot.y = Math.round(box.y);
                 spot.w = Math.max(40, Math.round(box.w));
                 spot.h = Math.max(24, Math.round(box.h));
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
+            } else if (typeof spot.originX !== "number") {
+                spot.originX = spot.x;
+                spot.originY = spot.y;
+                spot.hasOrigin = true;
             }
             start = {x: spot.x, y: spot.y, w: spot.w, h: spot.h};
         }
@@ -1997,29 +2001,12 @@
         if (!el || el.nodeType !== 1) {
             return "";
         }
-        if (el.id && /^[A-Za-z][\w:-]{0,60}$/.test(el.id) && el.id.indexOf("pd-") !== 0) {
-            return "#" + el.id;
+        var id = el.getAttribute("data-pd-id") || "";
+        if (!/^[A-Za-z][A-Za-z0-9]{0,19}$/.test(id)) {
+            id = "e" + Math.floor(Math.random() * 1e9).toString(36);
+            el.setAttribute("data-pd-id", id);
         }
-        var node = el;
-        var parts = [];
-        var guard = 0;
-        while (node && node.nodeType === 1 && node.tagName !== "BODY" && node.tagName !== "HTML" && guard < 4) {
-            var piece = node.tagName.toLowerCase();
-            var raw = typeof node.className === "string" ? node.className : "";
-            var classes = raw.split(/\s+/).filter(function (name) {
-                return /^[A-Za-z][A-Za-z0-9_-]{0,40}$/.test(name) && name.indexOf("pd-") !== 0 && name.indexOf("css-") !== 0;
-            }).slice(0, 2);
-            if (classes.length) {
-                piece += "." + classes.join(".");
-            }
-            parts.unshift(piece);
-            if (classes.length || (node.id && node.id.indexOf("pd-") !== 0)) {
-                break;
-            }
-            node = node.parentNode;
-            guard++;
-        }
-        return parts.join(" > ").slice(0, 180);
+        return "[data-pd-id=\"" + id + "\"]";
     }
 
     function ruleForPicked(create) {

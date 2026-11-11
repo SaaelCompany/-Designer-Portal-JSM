@@ -569,35 +569,10 @@ html.pd-active [data-pd-hidden="1"] {
     display: none !important;
 }
 
-html.pd-free body {
+html.pd-active [data-pd-free="1"] {
     position: relative !important;
-}
-
-html.pd-free #pd-chrome,
-html.pd-free #pd-widgets {
-    display: contents;
-}
-
-html.pd-free #jsd-portal-container,
-html.pd-free #cv-content,
-html.pd-free .cv-smart-portal,
-html.pd-free .cv-page,
-html.pd-free #mock-home,
-html.pd-free #content {
-    position: static !important;
-    transform: none !important;
-}
-
-html.pd-free [data-pd-free="1"] {
-    position: absolute !important;
-    margin: 0 !important;
-    max-width: none !important;
+    z-index: 6;
     box-sizing: border-box;
-}
-
-html.pd-active[data-pd-sticky="1"] #pd-header[data-pd-free="1"],
-html.pd-active[data-pd-sticky="1"][data-pd-header-mode="theme"] [data-pd-region="header"][data-pd-free="1"] {
-    position: absolute !important;
 }
 
 html.pd-active .pd-widget {

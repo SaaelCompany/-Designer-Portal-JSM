@@ -266,7 +266,14 @@
                 link.href = resolveHref(links[i].href, ctx.contextPath);
                 nav.appendChild(link);
             }
-            if (model.showLogin !== false) {
+            var person = viewer(doc);
+            if (person.signed) {
+                if (person.name) {
+                    var account = el(doc, "a", "pd-login", person.name);
+                    account.href = profileHref(ctx);
+                    nav.appendChild(account);
+                }
+            } else if (model.showLogin !== false) {
                 var login = el(doc, "a", "pd-login", model.loginLabel || "Войти");
                 login.href = loginHref(ctx);
                 nav.appendChild(login);
@@ -403,7 +410,25 @@
         if (value === "{login}") {
             return loginHref(ctx);
         }
+        if (value === "{profile}") {
+            return profileHref(ctx);
+        }
         return resolveHref(value, ctx.contextPath);
+    }
+
+    function metaContent(doc, name) {
+        var node = doc.querySelector ? doc.querySelector('meta[name="' + name + '"]') : null;
+        return node ? String(node.getAttribute("content") || "").replace(/^\s+|\s+$/g, "") : "";
+    }
+
+    function viewer(doc) {
+        var name = metaContent(doc, "ajs-remote-user-fullname") || metaContent(doc, "ajs-remote-user");
+        var logout = doc.querySelector ? doc.querySelector('a[href*="logout"], a[href*="Logout"]') : null;
+        return {signed: !!(name || logout), name: name};
+    }
+
+    function profileHref(ctx) {
+        return (ctx.contextPath || "") + "/servicedesk/customer/user/profile";
     }
 
     function renderOneMenu(doc, menu, id, canvasKey, ctx) {
@@ -441,9 +466,19 @@
             node.removeChild(node.firstChild);
         }
         var items = menu.items || [];
+        var person = viewer(doc);
         for (var i = 0; i < items.length; i++) {
-            var link = el(doc, "a", "pd-menu-link", items[i].label || "");
-            link.href = menuHref(items[i].href, ctx);
+            var href = items[i].href || "";
+            var label = items[i].label || "";
+            if (href === "{login}" && person.signed) {
+                href = "{profile}";
+                label = person.name || label;
+                if (!person.name) {
+                    continue;
+                }
+            }
+            var link = el(doc, "a", "pd-menu-link", label);
+            link.href = menuHref(href, ctx);
             link.style.borderRadius = (menu.radius || 0) + "px";
             node.appendChild(link);
         }
@@ -871,30 +906,21 @@
             el.style.zIndex = "";
             return;
         }
-        var doc = el.ownerDocument;
         el.setAttribute("data-pd-free", "1");
-        el.style.position = "absolute";
-        el.style.margin = "0";
+        el.style.position = "relative";
         el.style.zIndex = "6";
         el.style.boxSizing = "border-box";
-        el.style.left = "0px";
-        el.style.top = "0px";
-        var parent = el.offsetParent || doc.body;
-        var parentBox = parent.getBoundingClientRect();
-        var bodyBox = doc.body.getBoundingClientRect();
-        el.style.left = Math.round((spot.x || 0) - (parentBox.left - bodyBox.left)) + "px";
-        el.style.top = Math.round((spot.y || 0) - (parentBox.top - bodyBox.top)) + "px";
+        var hasOrigin = !!(spot.hasOrigin || typeof spot.originX === "number");
+        var originX = hasOrigin ? spot.originX : spot.x;
+        var originY = hasOrigin ? spot.originY : spot.y;
+        el.style.left = Math.round((spot.x || 0) - (originX || 0)) + "px";
+        el.style.top = Math.round((spot.y || 0) - (originY || 0)) + "px";
         el.style.width = spot.w > 0 ? spot.w + "px" : "";
         el.style.height = spot.h > 0 ? spot.h + "px" : "";
     }
 
     function placeCanvas(doc, theme, device, page) {
-        var html = doc.documentElement;
-        if (anyFree(theme, device, page)) {
-            addClass(html, "pd-free");
-        } else {
-            removeClass(html, "pd-free");
-        }
+        removeClass(doc.documentElement, "pd-free");
         var nodes = doc.querySelectorAll ? doc.querySelectorAll("[data-pd-canvas]") : [];
         for (var i = 0; i < nodes.length; i++) {
             var key = nodes[i].getAttribute("data-pd-canvas");
@@ -957,11 +983,12 @@
                 continue;
             }
             var spot = rule[device] || rule.desktop;
+            var alone = found.length === 1;
             for (var n = 0; n < found.length; n++) {
                 found[n].setAttribute("data-pd-target", rule.id);
                 found[n].setAttribute("data-pd-canvas", "el-" + rule.id);
                 paintLook(found[n], rule.look || {});
-                if (spot && (spot.free || spot.hidden)) {
+                if (alone && spot && (spot.free || spot.hidden)) {
                     place(found[n], spot);
                 }
             }
@@ -1170,6 +1197,7 @@
             node.removeAttribute("data-pd-target");
             node.removeAttribute("data-pd-select");
             node.removeAttribute("data-pd-desc");
+            // data-pd-id stays: it is the only handle that still finds this exact object after a redraw.
             for (var p = 0; p < props.length; p++) {
                 node.style[props[p]] = "";
             }

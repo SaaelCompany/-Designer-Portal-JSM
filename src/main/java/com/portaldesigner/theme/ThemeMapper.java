@@ -30,6 +30,9 @@ public final class ThemeMapper {
         theme.colors.primary = color(colors, "primary", theme.colors.primary, warnings);
         theme.colors.primaryText = color(colors, "primaryText", theme.colors.primaryText, warnings);
         theme.colors.background = color(colors, "background", theme.colors.background, warnings);
+        if ("#F4F1EA".equalsIgnoreCase(theme.colors.background)) {
+            theme.colors.background = "#FFFFFF";
+        }
         theme.colors.surface = color(colors, "surface", theme.colors.surface, warnings);
         theme.colors.text = color(colors, "text", theme.colors.text, warnings);
         theme.colors.muted = color(colors, "muted", theme.colors.muted, warnings);
@@ -304,6 +307,9 @@ public final class ThemeMapper {
         spot.y = clampSilent(intVal(map.get("y"), 0), -2000, 8000);
         spot.w = clampSilent(intVal(map.get("w"), 0), 0, 2400);
         spot.h = clampSilent(intVal(map.get("h"), 0), 0, 2400);
+        spot.hasOrigin = map.containsKey("originX");
+        spot.originX = clampSilent(intVal(map.get("originX"), 0), -4000, 8000);
+        spot.originY = clampSilent(intVal(map.get("originY"), 0), -4000, 12000);
         return spot;
     }
 
@@ -396,6 +402,10 @@ public final class ThemeMapper {
         map.put("y", source.y);
         map.put("w", source.w);
         map.put("h", source.h);
+        if (source.hasOrigin) {
+            map.put("originX", source.originX);
+            map.put("originY", source.originY);
+        }
         return map;
     }
 

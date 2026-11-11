@@ -178,6 +178,8 @@ public final class DesignPreviewServer {
                     + "</div></div></div>";
         }
         return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                + "<meta name=\"ajs-remote-user\" content=\"anna\"/>"
+                + "<meta name=\"ajs-remote-user-fullname\" content=\"Анна Соколова\"/>"
                 + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
                 + "</head><body>" + body
                 + "<script src=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js\"></script>"

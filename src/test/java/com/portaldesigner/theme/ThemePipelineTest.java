@@ -25,6 +25,16 @@ public class ThemePipelineTest {
     private final ThemeService service = new ThemeService(new MemoryThemeRepository(), new ThemeCompiler());
 
     @Test
+    public void milkPageBackgroundBecomesWhite() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> colors = new LinkedHashMap<String, Object>();
+        colors.put("background", "#F4F1EA");
+        raw.put("colors", colors);
+        assertEquals("#FFFFFF", ThemeMapper.fromMap(raw).theme.colors.background);
+        assertEquals("#FFFFFF", new PortalTheme().colors.background);
+    }
+
+    @Test
     public void unpublishedPortalStaysUnthemed() {
         Map<String, Object> body = service.publicTheme("global");
         assertEquals(Boolean.FALSE, body.get("enabled"));
