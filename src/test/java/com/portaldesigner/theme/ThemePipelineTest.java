@@ -169,7 +169,7 @@ public class ThemePipelineTest {
         assertTrue(js.contains("pdPreview=1"));
         assertTrue(js.contains("clearTouched"));
         String scoped = readQuiet("/css/portal.css");
-        assertTrue(scoped.contains("data-pd-chrome=\"full\"] [data-pd-region=\"requests\"]"));
+        assertTrue(scoped.contains("data-pd-page=\"project\"] [data-pd-region=\"requests\"]"));
         assertTrue(scoped.contains("data-pd-chrome=\"quiet\""));
         assertTrue(scoped.contains("pd-tip-bubble"));
         String css = readQuiet("/css/portal.css");
@@ -236,6 +236,39 @@ public class ThemePipelineTest {
         PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
         assertEquals(18, again.elements.get(0).look.fontSize);
         assertEquals("tooltip", again.canvas.widgets.get(0).type);
+    }
+
+    @Test
+    public void menusAndFormRadiusRoundTrip() {
+        Map<String, Object> raw = new LinkedHashMap<String, Object>();
+        Map<String, Object> menu = new LinkedHashMap<String, Object>();
+        menu.put("mode", "replace");
+        menu.put("direction", "column");
+        menu.put("radius", Integer.valueOf(0));
+        menu.put("color", "#172B4D");
+        List<Map<String, Object>> items = new ArrayList<Map<String, Object>>();
+        Map<String, Object> item = new LinkedHashMap<String, Object>();
+        item.put("label", "Порталы");
+        item.put("href", "{portals}");
+        items.add(item);
+        menu.put("items", items);
+        raw.put("portalMenu", menu);
+        Map<String, Object> form = new LinkedHashMap<String, Object>();
+        form.put("radius", Integer.valueOf(0));
+        form.put("fontFamily", "Segoe UI");
+        raw.put("form", form);
+
+        PortalTheme theme = ThemeMapper.fromMap(raw).theme;
+        assertEquals("column", theme.portalMenu.direction);
+        assertEquals(0, theme.portalMenu.radius);
+        assertEquals(1, theme.portalMenu.items.size());
+        assertEquals("{portals}", theme.portalMenu.items.get(0).href);
+        assertEquals(0, theme.form.radius);
+
+        PortalTheme again = ThemeMapper.fromMap(ThemeMapper.toMap(theme)).theme;
+        assertEquals(0, again.portalMenu.radius);
+        assertEquals(0, again.form.radius);
+        assertEquals("column", again.portalMenu.direction);
     }
 
     @Test

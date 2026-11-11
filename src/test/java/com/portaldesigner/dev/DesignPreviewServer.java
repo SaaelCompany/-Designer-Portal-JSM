@@ -140,18 +140,26 @@ public final class DesignPreviewServer {
                     + "<tr><td><a href=\"/servicedesk/customer/portal/1/IT-16\">IT-16</a></td>"
                     + "<td class=\"cv-request-summary\">Доступ для нового сотрудника</td></tr></table></div>";
         } else if (path.endsWith("/portals")) {
-            body = "<header class=\"cv-smart-portal-header\">Порталы</header><div id=\"cv-content\">"
+            body = "<header class=\"cv-smart-portal-header\">Порталы</header>"
+                    + "<nav class=\"cv-nav\"><a href=\"/servicedesk/customer/portals\">Порталы</a>"
+                    + "<a href=\"/servicedesk/customer/user/requests\">Запросы</a></nav>"
+                    + "<div id=\"cv-content\">"
                     + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/1\">IT поддержка</a>"
                     + "<a class=\"cv-portal\" href=\"/servicedesk/customer/portal/4\">Кадры</a></div>";
         } else if (path.contains("/create/")) {
             body = "<header class=\"cv-smart-portal-header\"><a href=\"/servicedesk/customer/portal/1\">Назад</a></header>"
+                    + "<nav class=\"cv-project-nav\"><a href=\"/servicedesk/customer/portal/1\">Портал</a></nav>"
                     + "<div id=\"cv-content\"><form class=\"cv-create\"><h1>Новая заявка</h1>"
-                    + "<label>Тема<input type=\"text\"></label><button type=\"submit\">Отправить</button></form></div>";
+                    + "<label>Тема<input name=\"summary\" type=\"text\"></label>"
+                    + "<label>Описание<textarea name=\"description\"></textarea></label>"
+                    + "<button type=\"submit\">Отправить</button></form></div>";
         } else if (path.endsWith("/login")) {
             body = "<div id=\"cv-content\"><form class=\"cv-login\"><h1>Вход</h1><input type=\"email\"><button type=\"submit\">Войти</button></form></div>";
         } else {
             body = "<div id=\"jsd-portal-container\"><header class=\"cv-smart-portal-header\">"
                     + "<a class=\"cv-brand\" href=\"/servicedesk/customer/portal/1\">Центр поддержки</a></header>"
+                    + "<nav class=\"cv-project-nav\"><a href=\"/servicedesk/customer/portal/1\">Портал</a>"
+                    + "<a href=\"/servicedesk/customer/user/requests\">Запросы</a></nav>"
                     + "<div id=\"cv-content\" class=\"cv-smart-portal\"><h1>Чем мы можем помочь?</h1>"
                     + "<div class=\"cv-search\"><input type=\"search\" placeholder=\"Поиск\"></div>"
                     + "<div class=\"cv-request-types\">"

@@ -39,10 +39,10 @@
     function pageKind(path) {
         var clean = String(path || "").split("?")[0].replace(/\/+$/, "");
         if (/\/servicedesk\/customer\/portals$/.test(clean)) {
-            return "home";
+            return "portals";
         }
         if (/\/servicedesk\/customer\/portal\/\d+$/.test(clean)) {
-            return "home";
+            return "project";
         }
         if (/\/login$/.test(clean)) {
             return "login";
@@ -60,14 +60,24 @@
         if (!rulePage || rulePage === "all") {
             return true;
         }
+        if (rulePage === "home" && (page === "project" || page === "portals" || page === "home")) {
+            return true;
+        }
+        if (rulePage === "project" && page === "home") {
+            return true;
+        }
         return rulePage === page;
+    }
+
+    function surface(page) {
+        return page === "home" || page === "project" || page === "portals";
     }
 
     function fullChrome(theme, page) {
         if (page === "create" || page === "login") {
             return false;
         }
-        if (page === "home") {
+        if (surface(page)) {
             return true;
         }
         return !!((theme && theme.header && theme.header.allPages));
@@ -148,9 +158,9 @@
             return false;
         }
         if (theme.hero.pages === "all") {
-            return page !== "login";
+            return page !== "login" && page !== "create";
         }
-        return page === "home";
+        return surface(page);
     }
 
     function signature(theme) {
@@ -353,7 +363,170 @@
         footer.appendChild(inner);
     }
 
-    function renderChrome(doc, theme, ctx) {
+    function canvasHere(key, page) {
+        if (key.indexOf("field-") === 0) {
+            return page === "create";
+        }
+        if (key === "portal-menu") {
+            return page === "portals";
+        }
+        if (key === "project-menu") {
+            return page === "project" || page === "create";
+        }
+        return surface(page);
+    }
+
+    function menuSpot(theme, key, device) {
+        var menu = key === "portal-menu" ? theme.portalMenu : theme.projectMenu;
+        if (!menu) {
+            return null;
+        }
+        return menu[device] || menu.desktop || null;
+    }
+
+    function menuHref(href, ctx) {
+        var value = href || "";
+        var base = ctx.contextPath || "";
+        var portal = ctx.portalId && ctx.portalId !== "global" ? base + "/servicedesk/customer/portal/" + ctx.portalId : base + "/servicedesk/customer/portals";
+        if (value === "{portal}") {
+            return portal;
+        }
+        if (value === "{portals}") {
+            return base + "/servicedesk/customer/portals";
+        }
+        if (value === "{requests}") {
+            return base + "/servicedesk/customer/user/requests";
+        }
+        if (value === "{login}") {
+            return loginHref(ctx);
+        }
+        return resolveHref(value, ctx.contextPath);
+    }
+
+    function renderOneMenu(doc, menu, id, canvasKey, ctx) {
+        var node = doc.getElementById(id);
+        if (!menu || menu.mode === "hidden") {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+            return;
+        }
+        if (menu.mode !== "replace") {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+            return;
+        }
+        if (!node) {
+            node = el(doc, "nav");
+            node.id = id;
+            doc.body.insertBefore(node, doc.body.firstChild);
+        }
+        node.className = "pd-menu" + (menu.direction === "column" ? " pd-menu-column" : "");
+        node.setAttribute("data-pd-canvas", canvasKey);
+        node.setAttribute("data-pd-select", canvasKey);
+        node.style.color = menu.color || "";
+        node.style.background = menu.background || "";
+        node.style.fontFamily = menu.fontFamily || "";
+        node.style.fontSize = menu.fontSize > 0 ? menu.fontSize + "px" : "";
+        node.style.gap = (menu.gap || 0) + "px";
+        node.style.borderRadius = (menu.radius || 0) + "px";
+        if (doc.activeElement && node.contains && node.contains(doc.activeElement)) {
+            return;
+        }
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+        var items = menu.items || [];
+        for (var i = 0; i < items.length; i++) {
+            var link = el(doc, "a", "pd-menu-link", items[i].label || "");
+            link.href = menuHref(items[i].href, ctx);
+            link.style.borderRadius = (menu.radius || 0) + "px";
+            node.appendChild(link);
+        }
+    }
+
+    function renderMenus(doc, theme, ctx, page) {
+        renderOneMenu(doc, page === "portals" ? theme.portalMenu : null, "pd-menu-portal", "portal-menu", ctx);
+        renderOneMenu(doc, page === "project" || page === "create" ? theme.projectMenu : null, "pd-menu-project", "project-menu", ctx);
+    }
+
+    function hideNativeMenus(doc, theme, page) {
+        var menu = page === "portals" ? theme.portalMenu : (page === "project" || page === "create" ? theme.projectMenu : null);
+        var hide = menu && (menu.mode === "replace" || menu.mode === "hidden");
+        var navs = doc.getElementsByTagName("nav");
+        for (var i = 0; i < navs.length; i++) {
+            if (navs[i].id === "pd-menu-portal" || navs[i].id === "pd-menu-project" || inChrome(navs[i])) {
+                continue;
+            }
+            if (hide) {
+                navs[i].setAttribute("data-pd-menu-hidden", "1");
+            } else {
+                navs[i].removeAttribute("data-pd-menu-hidden");
+                if (menu && menu.mode === "theme") {
+                    navs[i].style.color = menu.color || "";
+                    navs[i].style.background = menu.background || "";
+                    navs[i].style.fontFamily = menu.fontFamily || "";
+                    navs[i].style.fontSize = menu.fontSize > 0 ? menu.fontSize + "px" : "";
+                    navs[i].style.borderRadius = (menu.radius || 0) + "px";
+                    navs[i].style.gap = (menu.gap || 0) + "px";
+                }
+            }
+        }
+    }
+
+    function fieldKey(control) {
+        var name = control.getAttribute("name") || control.id || "";
+        name = String(name).replace(/[^A-Za-z0-9_-]/g, "");
+        if (name) {
+            return "field-" + name.substring(0, 32);
+        }
+        var type = (control.getAttribute("type") || control.tagName || "field").toLowerCase();
+        return "field-" + type.substring(0, 32);
+    }
+
+    function markFields(doc, theme) {
+        var form = theme.form || {};
+        var forms = doc.getElementsByTagName("form");
+        for (var f = 0; f < forms.length; f++) {
+            if (inChrome(forms[f])) {
+                continue;
+            }
+            var controls = forms[f].querySelectorAll ? forms[f].querySelectorAll("input, textarea, select, button") : [];
+            for (var c = 0; c < controls.length; c++) {
+                var control = controls[c];
+                if ((control.getAttribute("type") || "").toLowerCase() === "hidden") {
+                    continue;
+                }
+                var row = control.parentNode && control.parentNode.tagName === "LABEL" ? control.parentNode : control;
+                row.setAttribute("data-pd-field", "1");
+                row.setAttribute("data-pd-canvas", fieldKey(control));
+                if (form.gap >= 0) {
+                    row.style.marginBottom = form.gap + "px";
+                }
+                if (form.labelColor && row.tagName === "LABEL") {
+                    row.style.color = form.labelColor;
+                }
+                if (form.fontFamily) {
+                    row.style.fontFamily = form.fontFamily;
+                }
+                if (form.fontSize > 0) {
+                    row.style.fontSize = form.fontSize + "px";
+                }
+                if (form.radius >= 0) {
+                    control.style.borderRadius = form.radius + "px";
+                }
+                if (form.color) {
+                    control.style.color = form.color;
+                }
+                if (form.background) {
+                    control.style.background = form.background;
+                }
+            }
+        }
+    }
+
+    function renderChrome(doc, theme, ctx, page) {
         if (!doc.body) {
             return;
         }
@@ -367,6 +540,7 @@
         renderHeader(doc, chrome, theme, ctx);
         renderHero(doc, chrome, theme);
         renderFooter(doc, theme, ctx);
+        renderMenus(doc, theme, ctx, page);
     }
 
     function markRegions(doc, theme, page, structural) {
@@ -417,10 +591,14 @@
                 orderCards(requestsRegion(doc), theme.requests.order);
             }
         }
-        if (page === "login" || page === "create") {
+        hideNativeMenus(doc, theme, page);
+        if (page === "create") {
+            markFields(doc, theme);
+        }
+        if (page === "login") {
             var forms = doc.getElementsByTagName("form");
             if (forms.length && forms[0].parentNode) {
-                setAttr(forms[0].parentNode, "data-pd-region", page === "login" ? "login" : "form");
+                setAttr(forms[0].parentNode, "data-pd-region", "login");
             }
         }
     }
@@ -624,13 +802,28 @@
 
     function anyFree(theme, device, page) {
         var canvas = theme.canvas || {};
-        if (page === "home") {
+        if (surface(page) || page === "create") {
             var screen = canvas[device] || {};
             for (var key in screen) {
-                if (screen.hasOwnProperty(key) && screen[key] && screen[key].free) {
-                    return true;
+                if (!screen.hasOwnProperty(key) || !screen[key] || !screen[key].free) {
+                    continue;
                 }
+                if (page === "create" && key.indexOf("field-") !== 0) {
+                    continue;
+                }
+                if (surface(page) && key.indexOf("field-") === 0) {
+                    continue;
+                }
+                return true;
             }
+        }
+        var portalSpot = menuSpot(theme, "portal-menu", device);
+        if (page === "portals" && portalSpot && portalSpot.free && !portalSpot.hidden) {
+            return true;
+        }
+        var projectSpot = menuSpot(theme, "project-menu", device);
+        if ((page === "project" || page === "create") && projectSpot && projectSpot.free && !projectSpot.hidden) {
+            return true;
         }
         var widgets = canvas.widgets || [];
         for (var i = 0; i < widgets.length; i++) {
@@ -705,11 +898,12 @@
             if (!key || key.indexOf("widget-") === 0 || key.indexOf("el-") === 0) {
                 continue;
             }
-            if (page !== "home") {
+            if (!canvasHere(key, page)) {
                 place(nodes[i], null);
                 continue;
             }
-            place(nodes[i], spotFor(theme, key, device));
+            var laid = key === "portal-menu" || key === "project-menu" ? menuSpot(theme, key, device) : spotFor(theme, key, device);
+            place(nodes[i], laid);
         }
         var widgets = (theme.canvas && theme.canvas.widgets) || [];
         for (var w = 0; w < widgets.length; w++) {
@@ -927,11 +1121,19 @@
         var structural = fullChrome(theme, page);
         setAttr(html, "data-pd-page", page);
         setAttr(html, "data-pd-chrome", structural ? "full" : "quiet");
+        var formLook = theme.form || {};
+        if (formLook.radius >= 0) {
+            html.style.setProperty("--pd-field-radius", formLook.radius + "px");
+            setAttr(html, "data-pd-field-radius", "set");
+        } else {
+            html.style.removeProperty("--pd-field-radius");
+            html.removeAttribute("data-pd-field-radius");
+        }
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
         clearTouched(doc);
-        renderChrome(doc, theme, ctx);
+        renderChrome(doc, theme, ctx, page);
         markRegions(doc, theme, page, structural);
         renderWidgets(doc, theme, ctx);
         tagCanvas(doc);
@@ -951,7 +1153,7 @@
         var props = ["position", "left", "top", "width", "height", "margin", "zIndex", "color", "backgroundColor", "fontSize", "fontWeight", "fontFamily", "borderRadius", "padding"];
         for (var i = 0; i < nodes.length; i++) {
             var node = nodes[i];
-            if (node.id === "pd-header" || node.id === "pd-hero" || node.id === "pd-footer" || node.id === "pd-announcement" || node.id === "pd-editor-layer") {
+            if (node.id === "pd-header" || node.id === "pd-hero" || node.id === "pd-footer" || node.id === "pd-announcement" || node.id === "pd-editor-layer" || node.id === "pd-menu-portal" || node.id === "pd-menu-project") {
                 continue;
             }
             if (node.id && node.id.indexOf("pd-widget-") === 0) {
@@ -988,6 +1190,8 @@
         html.removeAttribute("data-pd-hero");
         html.removeAttribute("data-pd-page");
         html.removeAttribute("data-pd-chrome");
+        html.removeAttribute("data-pd-field-radius");
+        html.style.removeProperty("--pd-field-radius");
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
             style.parentNode.removeChild(style);
@@ -999,6 +1203,14 @@
         var footer = doc.getElementById("pd-footer");
         if (footer && footer.parentNode) {
             footer.parentNode.removeChild(footer);
+        }
+        var portalMenu = doc.getElementById("pd-menu-portal");
+        if (portalMenu && portalMenu.parentNode) {
+            portalMenu.parentNode.removeChild(portalMenu);
+        }
+        var projectMenu = doc.getElementById("pd-menu-project");
+        if (projectMenu && projectMenu.parentNode) {
+            projectMenu.parentNode.removeChild(projectMenu);
         }
         var widgets = doc.getElementById("pd-widgets");
         if (widgets && widgets.parentNode) {

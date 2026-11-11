@@ -204,7 +204,9 @@ html.pd-active[data-pd-align="center"] #pd-hero p {
 }
 
 html.pd-active[data-pd-hero="off"] #pd-hero,
-html.pd-active[data-pd-page="home"][data-pd-hero="on"] [data-pd-region="native-title"] {
+html.pd-active[data-pd-hero="on"][data-pd-page="home"] [data-pd-region="native-title"],
+html.pd-active[data-pd-hero="on"][data-pd-page="project"] [data-pd-region="native-title"],
+html.pd-active[data-pd-hero="on"][data-pd-page="portals"] [data-pd-region="native-title"] {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -274,7 +276,9 @@ html.pd-active [data-pd-region="search"] textarea {
     box-shadow: 0 10px 30px rgba(20, 16, 12, 0.06);
 }
 
-html.pd-active[data-pd-page="home"][data-pd-chrome="full"] [data-pd-region="requests"] {
+html.pd-active[data-pd-chrome="full"][data-pd-page="home"] [data-pd-region="requests"],
+html.pd-active[data-pd-chrome="full"][data-pd-page="project"] [data-pd-region="requests"],
+html.pd-active[data-pd-chrome="full"][data-pd-page="portals"] [data-pd-region="requests"] {
     display: grid;
     grid-template-columns: repeat(var(--pd-cols), minmax(0, 1fr));
     gap: var(--pd-gap);
@@ -465,7 +469,7 @@ html.pd-active .pd-custom-html a {
     color: inherit;
 }
 
-html.pd-active:not([data-pd-page="home"]) #mock-home,
+html.pd-active:not([data-pd-page="home"]):not([data-pd-page="project"]):not([data-pd-page="portals"]) #mock-home,
 html.pd-active:not([data-pd-page="login"]) #mock-login,
 html.pd-active:not([data-pd-page="create"]) #mock-create,
 html.pd-active:not([data-pd-page="requests"]) #mock-requests-page {
@@ -672,4 +676,44 @@ html.pd-active .pd-widget-button {
     html.pd-active [data-pd-card]:hover {
         transform: none;
     }
+}
+
+html.pd-active [data-pd-menu-hidden="1"] {
+    display: none !important;
+}
+
+.pd-menu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--pd-header-bg, #14233B);
+    color: var(--pd-header-text, #F7F4EF);
+    position: relative;
+    z-index: 5;
+}
+
+.pd-menu-column {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.pd-menu-link {
+    color: inherit;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 0;
+    background: transparent;
+}
+
+html.pd-active[data-pd-page="create"] [data-pd-field] {
+    display: block;
+}
+
+html.pd-active[data-pd-page="create"][data-pd-field-radius="set"] input,
+html.pd-active[data-pd-page="create"][data-pd-field-radius="set"] textarea,
+html.pd-active[data-pd-page="create"][data-pd-field-radius="set"] select,
+html.pd-active[data-pd-page="create"][data-pd-field-radius="set"] button {
+    border-radius: var(--pd-field-radius, 0px) !important;
 }

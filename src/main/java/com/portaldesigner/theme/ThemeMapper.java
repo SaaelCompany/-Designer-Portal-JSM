@@ -114,6 +114,9 @@ public final class ThemeMapper {
         theme.footer.copyright = text(footer.get("copyright"), theme.footer.copyright, 160);
         theme.footer.columns = columns(footer.get("columns"), warnings);
         theme.footer.customHtml = html(str(footer.get("customHtml")), warnings, "footer.customHtml");
+        theme.portalMenu = menu(raw.get("portalMenu"), PortalTheme.Menu.portal(), warnings, "portalMenu");
+        theme.projectMenu = menu(raw.get("projectMenu"), PortalTheme.Menu.project(), warnings, "projectMenu");
+        theme.form = requestForm(raw.get("form"), warnings);
 
         Map<String, Object> responsive = map(raw.get("responsive"));
         theme.responsive.mobileMax = clamp(intVal(responsive.get("mobileMax"), theme.responsive.mobileMax), 360, 900, "responsive.mobileMax", warnings);
@@ -242,6 +245,9 @@ public final class ThemeMapper {
         footer.put("columns", columns);
         footer.put("customHtml", theme.footer.customHtml);
         root.put("footer", footer);
+        root.put("portalMenu", menuMap(theme.portalMenu));
+        root.put("projectMenu", menuMap(theme.projectMenu));
+        root.put("form", formMap(theme.form));
 
         Map<String, Object> responsive = new LinkedHashMap<String, Object>();
         responsive.put("mobileMax", theme.responsive.mobileMax);
@@ -280,7 +286,10 @@ public final class ThemeMapper {
     private static boolean canvasKey(String key) {
         if ("header".equals(key) || "hero".equals(key) || "search".equals(key)
                 || "requests".equals(key) || "announcement".equals(key) || "footer".equals(key)
-                || "login".equals(key) || "form".equals(key)) {
+                || "login".equals(key) || "form".equals(key) || "portal-menu".equals(key) || "project-menu".equals(key)) {
+            return true;
+        }
+        if (key.startsWith("field-") && key.substring(6).matches("[A-Za-z0-9_\\-]{1,40}")) {
             return true;
         }
         return key.startsWith("card-") && key.substring(5).matches("[A-Za-z0-9_\\-]{1,40}");
@@ -318,7 +327,7 @@ public final class ThemeMapper {
             PortalTheme.Widget widget = new PortalTheme.Widget();
             widget.id = id;
             widget.type = oneOf(str(item.get("type")), "text", "text", "image", "button", "html", "tooltip");
-            widget.page = oneOf(str(item.get("page")), "home", "home", "requests", "create", "login", "all");
+            widget.page = oneOf(str(item.get("page")), "home", "home", "portals", "project", "requests", "create", "login", "all");
             widget.text = text(item.get("text"), "", 500);
             String href = Urls.safeHref(str(item.get("href")));
             if (!str(item.get("href")).trim().isEmpty() && href.isEmpty()) {
@@ -411,6 +420,97 @@ public final class ThemeMapper {
         return value;
     }
 
+    private static PortalTheme.Menu menu(Object raw, PortalTheme.Menu fallback, List<String> warnings, String field) {
+        PortalTheme.Menu menu = new PortalTheme.Menu();
+        menu.mode = fallback.mode;
+        menu.direction = fallback.direction;
+        menu.fontSize = fallback.fontSize;
+        menu.radius = fallback.radius;
+        menu.gap = fallback.gap;
+        menu.items = new ArrayList<PortalTheme.Link>(fallback.items);
+        if (!(raw instanceof Map)) {
+            return menu;
+        }
+        Map<String, Object> map = map(raw);
+        menu.mode = oneOf(str(map.get("mode")), fallback.mode, "replace", "theme", "hidden");
+        menu.direction = oneOf(str(map.get("direction")), fallback.direction, "row", "column");
+        if (!str(map.get("color")).trim().isEmpty()) {
+            menu.color = color(map, "color", "", warnings);
+        }
+        if (!str(map.get("background")).trim().isEmpty()) {
+            menu.background = color(map, "background", "", warnings);
+        }
+        menu.fontFamily = fontFamily(str(map.get("fontFamily")));
+        menu.fontSize = clampSilent(intVal(map.get("fontSize"), fallback.fontSize), 0, 72);
+        menu.radius = clampSilent(intVal(map.get("radius"), fallback.radius), 0, 48);
+        menu.gap = clampSilent(intVal(map.get("gap"), fallback.gap), 0, 48);
+        if (map.get("items") != null) {
+            menu.items = menuLinks(map.get("items"), warnings);
+        }
+        menu.desktop = spot(map.get("desktop"));
+        menu.tablet = spot(map.get("tablet"));
+        menu.mobile = spot(map.get("mobile"));
+        if (menu.items.isEmpty()) {
+            warnings.add(field);
+        }
+        return menu;
+    }
+
+    private static Map<String, Object> menuMap(PortalTheme.Menu menu) {
+        PortalTheme.Menu source = menu == null ? new PortalTheme.Menu() : menu;
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("mode", source.mode);
+        map.put("direction", source.direction);
+        map.put("color", source.color);
+        map.put("background", source.background);
+        map.put("fontFamily", source.fontFamily);
+        map.put("fontSize", source.fontSize);
+        map.put("radius", source.radius);
+        map.put("gap", source.gap);
+        map.put("items", linkMaps(source.items));
+        map.put("desktop", spotMapOne(source.desktop));
+        map.put("tablet", spotMapOne(source.tablet));
+        map.put("mobile", spotMapOne(source.mobile));
+        return map;
+    }
+
+    private static PortalTheme.RequestForm requestForm(Object raw, List<String> warnings) {
+        PortalTheme.RequestForm form = new PortalTheme.RequestForm();
+        if (!(raw instanceof Map)) {
+            return form;
+        }
+        Map<String, Object> map = map(raw);
+        int radius = intVal(map.get("radius"), -1);
+        form.radius = radius < 0 ? -1 : clampSilent(radius, 0, 48);
+        form.gap = clampSilent(intVal(map.get("gap"), form.gap), 0, 64);
+        int fontSize = intVal(map.get("fontSize"), 0);
+        form.fontSize = fontSize <= 0 ? 0 : clampSilent(fontSize, 10, 72);
+        if (!str(map.get("color")).trim().isEmpty()) {
+            form.color = color(map, "color", "", warnings);
+        }
+        if (!str(map.get("background")).trim().isEmpty()) {
+            form.background = color(map, "background", "", warnings);
+        }
+        if (!str(map.get("labelColor")).trim().isEmpty()) {
+            form.labelColor = color(map, "labelColor", "", warnings);
+        }
+        form.fontFamily = fontFamily(str(map.get("fontFamily")));
+        return form;
+    }
+
+    private static Map<String, Object> formMap(PortalTheme.RequestForm form) {
+        PortalTheme.RequestForm source = form == null ? new PortalTheme.RequestForm() : form;
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        map.put("radius", source.radius);
+        map.put("gap", source.gap);
+        map.put("fontSize", source.fontSize);
+        map.put("color", source.color);
+        map.put("background", source.background);
+        map.put("labelColor", source.labelColor);
+        map.put("fontFamily", source.fontFamily);
+        return map;
+    }
+
     private static List<PortalTheme.ElementRule> elements(Object raw, List<String> warnings) {
         List<PortalTheme.ElementRule> rules = new ArrayList<PortalTheme.ElementRule>();
         if (!(raw instanceof List)) {
@@ -427,7 +527,7 @@ public final class ThemeMapper {
             }
             PortalTheme.ElementRule rule = new PortalTheme.ElementRule();
             rule.id = id;
-            rule.page = oneOf(str(item.get("page")), "home", "home", "requests", "create", "login", "all");
+            rule.page = oneOf(str(item.get("page")), "home", "home", "portals", "project", "requests", "create", "login", "all");
             rule.selector = selector;
             rule.label = text(item.get("label"), "", 80);
             rule.look = look(map(item.get("look")), warnings);
@@ -589,6 +689,29 @@ public final class ThemeMapper {
             }
         }
         return columns;
+    }
+
+    private static List<PortalTheme.Link> menuLinks(Object raw, List<String> warnings) {
+        List<PortalTheme.Link> links = new ArrayList<PortalTheme.Link>();
+        if (!(raw instanceof List)) {
+            return links;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && links.size() < 16; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String label = text(item.get("label"), "", 60);
+            String token = str(item.get("href")).trim();
+            String href = Urls.safeHref(token);
+            if (href.isEmpty() && ("{portal}".equals(token) || "{portals}".equals(token) || "{requests}".equals(token) || "{login}".equals(token))) {
+                href = token;
+            }
+            if (label.isEmpty() || href.isEmpty()) {
+                warnings.add("portalMenu");
+                continue;
+            }
+            links.add(new PortalTheme.Link(label, href));
+        }
+        return links;
     }
 
     private static List<PortalTheme.Link> links(Object raw, int max, List<String> warnings) {

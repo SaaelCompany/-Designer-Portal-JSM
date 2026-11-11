@@ -21,6 +21,9 @@ public final class PortalTheme {
     public Requests requests = new Requests();
     public Announcement announcement = new Announcement();
     public Footer footer = new Footer();
+    public Menu portalMenu = Menu.portal();
+    public Menu projectMenu = Menu.project();
+    public RequestForm form = new RequestForm();
     public Responsive responsive = new Responsive();
     public Canvas canvas = new Canvas();
     public List<ElementRule> elements = new ArrayList<ElementRule>();
@@ -227,6 +230,49 @@ public final class PortalTheme {
         public int padding = -1;
         public int width;
         public int height;
+    }
+
+    /** A menu the designer draws instead of the Jira customer navigation. */
+    public static final class Menu {
+        public String mode = "replace";
+        public String direction = "row";
+        public String color = "";
+        public String background = "";
+        public String fontFamily = "";
+        public int fontSize = 14;
+        public int radius;
+        public int gap = 8;
+        public List<Link> items = new ArrayList<Link>();
+        public Spot desktop = new Spot();
+        public Spot tablet = new Spot();
+        public Spot mobile = new Spot();
+
+        public static Menu portal() {
+            Menu menu = new Menu();
+            menu.items.add(new Link("Порталы", "{portals}"));
+            menu.items.add(new Link("Запросы", "{requests}"));
+            menu.items.add(new Link("Войти", "{login}"));
+            return menu;
+        }
+
+        public static Menu project() {
+            Menu menu = new Menu();
+            menu.items.add(new Link("Портал", "{portal}"));
+            menu.items.add(new Link("Все порталы", "{portals}"));
+            menu.items.add(new Link("Запросы", "{requests}"));
+            return menu;
+        }
+    }
+
+    /** Shared look of the request form. Radius 0 turns rounding off. -1 leaves the control untouched. */
+    public static final class RequestForm {
+        public int radius = -1;
+        public int gap = 16;
+        public int fontSize;
+        public String color = "";
+        public String background = "";
+        public String labelColor = "";
+        public String fontFamily = "";
     }
 
     public static final class Column {

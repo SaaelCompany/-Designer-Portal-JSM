@@ -8,6 +8,8 @@
             all: "Все порталы",
             portalPh: "ID",
             home: "Главная",
+            pagePortals: "Порталы",
+            pageProject: "Проект",
             pageRequests: "Запросы",
             login: "Вход",
             create: "Заявка",
@@ -64,6 +66,16 @@
             tipText: "Текст подсказки",
             tipTarget: "К какому объекту",
             chromeAll: "Та же шапка и подвал на страницах запросов",
+            portalMenu: "Меню портала",
+            projectMenu: "Меню проекта",
+            requestForm: "Форма заявки",
+            menuRow: "В строку",
+            menuColumn: "Столбцом",
+            menuDirection: "Как расположено",
+            radiusOff: "0 отключает скругление.",
+            menuHint: "Это меню рисуется вместо штатного. Пункты можно переименовать, переставить и удалить. Само меню перетаскивается по странице.",
+            formHint: "Кликните поле, подпись или кнопку и перетащите их. Ниже общий вид формы: цвет, шрифт и скругление. 0 у скругления делает углы прямыми.",
+            formLabel: "Цвет подписи",
             browse: "Переход",
             browseOn: "Режим перехода: ссылки открывают страницы портала. Нажмите «Переход» ещё раз, чтобы выбирать объекты.",
             restore: "Стандартный портал",
@@ -201,6 +213,8 @@
             all: "All portals",
             portalPh: "ID",
             home: "Home",
+            pagePortals: "Portals",
+            pageProject: "Project",
             pageRequests: "Requests",
             login: "Login",
             create: "Request",
@@ -257,6 +271,16 @@
             tipText: "Tooltip text",
             tipTarget: "Attached to",
             chromeAll: "The same header and footer on request pages",
+            portalMenu: "Portal menu",
+            projectMenu: "Project menu",
+            requestForm: "Request form",
+            menuRow: "Row",
+            menuColumn: "Column",
+            menuDirection: "Direction",
+            radiusOff: "0 turns rounding off.",
+            menuHint: "This menu replaces the standard one. Rename, reorder and remove items. Drag the menu itself around the page.",
+            formHint: "Click a field, label or button and drag it. The settings below cover the whole form: color, font and corners. 0 makes the corners square.",
+            formLabel: "Label color",
             browse: "Browse",
             browseOn: "Browse mode: links open portal pages. Press Browse again to select objects.",
             restore: "Standard portal",
@@ -416,7 +440,7 @@
         globalTheme: null,
         presets: [],
         device: "desktop",
-        page: "home",
+        page: "project",
         section: "hero",
         widgetId: "",
         dirty: false,
@@ -596,6 +620,11 @@
         theme.canvas.widgets = theme.canvas.widgets || [];
         theme.elements = theme.elements || [];
         theme.header = theme.header || {};
+        theme.portalMenu = theme.portalMenu || {mode: "replace", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.projectMenu = theme.projectMenu || {mode: "replace", direction: "row", color: "", background: "", fontFamily: "", fontSize: 14, radius: 0, gap: 8, items: [], desktop: {}, tablet: {}, mobile: {}};
+        theme.portalMenu.items = theme.portalMenu.items || [];
+        theme.projectMenu.items = theme.projectMenu.items || [];
+        theme.form = theme.form || {radius: -1, gap: 16, fontSize: 0, color: "", background: "", labelColor: "", fontFamily: ""};
         return theme;
     }
 
@@ -986,6 +1015,9 @@
         var id = state.portalId;
         var base = (window.PD_CONTEXT || "") + "/servicedesk/customer";
         var q = "pdPreview=1";
+        if (state.page === "portals") {
+            return base + "/portals?" + q;
+        }
         if (state.page === "requests") {
             return base + "/user/requests?" + q;
         }
@@ -1145,7 +1177,7 @@
     }
 
     function renderSegments() {
-        fillSeg("pages", [["home", "home"], ["requests", "pageRequests"], ["login", "login"], ["create", "create"]], state.page, function (id) {
+        fillSeg("pages", [["portals", "pagePortals"], ["project", "pageProject"], ["create", "create"], ["requests", "pageRequests"], ["login", "login"]], state.page, function (id) {
             state.page = id;
             state.picked = null;
             renderSegments();
@@ -1180,7 +1212,7 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "canvas", "object", "screens", "css"].forEach(function (id) {
+        ["theme", "header", "portalMenu", "projectMenu", "requestForm", "hero", "search", "requests", "announcement", "footer", "canvas", "object", "screens", "css"].forEach(function (id) {
             host.appendChild(h("button", {
                 type: "button",
                 class: state.section === id ? "active" : "",
@@ -1398,6 +1430,12 @@
             widget[deviceKey()] = widget[deviceKey()] || blankSpot(true);
             return widget[deviceKey()];
         }
+        if (key === "portal-menu" || key === "project-menu") {
+            ensureShape(state.theme);
+            var menu = key === "portal-menu" ? state.theme.portalMenu : state.theme.projectMenu;
+            menu[deviceKey()] = menu[deviceKey()] || blankSpot(false);
+            return menu[deviceKey()];
+        }
         if (key.indexOf("el-") === 0) {
             var rule = elementById(key.substring(3));
             if (!rule) {
@@ -1426,6 +1464,10 @@
                         list[w][deviceKey()] = spot;
                     }
                 }
+            } else if (key === "portal-menu" || key === "project-menu") {
+                ensureShape(theme);
+                var menu = key === "portal-menu" ? theme.portalMenu : theme.projectMenu;
+                menu[deviceKey()] = spot;
             } else if (key.indexOf("el-") === 0) {
                 ensureShape(theme);
                 var rules = theme.elements;
@@ -1894,6 +1936,12 @@
             renderTheme(host);
         } else if (state.section === "header") {
             renderHeader(host);
+        } else if (state.section === "portalMenu") {
+            renderPortalMenu(host);
+        } else if (state.section === "projectMenu") {
+            renderProjectMenu(host);
+        } else if (state.section === "requestForm") {
+            renderRequestForm(host);
         } else if (state.section === "hero") {
             renderHero(host);
         } else if (state.section === "search") {
@@ -2153,6 +2201,99 @@
         host.appendChild(field("layout.shadow", t("shadow"), selectInput("layout.shadow", [["none", "none"], ["soft", "soft"], ["strong", "strong"]])));
         host.appendChild(field(pathFor("layout.pagePadding"), t("pad"), numberInput("layout.pagePadding", 0, 64)));
         host.appendChild(field("layout.backgroundImage", t("pageImage"), imageInput("layout.backgroundImage")));
+    }
+
+    function menuItems(list) {
+        var wrap = h("div");
+        (list || []).forEach(function (link, index) {
+            var label = h("input", {type: "text", value: link.label || ""});
+            var href = h("input", {type: "text", value: link.href || ""});
+            label.addEventListener("input", function () {
+                remember();
+                link.label = label.value;
+                markDirty();
+                scheduleCompile();
+            });
+            href.addEventListener("input", function () {
+                remember();
+                link.href = href.value;
+                markDirty();
+                scheduleCompile();
+            });
+            var up = h("button", {type: "button", class: "text-btn", text: t("moveUp"), onclick: function () {
+                if (index < 1) return;
+                remember();
+                var swap = list[index - 1];
+                list[index - 1] = list[index];
+                list[index] = swap;
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            var down = h("button", {type: "button", class: "text-btn", text: t("moveDown"), onclick: function () {
+                if (index >= list.length - 1) return;
+                remember();
+                var swap = list[index + 1];
+                list[index + 1] = list[index];
+                list[index] = swap;
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            var remove = h("button", {type: "button", class: "icon-btn", text: "×", onclick: function () {
+                remember();
+                list.splice(index, 1);
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }});
+            wrap.appendChild(h("div", {class: "link-row"}, [label, href, up, down, remove]));
+        });
+        wrap.appendChild(h("button", {type: "button", class: "text-btn", text: t("addLink"), onclick: function () {
+            remember();
+            list.push({label: t("newLink"), href: "/"});
+            markDirty();
+            renderInspector();
+            scheduleCompile();
+        }}));
+        return wrap;
+    }
+
+    function renderMenuEditor(host, path) {
+        ensureShape(state.theme);
+        var menu = getPath(state.theme, path);
+        host.appendChild(h("p", {class: "hint", text: t("menuHint")}));
+        host.appendChild(field(path + ".mode", t("mode"), selectInput(path + ".mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field(path + ".direction", t("menuDirection"), selectInput(path + ".direction", [["row", "menuRow"], ["column", "menuColumn"]])));
+        host.appendChild(field(path + ".color", t("objectColor"), textInput(path + ".color")));
+        host.appendChild(field(path + ".background", t("fillColor"), textInput(path + ".background")));
+        host.appendChild(field(path + ".fontFamily", t("customFont"), textInput(path + ".fontFamily")));
+        host.appendChild(field(path + ".fontSize", t("fontSize"), numberInput(path + ".fontSize", 0, 72)));
+        host.appendChild(field(path + ".radius", t("radius"), numberInput(path + ".radius", 0, 48)));
+        host.appendChild(h("p", {class: "hint", text: t("radiusOff")}));
+        host.appendChild(field(path + ".gap", t("gap"), numberInput(path + ".gap", 0, 48)));
+        host.appendChild(menuItems(menu.items));
+    }
+
+    function renderPortalMenu(host) {
+        renderMenuEditor(host, "portalMenu");
+    }
+
+    function renderProjectMenu(host) {
+        renderMenuEditor(host, "projectMenu");
+    }
+
+    function renderRequestForm(host) {
+        ensureShape(state.theme);
+        host.appendChild(h("p", {class: "hint", text: t("formHint")}));
+        host.appendChild(field("form.radius", t("radius"), numberInput("form.radius", -1, 48)));
+        host.appendChild(h("p", {class: "hint", text: t("radiusOff")}));
+        host.appendChild(field("form.gap", t("gap"), numberInput("form.gap", 0, 64)));
+        host.appendChild(field("form.fontSize", t("fontSize"), numberInput("form.fontSize", 0, 72)));
+        host.appendChild(field("form.fontFamily", t("customFont"), textInput("form.fontFamily")));
+        host.appendChild(field("form.color", t("objectColor"), textInput("form.color")));
+        host.appendChild(field("form.background", t("fillColor"), textInput("form.background")));
+        host.appendChild(field("form.labelColor", t("formLabel"), textInput("form.labelColor")));
     }
 
     function renderHeader(host) {
