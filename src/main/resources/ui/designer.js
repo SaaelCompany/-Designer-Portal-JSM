@@ -63,8 +63,7 @@
             addTip: "Подсказка",
             tipText: "Текст подсказки",
             tipTarget: "К какому объекту",
-            chromeAll: "Своя шапка и подвал на всех страницах",
-            takeover: "Заменить шапку, подвал и сетку карточек",
+            chromeAll: "Та же шапка и подвал на страницах запросов",
             browse: "Переход",
             browseOn: "Режим перехода: ссылки открывают страницы портала. Нажмите «Переход» ещё раз, чтобы выбирать объекты.",
             restore: "Стандартный портал",
@@ -257,8 +256,7 @@
             addTip: "Tooltip",
             tipText: "Tooltip text",
             tipTarget: "Attached to",
-            chromeAll: "Custom header and footer on every page",
-            takeover: "Replace header, footer and the card grid",
+            chromeAll: "The same header and footer on request pages",
             browse: "Browse",
             browseOn: "Browse mode: links open portal pages. Press Browse again to select objects.",
             restore: "Standard portal",
@@ -2158,7 +2156,6 @@
     }
 
     function renderHeader(host) {
-        host.appendChild(checkInput("header.takeover", t("takeover")));
         host.appendChild(checkInput("header.allPages", t("chromeAll")));
         host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));

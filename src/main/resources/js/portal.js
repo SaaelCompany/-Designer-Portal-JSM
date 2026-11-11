@@ -63,12 +63,14 @@
         return rulePage === page;
     }
 
-    function fullChrome(theme, page, mock) {
-        var header = (theme && theme.header) || {};
-        if (header.allPages) {
-            return page !== "login";
+    function fullChrome(theme, page) {
+        if (page === "create" || page === "login") {
+            return false;
         }
-        return page === "home" && (!!header.takeover || !!mock);
+        if (page === "home") {
+            return true;
+        }
+        return !!((theme && theme.header && theme.header.allPages));
     }
 
     function addClass(el, name) {
@@ -922,7 +924,7 @@
         setAttr(html, "data-pd-desc", theme.requests && theme.requests.showDescription === false ? "off" : "on");
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");
-        var structural = fullChrome(theme, page, options.mock);
+        var structural = fullChrome(theme, page);
         setAttr(html, "data-pd-page", page);
         setAttr(html, "data-pd-chrome", structural ? "full" : "quiet");
         if (options.css != null) {
