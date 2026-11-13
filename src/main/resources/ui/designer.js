@@ -1797,6 +1797,9 @@
         event.returnValue = "";
     });
 
+    if (document.getElementById("header")) {
+        document.documentElement.className += " pd-embedded";
+    }
     renderShell();
     loadPresets(function () {
         loadPortals();

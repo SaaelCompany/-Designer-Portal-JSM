@@ -48,8 +48,11 @@ public class DesignerServlet extends HttpServlet {
         if (AdminGuard.requireAdmin(auth, permissions) == null) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/html; charset=UTF-8");
-            response.getWriter().write("<!DOCTYPE html><meta charset=\"utf-8\"><title>Portal Designer</title>"
-                    + "<p>Нужны права администратора Jira, чтобы открыть конструктор портала.</p>");
+            response.getWriter().write("<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                    + "<meta name=\"decorator\" content=\"atl.admin\"/>"
+                    + "<title>Конструктор портала</title></head><body>"
+                    + "<p>Нужны права администратора Jira, чтобы открыть конструктор портала.</p>"
+                    + "</body></html>");
             return;
         }
         String html = template();

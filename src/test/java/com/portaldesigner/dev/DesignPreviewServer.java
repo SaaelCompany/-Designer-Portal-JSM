@@ -51,7 +51,7 @@ public final class DesignPreviewServer {
                         .replace("@@CONTEXT_JSON@@", "\"\"")
                         .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
                         .replace("@@PROJECT_JSON@@", "\"IT\"");
-                send(exchange, 200, "text/html; charset=UTF-8", html.getBytes(StandardCharsets.UTF_8));
+                send(exchange, 200, "text/html; charset=UTF-8", embedInJiraChrome(html).getBytes(StandardCharsets.UTF_8));
                 return;
             }
             if (path.startsWith("/download/resources/" + PLUGIN_KEY + ":")) {
@@ -130,6 +130,29 @@ public final class DesignPreviewServer {
         } else {
             send(exchange, 404, "text/plain", "no route".getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    /** Stand-in for Jira's atl.admin decorator: header plus the administration menu. */
+    private static String embedInJiraChrome(String page) {
+        int headStart = page.indexOf("<head>");
+        int headEnd = page.indexOf("</head>");
+        int bodyStart = page.indexOf("<body>");
+        int bodyEnd = page.indexOf("</body>");
+        String head = page.substring(headStart + "<head>".length(), headEnd);
+        String body = page.substring(bodyStart + "<body>".length(), bodyEnd);
+        return "<!DOCTYPE html><html lang=\"ru\"><head>" + head + "<style>"
+                + "#header{height:40px;background:#0747a6;color:#fff;display:flex;align-items:center;padding:0 16px;font:14px/1.2 sans-serif}"
+                + "#header span{margin-left:24px;opacity:.85}"
+                + "#content{display:flex;align-items:stretch;min-height:calc(100vh - 40px)}"
+                + "#admin-menu{width:220px;flex:0 0 220px;background:#f4f5f7;border-right:1px solid #dfe1e6;padding:16px;font:14px/1.4 sans-serif;color:#172b4d}"
+                + "#admin-menu strong{display:block;margin-bottom:8px}"
+                + "#admin-menu .on{background:#fff;border-radius:3px;padding:6px 8px}"
+                + "#admin-content{flex:1;min-width:0;padding:20px}"
+                + "</style></head><body>"
+                + "<header id=\"header\">Jira<span>Администрирование</span></header>"
+                + "<div id=\"content\"><nav id=\"admin-menu\"><strong>Клиентский портал</strong>"
+                + "<div class=\"on\">Конструктор портала</div></nav>"
+                + "<div id=\"admin-content\">" + body + "</div></div></body></html>";
     }
 
     private static String customerHtml(String body) {
