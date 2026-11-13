@@ -89,9 +89,31 @@ public class ThemePipelineTest {
             assertTrue("missing " + token, css.contains(token));
         }
         String js = read("/js/portal.js");
+        assertTrue(css.contains("pd-replace"));
         assertTrue(js.contains("PortalDesigner"));
         assertTrue(js.contains("public-theme"));
         assertTrue(js.contains("MutationObserver"));
+        assertTrue(js.contains("pd-replace"));
+        assertTrue(js.contains("readCatalog"));
+    }
+
+    @Test
+    public void requestOrderRoundTripsAndDropsUnsafeIds() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.requests.order.add("12");
+        theme.requests.order.add("10");
+        Map<String, Object> stored = ThemeMapper.toMap(theme);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requests = (Map<String, Object>) stored.get("requests");
+        @SuppressWarnings("unchecked")
+        java.util.List<String> incoming = new java.util.ArrayList<String>();
+        incoming.add("15");
+        incoming.add("../etc");
+        incoming.add("11");
+        requests.put("order", incoming);
+        MappedTheme mapped = ThemeMapper.fromMap(stored);
+        assertEquals(java.util.Arrays.asList("15", "11"), mapped.theme.requests.order);
+        assertTrue(mapped.warnings.contains("requests.order"));
     }
 
     @Test

@@ -1,5 +1,35 @@
 /* Portal Designer structural skin. Colors, type size and breakpoints come from the compiled stylesheet. */
 
+html.pd-replace body {
+    margin: 0;
+    background: var(--pd-bg);
+}
+
+html.pd-replace body > :not(#pd-page) {
+    display: none !important;
+}
+
+html.pd-active .pd-tile {
+    cursor: grab;
+}
+
+html.pd-replace #pd-page {
+    display: flex !important;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+html.pd-replace #pd-main {
+    flex: 1 0 auto;
+}
+
+html.pd-replace .pd-kept {
+    max-width: 640px;
+    margin: 48px auto;
+    padding: 0 24px;
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 html.pd-active {
     background: var(--pd-bg);
     color: var(--pd-text);

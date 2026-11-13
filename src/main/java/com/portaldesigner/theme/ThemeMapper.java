@@ -93,6 +93,7 @@ public final class ThemeMapper {
         theme.requests.gap = clamp(intVal(requests.get("gap"), theme.requests.gap), 0, 40, "requests.gap", warnings);
         theme.requests.showDescription = bool(requests.get("showDescription"), theme.requests.showDescription);
         theme.requests.cardStyle = oneOf(str(requests.get("cardStyle")), theme.requests.cardStyle, "elevated", "outline", "flat");
+        theme.requests.order = idList(requests.get("order"), warnings);
 
         Map<String, Object> announcement = map(raw.get("announcement"));
         theme.announcement.visible = bool(announcement.get("visible"), theme.announcement.visible);
@@ -203,6 +204,7 @@ public final class ThemeMapper {
         requests.put("gap", theme.requests.gap);
         requests.put("showDescription", theme.requests.showDescription);
         requests.put("cardStyle", theme.requests.cardStyle);
+        requests.put("order", theme.requests.order);
         root.put("requests", requests);
 
         Map<String, Object> announcement = new LinkedHashMap<String, Object>();
@@ -472,5 +474,22 @@ public final class ThemeMapper {
             }
         }
         return fallback;
+    }
+
+    private static List<String> idList(Object raw, List<String> warnings) {
+        List<String> ids = new ArrayList<String>();
+        if (!(raw instanceof List)) {
+            return ids;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && ids.size() < 40; i++) {
+            String id = str(list.get(i)).trim();
+            if (id.matches("[A-Za-z0-9_-]{1,40}")) {
+                ids.add(id);
+            } else if (!id.isEmpty()) {
+                warnings.add("requests.order");
+            }
+        }
+        return ids;
     }
 }

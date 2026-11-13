@@ -90,6 +90,18 @@ public final class DesignPreviewServer {
                 routeTheme(exchange, themes, path, query);
                 return;
             }
+            if ("/servicedesk/customer/portals".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(portalsBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/servicedesk/customer/portal/1".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(projectBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/servicedesk/customer/portal/1/create/10".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(createBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             send(exchange, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
         } catch (ThemeException ex) {
             sendJson(exchange, 400, error(ex.code()));
@@ -118,6 +130,35 @@ public final class DesignPreviewServer {
         } else {
             send(exchange, 404, "text/plain", "no route".getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    private static String customerHtml(String body) {
+        return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
+                + "</head><body>" + body
+                + "<script src=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js\"></script>"
+                + "</body></html>";
+    }
+
+    private static String portalsBody() {
+        return "<header id=\"jira-header\">Jira Service Management</header>"
+                + "<h1>Порталы</h1>"
+                + "<a href=\"/servicedesk/customer/portal/1\">IT поддержка <p>Техника и доступы</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/4\">Кадры <p>Отпуска и справки</p></a>";
+    }
+
+    private static String projectBody() {
+        return "<header id=\"jira-header\">Jira Service Management</header>"
+                + "<h1>IT поддержка</h1>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/10\">Доступ к системе <p>Учётная запись, права, VPN</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/11\">Не работает сервис <p>Сбой в рабочей системе</p></a>";
+    }
+
+    private static String createBody() {
+        return "<header id=\"jira-header\">Jira Service Management</header>"
+                + "<form id=\"create-form\"><h1>Новая заявка</h1>"
+                + "<label>Тема<input name=\"summary\"/></label>"
+                + "<button type=\"submit\">Отправить</button></form>";
     }
 
     private static Map<String, Object> samplePortals() {

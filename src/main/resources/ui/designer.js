@@ -85,6 +85,9 @@
             gap: "Интервал",
             cardStyle: "Вид карточек",
             descriptions: "Описания на карточках",
+            replaceHint: "Конструктор не перекрашивает портал Jira. Опубликованная страница целиком заменяет список порталов и страницу проекта. Форма заявки и вход остаются страницами Jira.",
+            cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
+            keptPage: "Форма входа и форма заявки остаются страницами Jira. Конструктор их не собирает заново.",
             layoutMode: "Раскладка",
             tone: "Тон",
             text: "Текст",
@@ -224,6 +227,9 @@
             gap: "Gap",
             cardStyle: "Card style",
             descriptions: "Card descriptions",
+            replaceHint: "The designer does not restyle the Jira portal. The published page replaces the portal list and the project page. The request form and the login page stay Jira pages.",
+            cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
+            keptPage: "The login page and the request form stay Jira pages. The designer does not rebuild them.",
             layoutMode: "Layout",
             tone: "Tone",
             text: "Text",
@@ -470,6 +476,7 @@
         theme.hero = theme.hero || {};
         theme.search = theme.search || {};
         theme.requests = theme.requests || {};
+        theme.requests.order = theme.requests.order || [];
         theme.announcement = theme.announcement || {};
         theme.footer = theme.footer || {};
         theme.footer.columns = theme.footer.columns || [];
@@ -557,25 +564,18 @@
         return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>" +
             "<link rel=\"stylesheet\" href=\"" + css + "\"/>" +
             "<style id=\"pd-generated-style\"></style></head><body>" +
-            "<header data-pd-region=\"header\"><span>Jira Service Management</span></header>" +
-            "<div id=\"mock-home\"><div class=\"native-search\"><input type=\"search\" placeholder=\"Поиск\"/></div>" +
-            "<h2 id=\"mock-group\">Популярные услуги</h2><div id=\"mock-requests\"></div></div>" +
-            "<div id=\"mock-login\"><form><h2>Вход</h2><label>Эл. почта<input type=\"email\"/></label>" +
-            "<label>Пароль<input type=\"password\"/></label><button type=\"submit\">Войти</button></form></div>" +
-            "<div id=\"mock-create\"><form><h2>Новая заявка</h2><label>Тема<input type=\"text\"/></label>" +
-            "<label>Описание<textarea rows=\"4\"></textarea></label><button type=\"submit\">Отправить</button></form></div>" +
-            "<footer data-pd-region=\"footer\">Jira Service Management</footer>" +
+            "<div id=\"pd-source\"></div>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
     }
 
     function fillCards(doc) {
-        var box = doc.getElementById("mock-requests");
+        var box = doc.getElementById("pd-source");
         if (!box) {
             return;
         }
         var types = state.requestTypes.length ? state.requestTypes : SAMPLE;
-        var sig = state.portalId + ":" + types.map(function (item) { return item.name; }).join("|");
+        var sig = state.portalId + ":" + types.map(function (item) { return item.id + ":" + item.name; }).join("|");
         if (box.getAttribute("data-sig") === sig) {
             return;
         }
@@ -583,28 +583,22 @@
         while (box.firstChild) {
             box.removeChild(box.firstChild);
         }
-        var portal = state.portalId === "global" ? "1" : state.portalId;
-        types.forEach(function (type, index) {
+        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "1";
+        types.forEach(function (type) {
             var link = doc.createElement("a");
-            link.href = "#";
-            link.setAttribute("data-pd-card", "1");
-            var icon = doc.createElement("span");
-            icon.className = "pd-card-icon";
-            icon.textContent = (type.name || "?").charAt(0).toUpperCase();
-            var title = doc.createElement("span");
-            title.className = "pd-card-title";
-            title.textContent = type.name || "";
-            var desc = doc.createElement("span");
-            desc.className = "pd-card-desc";
-            desc.setAttribute("data-pd-desc", "1");
-            desc.textContent = type.description || "";
-            link.appendChild(icon);
-            link.appendChild(title);
-            link.appendChild(desc);
+            link.href = "/servicedesk/customer/portal/" + portal + "/create/" + type.id;
+            link.appendChild(doc.createTextNode(type.name || ""));
+            if (type.description) {
+                var note = doc.createElement("p");
+                note.textContent = type.description;
+                link.appendChild(note);
+            }
             box.appendChild(link);
         });
-        box.setAttribute("data-pd-region", "requests");
-        box.setAttribute("data-pd-select", "requests");
+        var cards = doc.getElementById("pd-cards");
+        if (cards) {
+            cards.removeAttribute("data-pd-sig");
+        }
     }
 
     function armPreview(doc) {
@@ -627,6 +621,67 @@
                 node = node.parentNode;
             }
         }, true);
+        doc.addEventListener("pointerdown", function (event) {
+            var tile = event.target.closest ? event.target.closest(".pd-tile") : null;
+            if (!tile || !state.theme) {
+                return;
+            }
+            event.preventDefault();
+            if (tile.setPointerCapture && event.pointerId != null) {
+                try {
+                    tile.setPointerCapture(event.pointerId);
+                } catch (ignored) {
+                    /* capture is optional */
+                }
+            }
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var moved = false;
+            function move(ev) {
+                if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 6) {
+                    moved = true;
+                }
+            }
+            function up(ev) {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                if (tile.releasePointerCapture && ev.pointerId != null) {
+                    try {
+                        tile.releasePointerCapture(ev.pointerId);
+                    } catch (ignored) {
+                        /* already released */
+                    }
+                }
+                if (!moved) {
+                    return;
+                }
+                var under = doc.elementFromPoint(ev.clientX, ev.clientY);
+                var other = under && under.closest ? under.closest(".pd-tile") : null;
+                var box = doc.getElementById("pd-cards");
+                if (!other || other === tile || !box || other.parentNode !== box) {
+                    return;
+                }
+                remember();
+                var mark = doc.createComment("");
+                box.insertBefore(mark, tile);
+                box.insertBefore(tile, other);
+                box.insertBefore(other, mark);
+                box.removeChild(mark);
+                var ids = [];
+                for (var i = 0; i < box.children.length; i++) {
+                    var id = box.children[i].getAttribute("data-pd-type");
+                    if (id) {
+                        ids.push(id);
+                    }
+                }
+                ensureShape(state.theme);
+                state.theme.requests.order = ids;
+                markDirty();
+                scheduleCompile();
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        });
         doc.addEventListener("input", function (event) {
             var path = event.target.getAttribute && event.target.getAttribute("data-pd-bind");
             if (!path || !state.theme) {
@@ -658,6 +713,7 @@
             portalId: state.portalId,
             page: state.page,
             preview: true,
+            keptLabel: t("keptPage"),
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind]");
                 for (var i = 0; i < bound.length; i++) {
@@ -981,6 +1037,7 @@
     }
 
     function renderTheme(host) {
+        host.appendChild(h("p", {class: "hint", text: t("replaceHint")}));
         host.appendChild(h("div", {class: "block-label", text: t("presets")}));
         var presets = h("div", {class: "presets"});
         state.presets.forEach(function (preset) {
@@ -1058,6 +1115,7 @@
     }
 
     function renderRequests(host) {
+        host.appendChild(h("p", {class: "hint", text: t("cardOrderHint")}));
         host.appendChild(field("requests.layout", t("layoutMode"), selectInput("requests.layout", [["grid", "grid"], ["list", "list"]])));
         host.appendChild(field(pathFor("requests.columns"), t("columns"), numberInput("requests.columns", 1, 4)));
         host.appendChild(field("requests.gap", t("gap"), numberInput("requests.gap", 0, 40)));

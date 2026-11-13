@@ -25,7 +25,7 @@ public final class PortalTheme {
     public static final class Colors {
         public String primary = "#0B5FFF";
         public String primaryText = "#FFFFFF";
-        public String background = "#F4F1EA";
+        public String background = "#FFFFFF";
         public String surface = "#FFFFFF";
         public String text = "#1C1915";
         public String muted = "#6B645C";
@@ -94,6 +94,7 @@ public final class PortalTheme {
         public int gap = 16;
         public boolean showDescription = true;
         public String cardStyle = "elevated";
+        public List<String> order = new ArrayList<String>();
     }
 
     public static final class Announcement {

@@ -281,12 +281,14 @@
         hero.appendChild(inner);
     }
 
-    function renderFooter(doc, theme, ctx) {
+    function renderFooter(doc, parent, theme, ctx) {
         var footer = doc.getElementById("pd-footer");
         if (!footer) {
             footer = el(doc, "footer");
             footer.id = "pd-footer";
-            doc.body.appendChild(footer);
+            parent.appendChild(footer);
+        } else if (footer.parentNode !== parent) {
+            parent.appendChild(footer);
         }
         footer.setAttribute("data-pd-select", "footer");
         var footerSig = signature(theme);
@@ -329,117 +331,220 @@
         footer.appendChild(inner);
     }
 
-    function renderChrome(doc, theme, ctx) {
+    function owned(node) {
+        while (node) {
+            if (node.id === "pd-page") {
+                return true;
+            }
+            node = node.parentNode;
+        }
+        return false;
+    }
+
+    function readCatalog(doc) {
+        var requests = [];
+        var portals = [];
+        var seenRequest = {};
+        var seenPortal = {};
+        var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
+        for (var i = 0; i < links.length; i++) {
+            var link = links[i];
+            if (owned(link)) {
+                continue;
+            }
+            var href = (link.getAttribute("href") || "").split("?")[0];
+            var name = String(link.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            var description = "";
+            var notes = link.getElementsByTagName("p");
+            if (notes.length) {
+                description = String(notes[0].textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+                name = name.replace(description, "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            }
+            var created = /\/portal\/\d+\/create\/(\d+)\/?$/.exec(href);
+            var portal = /\/portal\/(\d+)\/?$/.exec(href);
+            if (created && !seenRequest[created[1]]) {
+                seenRequest[created[1]] = true;
+                requests.push({id: created[1], name: name, description: description, href: href});
+            } else if (portal && name && !seenPortal[portal[1]]) {
+                seenPortal[portal[1]] = true;
+                portals.push({id: portal[1], name: name, description: description, href: href});
+            }
+        }
+        return requests.length ? requests : portals;
+    }
+
+    function ordered(items, order) {
+        if (!order || !order.length) {
+            return items;
+        }
+        var rank = {};
+        for (var i = 0; i < order.length; i++) {
+            rank[String(order[i])] = i;
+        }
+        var copy = items.slice();
+        copy.sort(function (a, b) {
+            var ia = rank[a.id];
+            var ib = rank[b.id];
+            if (ia == null) {
+                ia = 1000;
+            }
+            if (ib == null) {
+                ib = 1000;
+            }
+            return ia - ib;
+        });
+        return copy;
+    }
+
+    function renderSearch(doc, parent, theme) {
+        var node = doc.getElementById("pd-search");
+        var model = theme.search || {};
+        if (model.visible === false) {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+            return;
+        }
+        if (!node) {
+            node = el(doc, "div");
+            node.id = "pd-search";
+            parent.appendChild(node);
+        }
+        node.setAttribute("data-pd-region", "search");
+        node.setAttribute("data-pd-select", "search");
+        var input = node.firstChild && node.firstChild.tagName === "INPUT" ? node.firstChild : null;
+        if (!input) {
+            input = doc.createElement("input");
+            input.setAttribute("type", "search");
+            input.addEventListener("input", function () {
+                var query = String(input.value || "").toLowerCase();
+                var cards = doc.getElementById("pd-cards");
+                if (!cards) {
+                    return;
+                }
+                for (var i = 0; i < cards.children.length; i++) {
+                    var text = String(cards.children[i].textContent || "").toLowerCase();
+                    cards.children[i].style.display = !query || text.indexOf(query) >= 0 ? "" : "none";
+                }
+            });
+            node.appendChild(input);
+        }
+        if ((input.getAttribute("placeholder") || "") !== (model.placeholder || "")) {
+            input.setAttribute("placeholder", model.placeholder || "");
+        }
+    }
+
+    function renderCards(doc, parent, theme) {
+        var box = doc.getElementById("pd-cards");
+        if (!box) {
+            box = el(doc, "div");
+            box.id = "pd-cards";
+            parent.appendChild(box);
+        }
+        box.setAttribute("data-pd-region", "requests");
+        box.setAttribute("data-pd-select", "requests");
+        var items = ordered(readCatalog(doc), theme.requests && theme.requests.order);
+        var sig = items.map(function (item) { return item.id + "\n" + item.name + "\n" + item.description; }).join("|");
+        var showDesc = !theme.requests || theme.requests.showDescription !== false;
+        sig += showDesc ? ":desc" : ":plain";
+        if (box.getAttribute("data-pd-sig") === sig && box.firstChild) {
+            return;
+        }
+        box.setAttribute("data-pd-sig", sig);
+        while (box.firstChild) {
+            box.removeChild(box.firstChild);
+        }
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var link = el(doc, "a", "pd-tile");
+            link.href = item.href || "#";
+            link.setAttribute("draggable", "false");
+            link.setAttribute("data-pd-card", "1");
+            link.setAttribute("data-pd-type", item.id);
+            link.appendChild(el(doc, "span", "pd-card-icon", (item.name || "?").charAt(0).toUpperCase()));
+            link.appendChild(el(doc, "span", "pd-card-title", item.name || ""));
+            if (showDesc && item.description) {
+                var desc = el(doc, "span", "pd-card-desc", item.description);
+                desc.setAttribute("data-pd-desc", "1");
+                link.appendChild(desc);
+            }
+            box.appendChild(link);
+        }
+    }
+
+    function replacePage(doc, theme, ctx, page) {
         if (!doc.body) {
             return;
+        }
+        var pageNode = doc.getElementById("pd-page");
+        if (!pageNode) {
+            pageNode = el(doc, "div");
+            pageNode.id = "pd-page";
+            doc.body.appendChild(pageNode);
         }
         var chrome = doc.getElementById("pd-chrome");
         if (!chrome) {
             chrome = el(doc, "div");
             chrome.id = "pd-chrome";
-            doc.body.insertBefore(chrome, doc.body.firstChild);
+            pageNode.appendChild(chrome);
         }
         renderAnnouncement(doc, chrome, theme);
-        renderHeader(doc, chrome, theme, ctx);
-        renderHero(doc, chrome, theme);
-        renderFooter(doc, theme, ctx);
-    }
-
-    function markRegions(doc, theme, page) {
-        var headers = doc.getElementsByTagName("header");
-        for (var h = 0; h < headers.length; h++) {
-            if (headers[h].id === "pd-header" || inChrome(headers[h])) {
-                continue;
-            }
-            setAttr(headers[h], "data-pd-region", "header");
-            break;
-        }
-        var inputs = doc.getElementsByTagName("input");
-        for (var i = 0; i < inputs.length; i++) {
-            var input = inputs[i];
-            if (inChrome(input)) {
-                continue;
-            }
-            var type = (input.getAttribute("type") || "").toLowerCase();
-            var placeholder = input.getAttribute("placeholder") || "";
-            var className = input.className || "";
-            if (type === "search" || /search|поиск/i.test(placeholder) || /search/i.test(String(className))) {
-                if (input.parentNode && !inChrome(input.parentNode)) {
-                    setAttr(input.parentNode, "data-pd-region", "search");
-                    setAttr(input.parentNode, "data-pd-select", "search");
-                }
-                if (theme.search && theme.search.placeholder && input.getAttribute("placeholder") !== theme.search.placeholder) {
-                    input.setAttribute("placeholder", theme.search.placeholder);
-                }
-                break;
+        if (!theme.header || theme.header.mode !== "hidden") {
+            renderHeader(doc, chrome, theme, ctx);
+        } else {
+            var header = doc.getElementById("pd-header");
+            if (header && header.parentNode) {
+                header.parentNode.removeChild(header);
             }
         }
-        var footers = doc.getElementsByTagName("footer");
-        for (var f = 0; f < footers.length; f++) {
-            if (footers[f].id === "pd-footer") {
-                continue;
-            }
-            setAttr(footers[f], "data-pd-region", "footer");
-        }
-        var headings = doc.getElementsByTagName("h1");
-        for (var t = 0; t < headings.length; t++) {
-            if (!inChrome(headings[t]) && headings[t].id !== "pd-hero-title") {
-                setAttr(headings[t], "data-pd-region", "native-title");
+        if (showHero(theme, page)) {
+            renderHero(doc, chrome, theme);
+        } else {
+            var hero = doc.getElementById("pd-hero");
+            if (hero && hero.parentNode) {
+                hero.parentNode.removeChild(hero);
             }
         }
-        markCards(doc);
-        if (page === "login" || page === "create") {
-            var forms = doc.getElementsByTagName("form");
-            if (forms.length && forms[0].parentNode) {
-                setAttr(forms[0].parentNode, "data-pd-region", page === "login" ? "login" : "form");
+        renderSearch(doc, chrome, theme);
+        var main = doc.getElementById("pd-main");
+        if (!main) {
+            main = el(doc, "main");
+            main.id = "pd-main";
+            pageNode.appendChild(main);
+        }
+        renderCards(doc, main, theme);
+        if (!theme.footer || theme.footer.mode !== "hidden") {
+            renderFooter(doc, pageNode, theme, ctx);
+        } else {
+            var footer = doc.getElementById("pd-footer");
+            if (footer && footer.parentNode) {
+                footer.parentNode.removeChild(footer);
             }
         }
     }
 
-    function markCards(doc) {
-        var links = doc.getElementsByTagName("a");
-        var groups = [];
-        for (var i = 0; i < links.length; i++) {
-            var link = links[i];
-            if (inChrome(link)) {
-                continue;
-            }
-            var href = (link.getAttribute("href") || "").split("?")[0];
-            if (!/\/servicedesk\/customer\/portal\/\d+(\/create\/\d+)?\/?$/.test(href)) {
-                continue;
-            }
-            var parent = link.parentNode;
-            if (!parent || parent.tagName === "NAV" || parent.tagName === "HEADER" || parent.tagName === "OL") {
-                continue;
-            }
-            var found = null;
-            for (var g = 0; g < groups.length; g++) {
-                if (groups[g].parent === parent) {
-                    found = groups[g];
-                    break;
-                }
-            }
-            if (!found) {
-                found = {parent: parent, count: 0};
-                groups.push(found);
-            }
-            found.count++;
-            link.setAttribute("data-pd-card", "1");
-            var described = link.getElementsByTagName("p");
-            if (described.length) {
-                described[0].setAttribute("data-pd-desc", "1");
-            }
+    function dropPage(doc) {
+        var built = doc.getElementById("pd-page");
+        if (built && built.parentNode) {
+            built.parentNode.removeChild(built);
         }
-        var best = null;
-        for (var k = 0; k < groups.length; k++) {
-            if (!best || groups[k].count > best.count) {
-                best = groups[k];
-            }
+        var html = doc.documentElement;
+        if (html) {
+            removeClass(html, "pd-active");
+            removeClass(html, "pd-replace");
         }
-        if (best) {
-            best.parent.setAttribute("data-pd-region", "requests");
-            best.parent.setAttribute("data-pd-select", "requests");
+    }
+
+    function showKept(doc, label) {
+        if (!doc.body) {
+            return;
         }
+        var note = el(doc, "div");
+        note.id = "pd-page";
+        note.className = "pd-kept";
+        note.appendChild(el(doc, "p", null, label || "Форма входа и форма заявки остаются страницами Jira."));
+        doc.body.appendChild(note);
+        addClass(doc.documentElement, "pd-replace");
     }
 
     function apply(options) {
@@ -455,7 +560,15 @@
             contextPath: options.contextPath || "",
             portalId: options.portalId || "global"
         };
+        if (page !== "home") {
+            dropPage(doc);
+            if (options.preview) {
+                showKept(doc, options.keptLabel);
+            }
+            return;
+        }
         addClass(html, "pd-active");
+        addClass(html, "pd-replace");
         setAttr(html, "data-pd-header-mode", (theme.header && theme.header.mode) || "replace");
         setAttr(html, "data-pd-footer-mode", (theme.footer && theme.footer.mode) || "replace");
         setAttr(html, "data-pd-sticky", theme.header && theme.header.sticky === false ? "0" : "1");
@@ -470,8 +583,7 @@
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        renderChrome(doc, theme, ctx);
-        markRegions(doc, theme, page);
+        replacePage(doc, theme, ctx, page);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
@@ -480,6 +592,11 @@
     function teardown(doc) {
         var html = doc.documentElement;
         removeClass(html, "pd-active");
+        removeClass(html, "pd-replace");
+        var built = doc.getElementById("pd-page");
+        if (built && built.parentNode) {
+            built.parentNode.removeChild(built);
+        }
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
             style.parentNode.removeChild(style);
