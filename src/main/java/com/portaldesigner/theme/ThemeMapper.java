@@ -123,6 +123,7 @@ public final class ThemeMapper {
         }
         theme.customCss = cleanCss;
         theme.blocks = blocks(raw.get("blocks"), warnings);
+        theme.placements = placements(raw.get("placements"), warnings);
         return new MappedTheme(theme, warnings);
     }
 
@@ -236,6 +237,7 @@ public final class ThemeMapper {
         root.put("responsive", responsive);
         root.put("customCss", theme.customCss);
         root.put("blocks", blockMaps(theme.blocks));
+        root.put("placements", placementMaps(theme.placements));
         return root;
     }
 
@@ -350,6 +352,48 @@ public final class ThemeMapper {
             }
         }
         return blocks;
+    }
+
+    private static List<PortalTheme.Placement> placements(Object raw, List<String> warnings) {
+        List<PortalTheme.Placement> placements = new ArrayList<PortalTheme.Placement>();
+        if (!(raw instanceof List)) {
+            return placements;
+        }
+        List<?> list = (List<?>) raw;
+        List<String> seen = new ArrayList<String>();
+        for (int i = 0; i < list.size() && placements.size() < 8; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String id = oneOf(str(item.get("id")), "", "title", "form");
+            if (id.isEmpty() || seen.contains(id)) {
+                warnings.add("placements");
+                continue;
+            }
+            PortalTheme.Placement placement = new PortalTheme.Placement();
+            placement.id = id;
+            placement.x = clamp(intVal(item.get("x"), 0), 0, 90, "placements.x", warnings);
+            placement.y = clamp(intVal(item.get("y"), 0), 0, 2400, "placements.y", warnings);
+            int width = intVal(item.get("width"), 0);
+            placement.width = width == 0 ? 0 : clamp(width, 8, 100, "placements.width", warnings);
+            placements.add(placement);
+            seen.add(id);
+        }
+        return placements;
+    }
+
+    private static List<Map<String, Object>> placementMaps(List<PortalTheme.Placement> placements) {
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        if (placements == null) {
+            return out;
+        }
+        for (PortalTheme.Placement placement : placements) {
+            Map<String, Object> item = new LinkedHashMap<String, Object>();
+            item.put("id", placement.id);
+            item.put("x", placement.x);
+            item.put("y", placement.y);
+            item.put("width", placement.width);
+            out.add(item);
+        }
+        return out;
     }
 
     private static List<Map<String, Object>> blockMaps(List<PortalTheme.Block> blocks) {

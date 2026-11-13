@@ -1138,7 +1138,7 @@
                 continue;
             }
             var text = el.textContent || "";
-            if (text.length > 80 || text.indexOf("Jira Service Management") < 0) {
+            if (text.length > 80 || (text.indexOf("Jira Service Management") < 0 && text.indexOf("Работает на базе") < 0)) {
                 continue;
             }
             var host = el;
@@ -1150,6 +1150,226 @@
                 }
             }
             host.setAttribute("data-pd-brand", "1");
+        }
+    }
+
+    function pieceNode(doc, id) {
+        return doc.querySelector ? doc.querySelector("[data-pd-piece='" + id + "']") : null;
+    }
+
+    function placementIndex(theme) {
+        var index = {};
+        var list = theme && theme.placements || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].id) {
+                index[list[i].id] = list[i];
+            }
+        }
+        return index;
+    }
+
+    function rememberPlacement(theme, place) {
+        if (!theme) {
+            return;
+        }
+        var list = theme.placements || (theme.placements = []);
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].id === place.id) {
+                list[i].x = place.x;
+                list[i].y = place.y;
+                list[i].width = place.width;
+                return;
+            }
+        }
+        list.push(place);
+    }
+
+    function clampNum(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function readBox(node, body) {
+        var bodyRect = body.getBoundingClientRect();
+        var rect = node.getBoundingClientRect();
+        var width = body.clientWidth ? rect.width / body.clientWidth * 100 : 30;
+        return {
+            x: (rect.left - bodyRect.left) / (body.clientWidth || 1) * 100,
+            y: rect.top - bodyRect.top,
+            width: clampNum(width, 8, 100)
+        };
+    }
+
+    function applyBox(node, place) {
+        addClass(node, "pd-placed");
+        node.style.left = (place.x || 0) + "%";
+        node.style.top = (place.y || 0) + "px";
+        node.style.width = place.width ? place.width + "%" : "";
+    }
+
+    function findTitle(doc, form) {
+        if (!doc.body) {
+            return null;
+        }
+        var formRect = form ? form.getBoundingClientRect() : null;
+        var nodes = doc.body.getElementsByTagName("*");
+        var best = null;
+        var bestScore = -1;
+        var limit = Math.min(nodes.length, 800);
+        for (var i = 0; i < limit; i++) {
+            var elNode = nodes[i];
+            if (owned(elNode) || elNode.getAttribute("data-pd-piece") || elNode.getAttribute("data-pd-brand") || elNode.getAttribute("data-pd-native-bar")) {
+                continue;
+            }
+            if (form && (form === elNode || form.contains(elNode) || elNode.contains(form))) {
+                continue;
+            }
+            var rect = elNode.getBoundingClientRect();
+            if (rect.width < 80 || rect.width > 560 || rect.height < 24 || rect.height > 280) {
+                continue;
+            }
+            if (formRect && (rect.top > formRect.bottom || rect.left > formRect.left + 40)) {
+                continue;
+            }
+            var text = (elNode.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            if (text.length < 2 || text.length > 180) {
+                continue;
+            }
+            var score = rect.height + Math.min(text.length, 80);
+            if (score > bestScore) {
+                best = elNode;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    function adoptPieces(doc) {
+        var form = pieceNode(doc, "form");
+        if (!form) {
+            var forms = doc.getElementsByTagName("form");
+            for (var i = 0; i < forms.length; i++) {
+                if (!owned(forms[i])) {
+                    form = forms[i];
+                    form.setAttribute("data-pd-piece", "form");
+                    addClass(form, "pd-piece");
+                    break;
+                }
+            }
+        }
+        if (!pieceNode(doc, "title")) {
+            var title = findTitle(doc, form);
+            if (title) {
+                title.setAttribute("data-pd-piece", "title");
+                addClass(title, "pd-piece");
+            }
+        }
+    }
+
+    function ensurePreviewPieces(doc) {
+        var page = doc.getElementById("pd-page");
+        if (!page || pieceNode(doc, "title")) {
+            return;
+        }
+        var title = el(doc, "div", "pd-piece pd-preview-piece");
+        title.setAttribute("data-pd-piece", "title");
+        title.appendChild(el(doc, "div", null, "Центр поддержки / STP"));
+        title.appendChild(el(doc, "h2", null, "Техническая поддержка"));
+        var form = el(doc, "div", "pd-piece pd-preview-piece");
+        form.setAttribute("data-pd-piece", "form");
+        form.appendChild(el(doc, "p", null, "Форма заявки"));
+        page.appendChild(title);
+        page.appendChild(form);
+    }
+
+    function stackTitle(title, form) {
+        if (!title || !form || title.parentNode !== form.parentNode) {
+            return;
+        }
+        var parent = title.parentNode;
+        parent.style.setProperty("display", "flex", "important");
+        parent.style.setProperty("flex-direction", "column", "important");
+        parent.style.setProperty("align-items", "center", "important");
+        title.style.order = "-1";
+        form.style.order = "1";
+    }
+
+    function armPiece(doc, node, theme, options) {
+        if (!options.arrange || node.getAttribute("data-pd-drag") || !doc.body) {
+            return;
+        }
+        node.setAttribute("data-pd-drag", "1");
+        var handle = el(doc, "button", "pd-move", options.dragLabel || "Перетащить");
+        handle.type = "button";
+        node.appendChild(handle);
+        handle.addEventListener("pointerdown", function (event) {
+            if (!doc.body) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            var origin = readBox(node, doc.body);
+            applyBox(node, {x: origin.x, y: origin.y, width: 0});
+            doc.documentElement.setAttribute("data-pd-dragging", "1");
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var span = doc.body.clientWidth || 1;
+            function move(ev) {
+                applyBox(node, {
+                    x: clampNum(origin.x + (ev.clientX - startX) / span * 100, 0, 90),
+                    y: clampNum(origin.y + (ev.clientY - startY), 0, 2400),
+                    width: 0
+                });
+            }
+            function up(ev) {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                doc.documentElement.removeAttribute("data-pd-dragging");
+                var place = {
+                    id: node.getAttribute("data-pd-piece"),
+                    x: Math.round(clampNum(origin.x + (ev.clientX - startX) / span * 100, 0, 90)),
+                    y: Math.round(clampNum(origin.y + (ev.clientY - startY), 0, 2400)),
+                    width: 0
+                };
+                rememberPlacement(theme, place);
+                applyBox(node, place);
+                if (typeof options.onPlace === "function") {
+                    options.onPlace(place, theme);
+                }
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        });
+    }
+
+    function layoutPieces(doc, theme, options) {
+        options = options || {};
+        if (!doc.body || !doc.documentElement || doc.documentElement.getAttribute("data-pd-dragging")) {
+            return;
+        }
+        if (options.preview) {
+            ensurePreviewPieces(doc);
+        } else {
+            adoptPieces(doc);
+        }
+        if (options.arrange) {
+            addClass(doc.documentElement, "pd-arrange");
+        }
+        var saved = placementIndex(theme);
+        var title = pieceNode(doc, "title");
+        var form = pieceNode(doc, "form");
+        if (title && saved.title) {
+            applyBox(title, saved.title);
+        } else if (title) {
+            stackTitle(title, form);
+        }
+        if (form && saved.form) {
+            applyBox(form, saved.form);
+        }
+        if (title) {
+            armPiece(doc, title, theme, options);
+        }
+        if (form) {
+            armPiece(doc, form, theme, options);
         }
     }
 
@@ -1249,6 +1469,7 @@
         replacePage(doc, theme, ctx, shell ? "shell" : page, options.account || null, options.catalog || null);
         if (shell) {
             arrangeShell(doc);
+            layoutPieces(doc, theme, options);
             if (options.preview) {
                 var held = doc.getElementById("pd-held");
                 var pageNode = doc.getElementById("pd-page");
@@ -1324,6 +1545,24 @@
         xhr.send(null);
     }
 
+    function putJson(url, body, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("PUT", url, true);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) {
+                return;
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                cb(null);
+            } else {
+                cb(new Error("HTTP " + xhr.status));
+            }
+        };
+        xhr.send(body);
+    }
+
     function boot() {
         if (window.__PD_BOOTED) {
             return;
@@ -1339,6 +1578,7 @@
         var accountState = "pending";
         var catalog = null;
         var mine = null;
+        var arrange = false;
 
         function loadAccount() {
             var dom = readVisitor(document);
@@ -1408,7 +1648,14 @@
                     account: account,
                     accountState: accountState,
                     requests: mine,
-                    catalog: catalog
+                    catalog: catalog,
+                    arrange: arrange,
+                    dragLabel: "Перетащить",
+                    onPlace: function (place, theme) {
+                        var source = data.source && data.source !== "off" && data.source !== "none" ? data.source : "global";
+                        putJson(contextPath + "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(source), JSON.stringify(theme), function () {
+                        });
+                    }
                 });
             } catch (e) {
                 releaseHold(document);
@@ -1483,6 +1730,12 @@
 
         load(true);
         loadAccount();
+        getJson(contextPath + "/rest/portal-designer/1.0/admin/theme?portalId=global", function (err) {
+            arrange = !err;
+            if (arrange && current) {
+                paint(current, currentId);
+            }
+        });
         document.addEventListener("click", function (event) {
             if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
                 return;

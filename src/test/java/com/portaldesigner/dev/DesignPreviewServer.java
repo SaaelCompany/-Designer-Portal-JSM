@@ -211,9 +211,9 @@ public final class DesignPreviewServer {
 
     private static String createBody() {
         return "<div class=\"help-center-bar\" style=\"height:56px;background:#0747a6;color:#fff\">Центр поддержки</div>"
-                + "<div class=\"cv-request-column\" style=\"max-width:420px;margin:0 auto;background:#fff\">"
-                + "<form id=\"create-form\" class=\"aui-page-panel\"><h1>Новая заявка</h1>"
-                + "<label>Тема<input name=\"summary\" type=\"text\"/></label>"
+                + "<div class=\"create-layout\" style=\"display:flex;align-items:flex-start;gap:32px\">"
+                + "<div class=\"request-intro\" style=\"width:220px\"><div>Центр поддержки / STP</div><h2>Техническая поддержка</h2></div>"
+                + "<form id=\"create-form\" class=\"aui-page-panel\"><label>Тема<input name=\"summary\" type=\"text\"/></label>"
                 + "<button type=\"submit\" class=\"aui-button-primary\">Создать</button></form>"
                 + "<p class=\"cv-powered-by\">Работает на базе Jira Service Management</p></div>";
     }

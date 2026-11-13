@@ -365,6 +365,47 @@ html.pd-active .pd-slot[data-pd-align="left"] { text-align: left; }
 html.pd-active .pd-slot[data-pd-align="center"] { text-align: center; }
 html.pd-active .pd-slot[data-pd-align="right"] { text-align: right; }
 
+html.pd-shell body {
+    position: relative;
+}
+
+html.pd-shell .pd-piece {
+    position: relative;
+}
+
+html.pd-arrange .pd-piece {
+    outline: 1px dashed var(--pd-primary);
+    outline-offset: 6px;
+}
+
+html.pd-shell .pd-piece.pd-placed {
+    position: absolute;
+    margin: 0 !important;
+    z-index: 4;
+}
+
+html.pd-shell .pd-preview-piece {
+    box-sizing: border-box;
+    width: 680px;
+    max-width: calc(100% - 48px);
+    margin: 16px auto;
+    padding: 16px 20px;
+    background: var(--pd-card);
+    border: 1px solid var(--pd-border);
+    border-radius: 8px;
+}
+
+html.pd-shell .pd-piece > .pd-move {
+    top: 8px;
+    right: 8px;
+    left: auto;
+}
+
+html.pd-shell [data-pd-piece="title"] > .pd-move {
+    top: -30px;
+    right: 0;
+}
+
 html.pd-active .pd-move,
 html.pd-active .pd-resize {
     position: absolute;

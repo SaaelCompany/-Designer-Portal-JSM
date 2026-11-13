@@ -21,6 +21,8 @@ public final class PortalTheme {
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
     public List<Block> blocks = new ArrayList<Block>();
+    /** Positions of native pieces on the request form, such as the title and the form. */
+    public List<Placement> placements = new ArrayList<Placement>();
     public String customCss = "";
 
     public static final class Colors {
@@ -168,6 +170,14 @@ public final class PortalTheme {
         public int fontSize;
         public String font = "";
         public String align = "";
+    }
+
+    /** A native portal piece placed by the constructor. x and width are percents, y is pixels. */
+    public static final class Placement {
+        public String id = "";
+        public int x;
+        public int y;
+        public int width;
     }
 
     public static final class Link {

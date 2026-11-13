@@ -32,6 +32,7 @@
             place: "Положение и размер",
             freePlace: "Свободное положение",
             placeHint: "Свободный блок можно перетащить куда угодно и сделать шире или уже. Размер шрифта 0 оставляет шрифт страницы.",
+            dragPiece: "Перетащить",
             posX: "Слева, %",
             posY: "Сверху, px",
             blockWidth: "Ширина, %",
@@ -115,7 +116,7 @@
             descriptions: "Описания на карточках",
             replaceHint: "Опубликованная страница заменяет список порталов, страницу проекта, мои запросы и профиль. Форма новой заявки и страница входа остаются страницами Jira.",
             cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
-            keptPage: "Форма входа остаётся страницей Jira. Форма заявки и открытый запрос сохраняют поля Jira, а шапка и подвал берутся из конструктора.",
+            keptPage: "Форма входа остаётся страницей Jira. На заявке и в открытом запросе поля остаются полями Jira. Заголовок и форму перетаскивает метка «Перетащить».",
             layoutMode: "Раскладка",
             tone: "Тон",
             text: "Текст",
@@ -203,6 +204,7 @@
             place: "Place and size",
             freePlace: "Free position",
             placeHint: "A free block can be dragged anywhere and made wider or narrower. Font size 0 keeps the page font.",
+            dragPiece: "Drag",
             posX: "From the left, %",
             posY: "From the top, px",
             blockWidth: "Width, %",
@@ -286,7 +288,7 @@
             descriptions: "Card descriptions",
             replaceHint: "The published page replaces the portal list, the project page, my requests and the profile. The new-request form and the login page stay Jira pages.",
             cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
-            keptPage: "The login page stays a Jira page. The request form and an open request keep Jira's fields, with the header and footer from the designer.",
+            keptPage: "The login page stays a Jira page. A request form and an open request keep Jira's fields. Drag moves the title and the form.",
             layoutMode: "Layout",
             tone: "Tone",
             text: "Text",
@@ -540,6 +542,7 @@
         theme.requests = theme.requests || {};
         theme.requests.order = theme.requests.order || [];
         theme.blocks = theme.blocks || [];
+        theme.placements = theme.placements || [];
         theme.announcement = theme.announcement || {};
         theme.footer = theme.footer || {};
         theme.footer.columns = theme.footer.columns || [];
@@ -849,6 +852,30 @@
                 {key: "STP-50", summary: "Тест", status: "Ожидание поддержки", href: "#"},
                 {key: "STP-47", summary: "Заявка", status: "Ожидание поддержки", href: "#"}
             ],
+            arrange: state.page === "create" || state.page === "request",
+            dragLabel: t("dragPiece"),
+            onPlace: function (place) {
+                ensureShape(state.theme);
+                var list = state.theme.placements;
+                var found = false;
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].id === place.id) {
+                        list[i].x = place.x;
+                        list[i].y = place.y;
+                        list[i].width = place.width;
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    list.push({id: place.id, x: place.x, y: place.y, width: place.width});
+                }
+                if (state.previewTheme) {
+                    ensureShape(state.previewTheme);
+                    state.previewTheme.placements = list;
+                }
+                markDirty();
+                scheduleCompile();
+            },
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind]");
                 for (var i = 0; i < bound.length; i++) {

@@ -101,6 +101,26 @@ public class ThemePipelineTest {
     }
 
     @Test
+    public void piecePlacementRoundTrips() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.enabled = true;
+        PortalTheme.Placement title = new PortalTheme.Placement();
+        title.id = "title";
+        title.x = 18;
+        title.y = 120;
+        title.width = 32;
+        theme.placements.add(title);
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> placements = (List<Map<String, Object>>) cast(saved.get("theme")).get("placements");
+        assertEquals(1, placements.size());
+        assertEquals("title", placements.get(0).get("id"));
+        assertEquals(Integer.valueOf(18), placements.get(0).get("x"));
+        assertEquals(Integer.valueOf(120), placements.get(0).get("y"));
+        assertEquals(Integer.valueOf(32), placements.get(0).get("width"));
+    }
+
+    @Test
     public void saveStripsScriptFromCustomHtml() {
         PortalTheme theme = ThemePresets.classic();
         theme.enabled = true;
