@@ -19,8 +19,28 @@ html.pd-replace #pd-page {
     min-height: 100vh;
 }
 
-html.pd-replace #pd-main {
-    flex: 1 0 auto;
+html.pd-replace #pd-slot-footer:last-child {
+    margin-top: auto;
+}
+
+.pd-original {
+    max-width: 720px;
+    margin: 28px auto 12px;
+    padding: 0 24px;
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1c1915;
+}
+
+#pd-source {
+    max-width: 720px;
+    margin: 0 auto 40px;
+    padding: 0 24px;
+}
+
+#pd-source a {
+    display: block;
+    margin: 10px 0;
+    color: #0b5fff;
 }
 
 html.pd-replace .pd-kept {
@@ -165,6 +185,99 @@ html.pd-active .pd-login {
     border-radius: 999px;
     padding: 8px 14px;
     line-height: 1;
+}
+
+html.pd-active .pd-account {
+    position: relative;
+}
+
+html.pd-active .pd-account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: inherit;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 4px 12px 4px 4px;
+    line-height: 1;
+}
+
+html.pd-active .pd-account-mark,
+html.pd-active .pd-account-btn img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+html.pd-active .pd-account-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--pd-primary);
+    color: var(--pd-primary-text);
+    font-weight: 700;
+}
+
+html.pd-active .pd-account-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 180px;
+    padding: 6px;
+    background: var(--pd-surface);
+    color: var(--pd-text);
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(20, 24, 40, 0.16);
+    z-index: 30;
+}
+
+html.pd-active .pd-account-menu.open {
+    display: block;
+}
+
+html.pd-active .pd-account-menu a {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--pd-text) !important;
+    text-decoration: none !important;
+}
+
+html.pd-active .pd-text-block,
+html.pd-active .pd-links-block {
+    width: calc(100% - (var(--pd-page-pad) * 2));
+    max-width: var(--pd-content);
+    margin: 12px auto 28px;
+}
+
+html.pd-active .pd-text-block h2,
+html.pd-active .pd-links-block h2 {
+    margin: 0 0 8px;
+    font-weight: var(--pd-heading-weight);
+}
+
+html.pd-active .pd-text-block p {
+    margin: 0;
+    color: var(--pd-muted);
+}
+
+html.pd-active .pd-links-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+html.pd-active .pd-links-row a {
+    display: inline-block;
+    padding: 10px 14px;
+    border-radius: var(--pd-radius);
+    background: var(--pd-card);
+    color: var(--pd-text) !important;
+    text-decoration: none !important;
+    border: 1px solid var(--pd-border);
 }
 
 html.pd-active #pd-header a:focus,

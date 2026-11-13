@@ -174,7 +174,9 @@
         if (!node) {
             node = el(doc, "div");
             node.id = "pd-announcement";
-            parent.insertBefore(node, parent.firstChild);
+            parent.appendChild(node);
+        } else if (node.parentNode !== parent) {
+            parent.appendChild(node);
         }
         setAttr(node, "data-pd-tone", announcement.tone || "info");
         setAttr(node, "data-pd-select", "announcement");
@@ -184,10 +186,116 @@
         }
     }
 
-    function renderHeader(doc, parent, theme, ctx) {
+    function readVisitor(doc) {
+        var user = "";
+        var name = "";
+        var logoutHref = "";
+        var requestsHref = "";
+        var meta = doc.querySelector ? doc.querySelector("meta[name='ajs-remote-user']") : null;
+        if (meta) {
+            user = meta.getAttribute("content") || "";
+        }
+        var full = doc.querySelector ? doc.querySelector("meta[name='ajs-remote-user-fullname']") : null;
+        if (full) {
+            name = full.getAttribute("content") || "";
+        }
+        var named = doc.getElementById("header-details-user-fullname");
+        if (named && !owned(named)) {
+            var label = String(named.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            if (label) {
+                name = label;
+                user = user || label;
+            }
+        }
+        var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
+        for (var i = 0; i < links.length; i++) {
+            if (owned(links[i])) {
+                continue;
+            }
+            var href = links[i].getAttribute("href") || "";
+            if (/logout|Logout\.jspa/i.test(href)) {
+                logoutHref = href;
+                if (!user && !name) {
+                    user = "signed-in";
+                    name = "Профиль";
+                }
+            } else if (/\/user\/requests/.test(href)) {
+                requestsHref = href;
+            }
+        }
+        if (!user && !name) {
+            return null;
+        }
+        return {
+            username: user,
+            name: name || user,
+            avatar: "",
+            logoutHref: logoutHref,
+            requestsHref: requestsHref
+        };
+    }
+
+    function accountNode(doc, theme, ctx, account) {
+        var base = ctx.contextPath || "";
+        if (account && (account.name || account.username)) {
+            var box = el(doc, "div", "pd-account");
+            var button = el(doc, "button", "pd-account-btn");
+            button.type = "button";
+            if (account.avatar) {
+                var img = doc.createElement("img");
+                img.src = account.avatar;
+                img.alt = "";
+                button.appendChild(img);
+            } else {
+                button.appendChild(el(doc, "span", "pd-account-mark", (account.name || account.username).charAt(0).toUpperCase()));
+            }
+            button.appendChild(el(doc, "span", "pd-account-name", account.name || account.username));
+            var menu = el(doc, "div", "pd-account-menu");
+            var requests = el(doc, "a", null, "Мои заявки");
+            requests.href = account.requestsHref || (base + "/servicedesk/customer/user/requests");
+            var logout = el(doc, "a", null, "Выйти");
+            logout.href = account.logoutHref || (base + "/logout");
+            menu.appendChild(requests);
+            menu.appendChild(logout);
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if ((" " + menu.className + " ").indexOf(" open ") >= 0) {
+                    removeClass(menu, "open");
+                } else {
+                    addClass(menu, "open");
+                }
+            });
+            if (!doc.__pdAccountDoc) {
+                doc.__pdAccountDoc = true;
+                doc.addEventListener("click", function (event) {
+                    var menus = doc.getElementsByClassName("pd-account-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        var owner = menus[i].parentNode;
+                        if (owner && !owner.contains(event.target)) {
+                            removeClass(menus[i], "open");
+                        }
+                    }
+                });
+            }
+            box.appendChild(button);
+            box.appendChild(menu);
+            return box;
+        }
+        var model = theme.header || {};
+        var login = el(doc, "a", "pd-login", model.loginLabel || "Войти");
+        login.href = loginHref(ctx);
+        return login;
+    }
+
+    function renderHeader(doc, parent, theme, ctx, account) {
         var header = doc.getElementById("pd-header");
         var editing = doc.activeElement && parent.contains && parent.contains(doc.activeElement);
-        var sig = signature(theme);
+        var who = account ? ((account.name || "") + "|" + (account.avatar || "")) : "";
+        var sig = signature(theme) + "\n" + who;
+        if (header && header.parentNode !== parent) {
+            parent.appendChild(header);
+        }
         if (header && header.getAttribute("data-pd-sig") === sig) {
             return;
         }
@@ -232,9 +340,7 @@
                 nav.appendChild(link);
             }
             if (model.showLogin !== false) {
-                var login = el(doc, "a", "pd-login", model.loginLabel || "Войти");
-                login.href = loginHref(ctx);
-                nav.appendChild(login);
+                nav.appendChild(accountNode(doc, theme, ctx, account));
             }
             inner.appendChild(nav);
             header.appendChild(inner);
@@ -253,6 +359,8 @@
         if (!hero) {
             hero = el(doc, "section");
             hero.id = "pd-hero";
+            parent.appendChild(hero);
+        } else if (hero.parentNode !== parent) {
             parent.appendChild(hero);
         }
         hero.setAttribute("data-pd-select", "hero");
@@ -409,6 +517,8 @@
             node = el(doc, "div");
             node.id = "pd-search";
             parent.appendChild(node);
+        } else if (node.parentNode !== parent) {
+            parent.appendChild(node);
         }
         node.setAttribute("data-pd-region", "search");
         node.setAttribute("data-pd-select", "search");
@@ -439,6 +549,8 @@
         if (!box) {
             box = el(doc, "div");
             box.id = "pd-cards";
+            parent.appendChild(box);
+        } else if (box.parentNode !== parent) {
             parent.appendChild(box);
         }
         box.setAttribute("data-pd-region", "requests");
@@ -472,7 +584,102 @@
         }
     }
 
-    function replacePage(doc, theme, ctx, page) {
+    function blocksOf(theme) {
+        if (theme.blocks && theme.blocks.length) {
+            return theme.blocks;
+        }
+        return [
+            {id: "announcement", type: "announcement", visible: !!(theme.announcement && theme.announcement.visible)},
+            {id: "header", type: "header", visible: !theme.header || theme.header.mode !== "hidden"},
+            {id: "hero", type: "hero", visible: !theme.hero || theme.hero.visible !== false},
+            {id: "search", type: "search", visible: !theme.search || theme.search.visible !== false},
+            {id: "requests", type: "requests", visible: true},
+            {id: "footer", type: "footer", visible: !theme.footer || theme.footer.mode !== "hidden"}
+        ];
+    }
+
+    function blockShown(theme, block, page) {
+        if (!block || block.visible === false) {
+            return false;
+        }
+        if (block.type === "header") {
+            return !theme.header || theme.header.mode !== "hidden";
+        }
+        if (block.type === "footer") {
+            return !theme.footer || theme.footer.mode !== "hidden";
+        }
+        if (block.type === "hero") {
+            return showHero(theme, page);
+        }
+        if (block.type === "search") {
+            return !theme.search || theme.search.visible !== false;
+        }
+        if (block.type === "announcement") {
+            return !!(theme.announcement && theme.announcement.visible && theme.announcement.text);
+        }
+        return true;
+    }
+
+    function slot(doc, pageNode, id, select) {
+        var node = doc.getElementById("pd-slot-" + id);
+        if (!node) {
+            node = el(doc, "div", "pd-slot");
+            node.id = "pd-slot-" + id;
+        }
+        node.setAttribute("data-pd-block", id);
+        node.setAttribute("data-pd-select", select);
+        pageNode.appendChild(node);
+        return node;
+    }
+
+    function clearNode(node) {
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+    }
+
+    function renderTextBlock(doc, parent, block) {
+        var box = parent.querySelector ? parent.querySelector(".pd-text-block") : null;
+        var sig = (block.title || "") + "\n" + (block.text || "");
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-text-block");
+        box.setAttribute("data-pd-sig", sig);
+        if (block.title) {
+            box.appendChild(el(doc, "h2", null, block.title));
+        }
+        if (block.text) {
+            box.appendChild(el(doc, "p", null, block.text));
+        }
+        parent.appendChild(box);
+    }
+
+    function renderLinksBlock(doc, parent, block, ctx) {
+        var box = parent.querySelector ? parent.querySelector(".pd-links-block") : null;
+        var sig = (block.title || "") + "\n" + JSON.stringify(block.links || []);
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-links-block");
+        box.setAttribute("data-pd-sig", sig);
+        if (block.title) {
+            box.appendChild(el(doc, "h2", null, block.title));
+        }
+        var row = el(doc, "div", "pd-links-row");
+        var links = block.links || [];
+        for (var i = 0; i < links.length; i++) {
+            var link = el(doc, "a", null, links[i].label || "");
+            link.href = resolveHref(links[i].href, ctx.contextPath);
+            row.appendChild(link);
+        }
+        box.appendChild(row);
+        parent.appendChild(box);
+    }
+
+    function replacePage(doc, theme, ctx, page, account) {
         if (!doc.body) {
             return;
         }
@@ -482,43 +689,42 @@
             pageNode.id = "pd-page";
             doc.body.appendChild(pageNode);
         }
-        var chrome = doc.getElementById("pd-chrome");
-        if (!chrome) {
-            chrome = el(doc, "div");
-            chrome.id = "pd-chrome";
-            pageNode.appendChild(chrome);
+        var note = doc.getElementById("pd-original");
+        if (note && note.parentNode) {
+            note.parentNode.removeChild(note);
         }
-        renderAnnouncement(doc, chrome, theme);
-        if (!theme.header || theme.header.mode !== "hidden") {
-            renderHeader(doc, chrome, theme, ctx);
-        } else {
-            var header = doc.getElementById("pd-header");
-            if (header && header.parentNode) {
-                header.parentNode.removeChild(header);
+        var blocks = blocksOf(theme);
+        var keep = {};
+        for (var i = 0; i < blocks.length; i++) {
+            var block = blocks[i];
+            if (!blockShown(theme, block, page)) {
+                continue;
+            }
+            keep[block.id] = true;
+            var select = block.type === "text" || block.type === "links" ? "block:" + block.id : block.type;
+            var parent = slot(doc, pageNode, block.id, select);
+            if (block.type === "announcement") {
+                renderAnnouncement(doc, parent, theme);
+            } else if (block.type === "header") {
+                renderHeader(doc, parent, theme, ctx, account);
+            } else if (block.type === "hero") {
+                renderHero(doc, parent, theme);
+            } else if (block.type === "search") {
+                renderSearch(doc, parent, theme);
+            } else if (block.type === "requests") {
+                renderCards(doc, parent, theme);
+            } else if (block.type === "footer") {
+                renderFooter(doc, parent, theme, ctx);
+            } else if (block.type === "text") {
+                renderTextBlock(doc, parent, block);
+            } else if (block.type === "links") {
+                renderLinksBlock(doc, parent, block, ctx);
             }
         }
-        if (showHero(theme, page)) {
-            renderHero(doc, chrome, theme);
-        } else {
-            var hero = doc.getElementById("pd-hero");
-            if (hero && hero.parentNode) {
-                hero.parentNode.removeChild(hero);
-            }
-        }
-        renderSearch(doc, chrome, theme);
-        var main = doc.getElementById("pd-main");
-        if (!main) {
-            main = el(doc, "main");
-            main.id = "pd-main";
-            pageNode.appendChild(main);
-        }
-        renderCards(doc, main, theme);
-        if (!theme.footer || theme.footer.mode !== "hidden") {
-            renderFooter(doc, pageNode, theme, ctx);
-        } else {
-            var footer = doc.getElementById("pd-footer");
-            if (footer && footer.parentNode) {
-                footer.parentNode.removeChild(footer);
+        var slots = pageNode.getElementsByClassName("pd-slot");
+        for (var s = slots.length - 1; s >= 0; s--) {
+            if (!keep[slots[s].getAttribute("data-pd-block")]) {
+                pageNode.removeChild(slots[s]);
             }
         }
     }
@@ -533,6 +739,21 @@
             removeClass(html, "pd-active");
             removeClass(html, "pd-replace");
         }
+    }
+
+    function showOriginal(doc, label) {
+        if (!doc.body) {
+            return;
+        }
+        var note = doc.getElementById("pd-original");
+        if (!note) {
+            note = el(doc, "div");
+            note.id = "pd-original";
+            note.className = "pd-original";
+            doc.body.insertBefore(note, doc.body.firstChild);
+        }
+        clearNode(note);
+        note.appendChild(el(doc, "p", null, label || "Так портал выглядит без плагина."));
     }
 
     function showKept(doc, label) {
@@ -560,6 +781,11 @@
             contextPath: options.contextPath || "",
             portalId: options.portalId || "global"
         };
+        if (options.original) {
+            dropPage(doc);
+            showOriginal(doc, options.originalLabel);
+            return;
+        }
         if (page !== "home") {
             dropPage(doc);
             if (options.preview) {
@@ -583,7 +809,7 @@
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        replacePage(doc, theme, ctx, page);
+        replacePage(doc, theme, ctx, page, options.account || null);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
@@ -596,6 +822,10 @@
         var built = doc.getElementById("pd-page");
         if (built && built.parentNode) {
             built.parentNode.removeChild(built);
+        }
+        var note = doc.getElementById("pd-original");
+        if (note && note.parentNode) {
+            note.parentNode.removeChild(note);
         }
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
@@ -642,6 +872,8 @@
         var current = null;
         var suppress = 0;
         var timer = 0;
+        var account = null;
+        var accountState = "pending";
 
         function paint(data, id) {
             suppress++;
@@ -658,8 +890,33 @@
                     css: data.css,
                     contextPath: contextPath,
                     portalId: id,
-                    page: pageKind(window.location.pathname)
+                    page: pageKind(window.location.pathname),
+                    account: account
                 });
+                if (accountState === "pending") {
+                    accountState = "loading";
+                    var found = readVisitor(document);
+                    if (!found) {
+                        accountState = "ready";
+                    } else {
+                        account = found;
+                        paint(data, id);
+                        getJson(contextPath + "/rest/api/2/myself", function (err, me) {
+                            if (err || !me) {
+                                return;
+                            }
+                            if (me.displayName) {
+                                found.name = me.displayName;
+                            }
+                            var urls = me.avatarUrls || {};
+                            found.avatar = urls["24x24"] || urls["16x16"] || "";
+                            account = found;
+                            if (current) {
+                                paint(current, currentId);
+                            }
+                        });
+                    }
+                }
             } catch (e) {
                 if (window.console && console.warn) {
                     console.warn("Portal Designer skipped a render", e);

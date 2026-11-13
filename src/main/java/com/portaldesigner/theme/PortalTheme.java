@@ -20,6 +20,7 @@ public final class PortalTheme {
     public Announcement announcement = new Announcement();
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
+    public List<Block> blocks = new ArrayList<Block>();
     public String customCss = "";
 
     public static final class Colors {
@@ -149,6 +150,16 @@ public final class PortalTheme {
             screen.showHeaderTitle = true;
             return screen;
         }
+    }
+
+    /** One piece of the constructed page, in the order it is drawn. */
+    public static final class Block {
+        public String id = "";
+        public String type = "text";
+        public boolean visible = true;
+        public String title = "";
+        public String text = "";
+        public List<Link> links = new ArrayList<Link>();
     }
 
     public static final class Link {

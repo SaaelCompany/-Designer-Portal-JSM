@@ -32,6 +32,7 @@ button { cursor: pointer; }
 .top {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 10px 14px;
     background: var(--paper-2);
@@ -96,6 +97,21 @@ button { cursor: pointer; }
 }
 
 .nav button.active { background: #efeae3; }
+
+.outline { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.outline-item {
+    display: flex; align-items: center; gap: 4px;
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 4px 6px; background: #fff;
+}
+.outline-item.active { border-color: var(--accent); }
+.outline-item.off { opacity: 0.45; }
+.outline-item .name {
+    flex: 1; text-align: left; border: 0; background: transparent; padding: 6px 4px;
+}
+.outline-item .mini {
+    border: 0; background: #efeae3; border-radius: 8px; padding: 4px 7px;
+}
 
 .stage-wrap { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 

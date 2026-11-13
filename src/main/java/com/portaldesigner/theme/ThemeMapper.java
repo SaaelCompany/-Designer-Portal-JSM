@@ -122,6 +122,7 @@ public final class ThemeMapper {
             warnings.add("customCss");
         }
         theme.customCss = cleanCss;
+        theme.blocks = blocks(raw.get("blocks"), warnings);
         return new MappedTheme(theme, warnings);
     }
 
@@ -234,6 +235,7 @@ public final class ThemeMapper {
         responsive.put("tablet", screenMap(theme.responsive.tablet));
         root.put("responsive", responsive);
         root.put("customCss", theme.customCss);
+        root.put("blocks", blockMaps(theme.blocks));
         return root;
     }
 
@@ -296,6 +298,66 @@ public final class ThemeMapper {
             }
         }
         return columns;
+    }
+
+    private static List<PortalTheme.Block> blocks(Object raw, List<String> warnings) {
+        List<PortalTheme.Block> blocks = new ArrayList<PortalTheme.Block>();
+        if (!(raw instanceof List)) {
+            return blocks;
+        }
+        List<?> list = (List<?>) raw;
+        List<String> seen = new ArrayList<String>();
+        List<String> seenTypes = new ArrayList<String>();
+        for (int i = 0; i < list.size() && blocks.size() < 24; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String type = oneOf(str(item.get("type")), "", "announcement", "header", "hero", "search", "requests", "footer", "text", "links");
+            if (type.isEmpty()) {
+                warnings.add("blocks");
+                continue;
+            }
+            boolean core = !"text".equals(type) && !"links".equals(type);
+            if (core && seenTypes.contains(type)) {
+                continue;
+            }
+            String id = str(item.get("id")).trim();
+            if (!id.matches("[A-Za-z0-9_-]{1,40}")) {
+                id = type + blocks.size();
+            }
+            if (seen.contains(id)) {
+                continue;
+            }
+            PortalTheme.Block block = new PortalTheme.Block();
+            block.id = id;
+            block.type = type;
+            block.visible = bool(item.get("visible"), true);
+            block.title = text(item.get("title"), "", 160);
+            block.text = text(item.get("text"), "", 600);
+            block.links = links(item.get("links"), 8, warnings);
+            blocks.add(block);
+            seen.add(id);
+            if (core) {
+                seenTypes.add(type);
+            }
+        }
+        return blocks;
+    }
+
+    private static List<Map<String, Object>> blockMaps(List<PortalTheme.Block> blocks) {
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        if (blocks == null) {
+            return out;
+        }
+        for (PortalTheme.Block block : blocks) {
+            Map<String, Object> item = new LinkedHashMap<String, Object>();
+            item.put("id", block.id);
+            item.put("type", block.type);
+            item.put("visible", block.visible);
+            item.put("title", block.title);
+            item.put("text", block.text);
+            item.put("links", linkMaps(block.links));
+            out.add(item);
+        }
+        return out;
     }
 
     private static List<PortalTheme.Link> links(Object raw, int max, List<String> warnings) {

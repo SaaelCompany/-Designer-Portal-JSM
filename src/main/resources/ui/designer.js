@@ -19,6 +19,22 @@
             import: "Импорт",
             export: "Экспорт",
             published: "Опубликовано",
+            structure: "Страница",
+            style: "Стиль",
+            designedPage: "Конструктор",
+            originalPortal: "Портал Jira",
+            originalLive: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
+            originalLabel: "Так портал выглядит без плагина: услуги Jira, без собранной страницы.",
+            pageHint: "Это состав страницы. Перетащите блок на другой блок, чтобы поменять порядок. Скрытый блок на портал не попадает.",
+            addText: "Текстовый блок",
+            addLinks: "Блок ссылок",
+            blockTitle: "Заголовок",
+            blockText: "Текст",
+            hideBlock: "Скрыть",
+            showBlock: "Показать",
+            guest: "Гость",
+            signedIn: "Вошёл",
+            profileHint: "У гостя здесь кнопка входа. Если посетитель уже вошёл, вместо неё показывается его имя, заявки и выход.",
             save: "Сохранить",
             saving: "Сохраняем…",
             saved: "Сохранено",
@@ -36,7 +52,7 @@
             colors: "Цвета",
             type: "Типографика",
             layout: "Сетка",
-            unpublished: "Посетители портала этого не видят, пока стиль не опубликован.",
+            unpublished: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
             inherited: "Этот портал показывает общий стиль. Включите свой стиль, чтобы править только его.",
             ownStyle: "Свой стиль этого портала",
             editGlobal: "Править общий стиль",
@@ -69,8 +85,8 @@
             showTitle: "Показывать название",
             titleField: "Название",
             sticky: "Прилипает при прокрутке",
-            showLogin: "Кнопка входа",
-            loginLabel: "Текст кнопки входа",
+            showLogin: "Вход или профиль",
+            loginLabel: "Текст для гостя",
             headerH: "Высота шапки",
             links: "Ссылки",
             visible: "Показывать",
@@ -161,6 +177,22 @@
             import: "Import",
             export: "Export",
             published: "Published",
+            structure: "Page",
+            style: "Style",
+            designedPage: "Builder",
+            originalPortal: "Jira portal",
+            originalLive: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
+            originalLabel: "This is the portal without the plugin: Jira's services, with no constructed page.",
+            pageHint: "These are the blocks of the page. Drag one onto another to reorder them. A hidden block is not on the portal.",
+            addText: "Text block",
+            addLinks: "Link row",
+            blockTitle: "Heading",
+            blockText: "Text",
+            hideBlock: "Hide",
+            showBlock: "Show",
+            guest: "Guest",
+            signedIn: "Signed in",
+            profileHint: "A guest sees the login button. A signed-in visitor sees their name, their requests and a way out.",
             save: "Save",
             saving: "Saving…",
             saved: "Saved",
@@ -178,7 +210,7 @@
             colors: "Colors",
             type: "Type",
             layout: "Layout",
-            unpublished: "Visitors will not see this until you publish it.",
+            unpublished: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
             inherited: "This portal uses the shared theme. Turn on its own theme to edit it separately.",
             ownStyle: "Own theme for this portal",
             editGlobal: "Edit the shared theme",
@@ -211,8 +243,8 @@
             showTitle: "Show title",
             titleField: "Title",
             sticky: "Stick while scrolling",
-            showLogin: "Login button",
-            loginLabel: "Login label",
+            showLogin: "Login or profile",
+            loginLabel: "Label for a guest",
             headerH: "Header height",
             links: "Links",
             visible: "Visible",
@@ -315,7 +347,9 @@
         presets: [],
         device: "desktop",
         page: "home",
-        section: "hero",
+        section: "page",
+        blockId: "header",
+        asUser: false,
         dirty: false,
         past: [],
         future: [],
@@ -455,6 +489,7 @@
 
     function markDirty() {
         state.dirty = true;
+        state.revision = (state.revision || 0) + 1;
         var save = document.getElementById("save");
         if (save) {
             save.textContent = t("save");
@@ -477,6 +512,7 @@
         theme.search = theme.search || {};
         theme.requests = theme.requests || {};
         theme.requests.order = theme.requests.order || [];
+        theme.blocks = theme.blocks || [];
         theme.announcement = theme.announcement || {};
         theme.footer = theme.footer || {};
         theme.footer.columns = theme.footer.columns || [];
@@ -613,7 +649,13 @@
             }
             while (node && node !== doc) {
                 if (node.getAttribute && node.getAttribute("data-pd-select")) {
-                    state.section = node.getAttribute("data-pd-select");
+                    var sel = node.getAttribute("data-pd-select");
+                    if (sel.indexOf("block:") === 0) {
+                        state.blockId = sel.substring(6);
+                    } else {
+                        state.blockId = sel;
+                    }
+                    state.section = "block";
                     renderNav();
                     renderInspector();
                     return;
@@ -714,6 +756,9 @@
             page: state.page,
             preview: true,
             keptLabel: t("keptPage"),
+            original: !(state.theme && state.theme.enabled),
+            originalLabel: t("originalLabel"),
+            account: state.asUser ? {name: "Анна Ковалева", username: "anna"} : null,
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind]");
                 for (var i = 0; i < bound.length; i++) {
@@ -776,7 +821,9 @@
                 ]),
                 h("select", {id: "portal", onchange: onPortal}),
                 h("input", {id: "portal-id", class: "portal-id", type: "text", placeholder: t("portalPh"), onchange: onManualPortal}),
+                h("div", {class: "seg", id: "mode"}),
                 h("div", {class: "seg", id: "pages"}),
+                h("div", {class: "seg", id: "audience"}),
                 h("div", {class: "seg", id: "devices"}),
                 h("div", {class: "grow"}, [
                     h("button", {type: "button", class: "ghost", text: t("undo"), onclick: undo}),
@@ -784,10 +831,6 @@
                     h("button", {type: "button", class: "ghost", id: "lang", text: t("lang"), onclick: toggleLang}),
                     h("button", {type: "button", class: "ghost", text: t("import"), onclick: importTheme}),
                     h("button", {type: "button", class: "ghost", text: t("export"), onclick: exportTheme}),
-                    h("label", {class: "publish"}, [
-                        h("input", {id: "enabled", type: "checkbox", onchange: onEnabled}),
-                        h("span", {id: "published-label", text: t("published")})
-                    ]),
                     save
                 ])
             ]),
@@ -818,6 +861,26 @@
             renderSegments();
             paintPreview();
         });
+        fillSeg("mode", [["designed", "designedPage"], ["original", "originalPortal"]], state.theme && state.theme.enabled ? "designed" : "original", function (id) {
+            if (!state.theme) {
+                return;
+            }
+            if (id === "original") {
+                useOriginal();
+                return;
+            }
+            remember();
+            state.theme.enabled = true;
+            markDirty();
+            renderSegments();
+            paintPreview();
+            paintBanner();
+        });
+        fillSeg("audience", [["guest", "guest"], ["user", "signedIn"]], state.asUser ? "user" : "guest", function (id) {
+            state.asUser = id === "user";
+            renderSegments();
+            paintPreview();
+        });
         fillSeg("devices", [["desktop", "desktop"], ["tablet", "tablet"], ["mobile", "mobile"]], state.device, function (id) {
             state.device = id;
             renderSegments();
@@ -842,11 +905,13 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "screens", "css"].forEach(function (id) {
+        ["page", "style", "screens", "css"].forEach(function (id) {
+            var active = state.section === id || (id === "page" && state.section === "block");
+            var label = id === "page" ? "structure" : id;
             host.appendChild(h("button", {
                 type: "button",
-                class: state.section === id ? "active" : "",
-                text: t(id),
+                class: active ? "active" : "",
+                text: t(label),
                 onclick: function () {
                     state.section = id;
                     renderNav();
@@ -991,11 +1056,15 @@
         }
         host.innerHTML = "";
         ensureShape(state.theme);
-        host.appendChild(h("h2", {text: t(state.section)}));
-        if (state.device !== "desktop" && (state.section === "requests" || state.section === "hero" || state.section === "header" || state.section === "theme")) {
+        host.appendChild(h("h2", {text: inspectorTitle()}));
+        if (state.device !== "desktop" && (state.section === "style" || state.section === "block")) {
             host.appendChild(h("p", {class: "hint", text: t("deviceHint")}));
         }
-        if (state.section === "theme") {
+        if (state.section === "page") {
+            renderPage(host);
+        } else if (state.section === "block") {
+            renderBlock(host);
+        } else if (state.section === "style" || state.section === "theme") {
             renderTheme(host);
         } else if (state.section === "header") {
             renderHeader(host);
@@ -1029,11 +1098,269 @@
         host.appendChild(h("ul", {class: "warn-list", id: "warnings"}));
         paintWarnings();
         paintContrast();
-        var enabled = document.getElementById("enabled");
-        if (enabled) {
-            enabled.checked = !!state.theme.enabled;
-        }
+        renderSegments();
         paintBanner();
+    }
+
+    function inspectorTitle() {
+        if (state.section === "page") {
+            return t("structure");
+        }
+        if (state.section === "style" || state.section === "theme") {
+            return t("style");
+        }
+        if (state.section === "block") {
+            var block = findBlock(state.blockId);
+            return block ? blockLabel(block) : t("structure");
+        }
+        return t(state.section);
+    }
+
+    function blockLabel(block) {
+        if (block.type === "text" || block.type === "links") {
+            return block.title || t(block.type === "text" ? "addText" : "addLinks");
+        }
+        return t(block.type === "requests" ? "requests" : block.type);
+    }
+
+    function defaultBlocks(theme) {
+        return [
+            {id: "announcement", type: "announcement", visible: !!(theme.announcement && theme.announcement.visible), title: "", text: "", links: []},
+            {id: "header", type: "header", visible: !theme.header || theme.header.mode !== "hidden", title: "", text: "", links: []},
+            {id: "hero", type: "hero", visible: !theme.hero || theme.hero.visible !== false, title: "", text: "", links: []},
+            {id: "search", type: "search", visible: !theme.search || theme.search.visible !== false, title: "", text: "", links: []},
+            {id: "requests", type: "requests", visible: true, title: "", text: "", links: []},
+            {id: "footer", type: "footer", visible: !theme.footer || theme.footer.mode !== "hidden", title: "", text: "", links: []}
+        ];
+    }
+
+    function materializeBlocks() {
+        ensureShape(state.theme);
+        if (!state.theme.blocks.length) {
+            state.theme.blocks = defaultBlocks(state.theme);
+        }
+    }
+
+    function findBlock(id) {
+        materializeBlocks();
+        var list = state.theme.blocks;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function blockIsShown(block) {
+        if (!block || block.visible === false) {
+            return false;
+        }
+        if (block.type === "header") {
+            return state.theme.header.mode !== "hidden";
+        }
+        if (block.type === "footer") {
+            return state.theme.footer.mode !== "hidden";
+        }
+        if (block.type === "hero") {
+            return state.theme.hero.visible !== false;
+        }
+        if (block.type === "search") {
+            return state.theme.search.visible !== false;
+        }
+        if (block.type === "announcement") {
+            return !!state.theme.announcement.visible;
+        }
+        return true;
+    }
+
+    function setBlockShown(block, shown) {
+        block.visible = shown;
+        if (block.type === "header") {
+            state.theme.header.mode = shown ? "replace" : "hidden";
+        } else if (block.type === "footer") {
+            state.theme.footer.mode = shown ? "replace" : "hidden";
+        } else if (block.type === "hero") {
+            state.theme.hero.visible = shown;
+        } else if (block.type === "search") {
+            state.theme.search.visible = shown;
+        } else if (block.type === "announcement") {
+            state.theme.announcement.visible = shown;
+        }
+    }
+
+    function renderPage(host) {
+        host.appendChild(h("p", {class: "hint", text: t("pageHint")}));
+        materializeBlocks();
+        var list = h("div", {class: "outline"});
+        state.theme.blocks.forEach(function (block) {
+            var row = h("div", {class: "outline-item" + (state.blockId === block.id ? " active" : "") + (blockIsShown(block) ? "" : " off")});
+            row.draggable = true;
+            row.addEventListener("dragstart", function (event) {
+                event.dataTransfer.setData("text/plain", block.id);
+                event.dataTransfer.effectAllowed = "move";
+            });
+            row.addEventListener("dragover", function (event) {
+                event.preventDefault();
+            });
+            row.addEventListener("drop", function (event) {
+                event.preventDefault();
+                moveBlock(event.dataTransfer.getData("text/plain"), block.id);
+            });
+            row.appendChild(h("button", {type: "button", class: "name", text: blockLabel(block), onclick: function () {
+                state.blockId = block.id;
+                state.section = "block";
+                renderNav();
+                renderInspector();
+            }}));
+            row.appendChild(h("button", {type: "button", class: "mini", text: blockIsShown(block) ? t("hideBlock") : t("showBlock"), onclick: function () {
+                remember();
+                materializeBlocks();
+                setBlockShown(block, !blockIsShown(block));
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }}));
+            if (block.type === "text" || block.type === "links") {
+                row.appendChild(h("button", {type: "button", class: "mini", text: "×", onclick: function () {
+                    remember();
+                    state.theme.blocks = state.theme.blocks.filter(function (item) { return item.id !== block.id; });
+                    state.section = "page";
+                    markDirty();
+                    renderInspector();
+                    scheduleCompile();
+                }}));
+            }
+            list.appendChild(row);
+        });
+        host.appendChild(list);
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addText"), onclick: function () { addBlock("text"); }}));
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addLinks"), onclick: function () { addBlock("links"); }}));
+    }
+
+    function moveBlock(fromId, toId) {
+        if (!fromId || fromId === toId) {
+            return;
+        }
+        remember();
+        materializeBlocks();
+        var list = state.theme.blocks;
+        var from = -1;
+        var to = -1;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === fromId) {
+                from = i;
+            }
+            if (list[i].id === toId) {
+                to = i;
+            }
+        }
+        if (from < 0 || to < 0) {
+            return;
+        }
+        var item = list.splice(from, 1)[0];
+        list.splice(to, 0, item);
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function addBlock(type) {
+        remember();
+        materializeBlocks();
+        var id = "b" + Math.random().toString(36).slice(2, 8);
+        state.theme.blocks.push({
+            id: id,
+            type: type,
+            visible: true,
+            title: type === "text" ? t("addText") : t("addLinks"),
+            text: "",
+            links: type === "links" ? [{label: t("newLink"), href: "/"}] : []
+        });
+        state.blockId = id;
+        state.section = "block";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function renderBlock(host) {
+        var block = findBlock(state.blockId);
+        if (!block) {
+            renderPage(host);
+            return;
+        }
+        if (block.type === "header") {
+            host.appendChild(h("p", {class: "hint", text: t("profileHint")}));
+            renderHeader(host);
+        } else if (block.type === "hero") {
+            renderHero(host);
+        } else if (block.type === "search") {
+            renderSearch(host);
+        } else if (block.type === "requests") {
+            renderRequests(host);
+        } else if (block.type === "announcement") {
+            renderAnnouncement(host);
+        } else if (block.type === "footer") {
+            renderFooter(host);
+        } else if (block.type === "text") {
+            host.appendChild(plainField(block, "title", t("blockTitle")));
+            host.appendChild(plainArea(block, "text", t("blockText")));
+        } else if (block.type === "links") {
+            host.appendChild(plainField(block, "title", t("blockTitle")));
+            block.links = block.links || [];
+            host.appendChild(linkEditor(block.links));
+        }
+    }
+
+    function plainField(block, key, label) {
+        var input = h("input", {type: "text", value: block[key] || ""});
+        input.addEventListener("input", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function plainArea(block, key, label) {
+        var input = h("textarea", {rows: 4, value: block[key] || ""});
+        input.addEventListener("input", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function useOriginal() {
+        if (!state.theme) {
+            return;
+        }
+        if (!state.theme.enabled && (state.portalId === "global" || !state.theme.useGlobal)) {
+            paintPreview();
+            paintBanner();
+            return;
+        }
+        remember();
+        state.theme.enabled = false;
+        if (state.portalId !== "global") {
+            state.theme.useGlobal = false;
+        }
+        markDirty();
+        renderSegments();
+        paintPreview();
+        paintBanner();
+        state.afterSaveError = function () {
+            state.theme.enabled = true;
+            renderSegments();
+            paintPreview();
+            paintBanner();
+        };
+        saveTheme();
     }
 
     function renderTheme(host) {
@@ -1309,11 +1636,21 @@
 
     function saveTheme() {
         var button = document.getElementById("save");
+        var onError = state.afterSaveError;
+        var revision = state.revision || 0;
+        state.afterSaveError = null;
         button.textContent = t("saving");
         api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), state.theme, function (err, data) {
+            if ((state.revision || 0) !== revision) {
+                button.textContent = t("save");
+                return;
+            }
             if (err || !data) {
                 button.textContent = t("save");
                 toast(t("saveError"));
+                if (onError) {
+                    onError();
+                }
                 return;
             }
             state.theme = data.theme;

@@ -9,6 +9,9 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -95,6 +98,30 @@ public class ThemePipelineTest {
         assertTrue(js.contains("MutationObserver"));
         assertTrue(js.contains("pd-replace"));
         assertTrue(js.contains("readCatalog"));
+    }
+
+    @Test
+    public void pageBlocksRoundTripAndDropUnknownTypes() {
+        Map<String, Object> stored = ThemeMapper.toMap(ThemePresets.classic());
+        List<Map<String, Object>> blocks = new ArrayList<Map<String, Object>>();
+        Map<String, Object> text = new LinkedHashMap<String, Object>();
+        text.put("id", "note");
+        text.put("type", "text");
+        text.put("visible", Boolean.TRUE);
+        text.put("title", "Справка");
+        text.put("text", "Позвоните");
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "script");
+        evil.put("type", "script");
+        evil.put("title", "nope");
+        blocks.add(text);
+        blocks.add(evil);
+        stored.put("blocks", blocks);
+        MappedTheme mapped = ThemeMapper.fromMap(stored);
+        assertEquals(1, mapped.theme.blocks.size());
+        assertEquals("note", mapped.theme.blocks.get(0).id);
+        assertEquals("Справка", mapped.theme.blocks.get(0).title);
+        assertTrue(mapped.warnings.contains("blocks"));
     }
 
     @Test
