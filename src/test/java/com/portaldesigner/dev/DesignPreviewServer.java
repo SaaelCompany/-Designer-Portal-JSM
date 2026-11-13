@@ -2,6 +2,7 @@ package com.portaldesigner.dev;
 
 import com.portaldesigner.json.Json;
 import com.portaldesigner.service.ThemeService;
+import com.portaldesigner.servlet.PortalSnippet;
 import com.portaldesigner.store.MemoryThemeRepository;
 import com.portaldesigner.theme.ThemeException;
 import com.sun.net.httpserver.Headers;
@@ -177,14 +178,14 @@ public final class DesignPreviewServer {
     }
 
     private static String customerHtml(String body) {
-        return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+        String html = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
                 + "<meta name=\"ajs-remote-user\" content=\"anna\"/>"
                 + "<meta name=\"ajs-remote-user-fullname\" content=\"Анна Ковалева\"/>"
                 + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
                 + "</head><body>" + body
-                + "<a href=\"/logout\">Выйти</a>"
-                + "<script src=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js\"></script>"
+                + "<a href=\"/logout\" style=\"display:none\">Выйти</a>"
                 + "</body></html>";
+        return PortalSnippet.inject(html, "/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js");
     }
 
     private static String portalsBody() {
@@ -210,9 +211,11 @@ public final class DesignPreviewServer {
 
     private static String createBody() {
         return "<div class=\"help-center-bar\" style=\"height:56px;background:#0747a6;color:#fff\">Центр поддержки</div>"
+                + "<div class=\"cv-request-column\" style=\"max-width:420px;margin:0 auto;background:#fff\">"
                 + "<form id=\"create-form\" class=\"aui-page-panel\"><h1>Новая заявка</h1>"
                 + "<label>Тема<input name=\"summary\" type=\"text\"/></label>"
-                + "<button type=\"submit\" class=\"aui-button-primary\">Создать</button></form>";
+                + "<button type=\"submit\" class=\"aui-button-primary\">Создать</button></form>"
+                + "<p class=\"cv-powered-by\">Работает на базе Jira Service Management</p></div>";
     }
 
     private static Map<String, Object> samplePortals() {

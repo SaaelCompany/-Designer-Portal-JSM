@@ -13,6 +13,10 @@ public class PortalSnippetTest {
         String once = PortalSnippet.inject(html, "/jira/download/resources/com.portaldesigner.portal-designer:portal-runtime/portal.js");
         String twice = PortalSnippet.inject(once, "/jira/download/resources/com.portaldesigner.portal-designer:portal-runtime/portal.js");
         assertTrue(once.contains(PortalSnippet.MARKER));
+        assertTrue(once.contains(PortalSnippet.HOLD));
+        assertTrue(once.contains("pd-hold"));
+        assertTrue(once.indexOf(PortalSnippet.HOLD) < once.indexOf(PortalSnippet.MARKER));
+        assertTrue(once.indexOf("defer></script>") > once.indexOf(PortalSnippet.MARKER));
         assertTrue(once.indexOf(PortalSnippet.MARKER) < once.toLowerCase().indexOf("</head>"));
         assertEquals(once, twice);
     }

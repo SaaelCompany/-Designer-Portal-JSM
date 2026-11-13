@@ -23,10 +23,14 @@ html.pd-shell #pd-page {
     min-height: 0;
 }
 
+html.pd-hold body {
+    visibility: hidden !important;
+}
+
 html.pd-shell [data-pd-native-bar],
+html.pd-shell [data-pd-brand],
 html.pd-shell .cv-smart-portal-header,
 html.pd-shell .cv-help-center-header,
-html.pd-shell .cv-page-header,
 html.pd-shell .aui-header {
     display: none !important;
 }
@@ -40,10 +44,16 @@ html.pd-shell .aui-page-panel {
 }
 
 html.pd-shell .pd-native-form {
+    box-sizing: border-box;
+    width: 680px !important;
+    max-width: calc(100% - 48px) !important;
+    margin: 32px auto 40px !important;
+    padding: 28px 32px 20px !important;
     background: var(--pd-card) !important;
     color: var(--pd-text);
-    border: 1px solid var(--pd-border);
-    border-radius: var(--pd-radius);
+    border: 1px solid var(--pd-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 12px 32px rgba(9, 30, 66, 0.08);
 }
 
 html.pd-shell .aui-button-primary,
@@ -55,12 +65,23 @@ html.pd-shell .pd-native-form input[type="submit"] {
     border-radius: var(--pd-radius) !important;
 }
 
-html.pd-shell .pd-native-form input,
+html.pd-shell .pd-native-form input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
 html.pd-shell .pd-native-form textarea,
 html.pd-shell .pd-native-form select {
-    border-color: var(--pd-border) !important;
+    box-sizing: border-box;
+    width: 100%;
+    background: #fff !important;
+    border: 1px solid var(--pd-border) !important;
     color: var(--pd-text);
     border-radius: 3px;
+    min-height: 36px;
+    padding: 6px 8px;
+}
+
+html.pd-shell .pd-native-form h1,
+html.pd-shell .pd-native-form h2 {
+    margin: 0 0 16px;
+    color: var(--pd-text);
 }
 
 html.pd-shell .pd-native-form a {

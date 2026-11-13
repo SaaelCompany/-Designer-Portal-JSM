@@ -1028,6 +1028,13 @@
         }
     }
 
+    function releaseHold(doc) {
+        var html = doc && doc.documentElement;
+        if (html) {
+            removeClass(html, "pd-hold");
+        }
+    }
+
     function dropPage(doc) {
         var built = doc.getElementById("pd-page");
         if (built && built.parentNode) {
@@ -1065,7 +1072,7 @@
 
     function hideNativeBars(doc) {
         var view = doc.defaultView || window;
-        var nodes = doc.querySelectorAll ? doc.querySelectorAll("header, [role='banner'], .aui-header, .cv-smart-portal-header, .cv-help-center-header, .cv-page-header, .cv-header, .jsd-header") : [];
+        var nodes = doc.querySelectorAll ? doc.querySelectorAll("[role='banner'], .aui-header, .cv-smart-portal-header, .cv-help-center-header, .jsd-header") : [];
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i].id === "pd-header" || owned(nodes[i])) {
                 continue;
@@ -1094,8 +1101,55 @@
         var forms = doc.getElementsByTagName("form");
         for (var f = 0; f < forms.length; f++) {
             if (!owned(forms[f])) {
-                addClass(forms[f], "pd-native-form");
+                dressForm(forms[f]);
             }
+        }
+        hideBrand(doc);
+    }
+
+    function dressForm(form) {
+        addClass(form, "pd-native-form");
+        var node = form.parentNode;
+        var steps = 0;
+        while (node && node.nodeType === 1 && node !== document.body && node.id !== "pd-page" && steps < 8) {
+            if (!owned(node)) {
+                node.style.setProperty("max-width", "none", "important");
+                node.style.setProperty("width", "100%", "important");
+                node.style.setProperty("background-color", "transparent", "important");
+            }
+            node = node.parentNode;
+            steps++;
+        }
+    }
+
+    function hideBrand(doc) {
+        var branded = doc.querySelectorAll ? doc.querySelectorAll(".cv-powered-by, .jsd-powered-by, .cv-smart-portal-footer") : [];
+        for (var i = 0; i < branded.length; i++) {
+            branded[i].setAttribute("data-pd-brand", "1");
+        }
+        if (!doc.body) {
+            return;
+        }
+        var nodes = doc.body.getElementsByTagName("*");
+        var limit = Math.min(nodes.length, 400);
+        for (var n = 0; n < limit; n++) {
+            var el = nodes[n];
+            if (owned(el) || el.getAttribute("data-pd-brand") || el.children.length) {
+                continue;
+            }
+            var text = el.textContent || "";
+            if (text.length > 80 || text.indexOf("Jira Service Management") < 0) {
+                continue;
+            }
+            var host = el;
+            var parent = el.parentNode;
+            if (parent && parent !== doc.body && parent.tagName !== "FORM" && !owned(parent)) {
+                var parentText = parent.textContent || "";
+                if (parentText.length < 120) {
+                    host = parent;
+                }
+            }
+            host.setAttribute("data-pd-brand", "1");
         }
     }
 
@@ -1143,6 +1197,7 @@
         var doc = options.document || document;
         var theme = options.theme;
         if (!doc.documentElement || !theme) {
+            releaseHold(doc);
             return;
         }
         var html = doc.documentElement;
@@ -1157,6 +1212,7 @@
         if (options.original) {
             dropPage(doc);
             showOriginal(doc, options.originalLabel);
+            releaseHold(doc);
             return;
         }
         if (page !== "home" && page !== "mine" && page !== "profile" && page !== "create" && page !== "request" && page !== "shell") {
@@ -1164,6 +1220,7 @@
             if (options.preview) {
                 showKept(doc, options.keptLabel);
             }
+            releaseHold(doc);
             return;
         }
         var shell = page === "create" || page === "request" || page === "shell";
@@ -1208,6 +1265,7 @@
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
+        releaseHold(doc);
     }
 
     function teardown(doc) {
@@ -1223,6 +1281,7 @@
         if (note && note.parentNode) {
             note.parentNode.removeChild(note);
         }
+        releaseHold(doc);
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
             style.parentNode.removeChild(style);
@@ -1352,6 +1411,7 @@
                     catalog: catalog
                 });
             } catch (e) {
+                releaseHold(document);
                 if (window.console && console.warn) {
                     console.warn("Portal Designer skipped a render", e);
                 }
@@ -1368,8 +1428,12 @@
                 paint(current, id);
                 return;
             }
+            var known = current && current.theme && currentId === id && current.active !== false && current.enabled;
             currentId = id;
             currentKind = kindNow;
+            if (known) {
+                paint(current, id);
+            }
             var token = {};
             var kind = pageKind(window.location.pathname);
             load.token = token;
@@ -1419,6 +1483,26 @@
 
         load(true);
         loadAccount();
+        document.addEventListener("click", function (event) {
+            if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+            var node = event.target;
+            while (node && node !== document && node.tagName !== "A") {
+                node = node.parentNode;
+            }
+            if (!node || node.tagName !== "A" || node.getAttribute("target") === "_blank") {
+                return;
+            }
+            var href = node.getAttribute("href") || "";
+            if (href.indexOf("/servicedesk/customer/") < 0 || node.pathname === window.location.pathname) {
+                return;
+            }
+            addClass(document.documentElement, "pd-hold");
+            window.setTimeout(function () {
+                removeClass(document.documentElement, "pd-hold");
+            }, 4000);
+        }, true);
         if (window.MutationObserver && document.body) {
             var observer = new MutationObserver(schedule);
             observer.observe(document.body, {childList: true, subtree: true});

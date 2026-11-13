@@ -10,6 +10,7 @@ import java.util.zip.GZIPOutputStream;
 /** Inserts the portal runtime into customer-portal HTML. Idempotent. */
 public final class PortalSnippet {
     static final String MARKER = "data-portal-designer=\"runtime\"";
+    static final String HOLD = "data-portal-designer=\"hold\"";
 
     private PortalSnippet() {
     }
@@ -32,7 +33,12 @@ public final class PortalSnippet {
         if (!lower.contains("<html") && !lower.contains("<!doctype html")) {
             return html;
         }
-        String tag = "<script " + MARKER + " src=\"" + escapeAttr(scriptUrl) + "\" defer></script>";
+        String tag = "<style " + HOLD + ">html.pd-hold body{visibility:hidden!important}</style>"
+                + "<script " + HOLD + ">(function(){var e=document.documentElement;"
+                + "if((' '+e.className+' ').indexOf(' pd-hold ')<0){e.className=(e.className?e.className+' ':'')+'pd-hold';}"
+                + "setTimeout(function(){e.className=(' '+e.className+' ').replace(' pd-hold ',' ').replace(/^\\s+|\\s+$/g,'');},4000);"
+                + "})();</script>"
+                + "<script " + MARKER + " src=\"" + escapeAttr(scriptUrl) + "\" defer></script>";
         int head = lower.indexOf("</head>");
         if (head >= 0) {
             return html.substring(0, head) + tag + html.substring(head);
