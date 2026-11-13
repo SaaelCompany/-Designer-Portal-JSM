@@ -53,8 +53,11 @@
         if (/\/login$/.test(clean)) {
             return "login";
         }
-        if (/\/portal\/\d+\/create\/\d+$/.test(clean)) {
+        if (/\/portal\/\d+\/(?:group\/\d+\/)?create\/\d+$/.test(clean)) {
             return "create";
+        }
+        if (/\/portal\/\d+\/[A-Za-z][A-Za-z0-9_]*-\d+$/.test(clean) || /\/request\/[^/]+$/.test(clean)) {
+            return "request";
         }
         return "other";
     }
@@ -465,6 +468,70 @@
         return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
     }
 
+    function fieldText(value, depth) {
+        if (value == null || depth > 4) {
+            return "";
+        }
+        if (typeof value === "string" || typeof value === "number") {
+            return plainText(value);
+        }
+        if (Object.prototype.toString.call(value) === "[object Array]") {
+            var parts = [];
+            for (var i = 0; i < value.length; i++) {
+                var part = fieldText(value[i], depth + 1);
+                if (part) {
+                    parts.push(part);
+                }
+            }
+            return parts.join(", ");
+        }
+        if (typeof value === "object") {
+            if (typeof value.value === "string" || typeof value.value === "number") {
+                return plainText(value.value);
+            }
+            if (value.value != null && typeof value.value !== "object") {
+                return fieldText(value.value, depth + 1);
+            }
+            if (typeof value.displayName === "string") {
+                return plainText(value.displayName);
+            }
+            if (typeof value.name === "string" && !value.fieldId) {
+                return plainText(value.name);
+            }
+            if (typeof value.filename === "string") {
+                return plainText(value.filename);
+            }
+            if (typeof value.friendly === "string") {
+                return plainText(value.friendly);
+            }
+            if (value.value && typeof value.value === "object") {
+                return fieldText(value.value, depth + 1);
+            }
+        }
+        return "";
+    }
+
+    function requestSummary(item) {
+        if (!item) {
+            return "";
+        }
+        if (typeof item.summary === "string" || typeof item.summary === "number") {
+            return plainText(item.summary);
+        }
+        var summary = fieldText(item.summary, 0);
+        if (summary) {
+            return summary;
+        }
+        var fields = item.requestFieldValues || [];
+        for (var i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            if (field && field.fieldId === "summary") {
+                return fieldText(field.value, 0);
+            }
+        }
+        return fields.length ? fieldText(fields[0] && fields[0].value, 0) : "";
+    }
+
     function readCatalog(doc, portalId) {
         var requests = [];
         var portals = [];
@@ -636,7 +703,20 @@
         }
     }
 
+    function dropExtraViews(parent) {
+        if (!parent || !parent.querySelectorAll) {
+            return;
+        }
+        var stale = parent.querySelectorAll(".pd-mine, .pd-profile");
+        for (var i = stale.length - 1; i >= 0; i--) {
+            if (stale[i].parentNode) {
+                stale[i].parentNode.removeChild(stale[i]);
+            }
+        }
+    }
+
     function renderCards(doc, parent, theme, ctx, catalog) {
+        dropExtraViews(parent);
         var box = doc.getElementById("pd-cards");
         if (!box) {
             box = el(doc, "div");
@@ -694,6 +774,9 @@
     function blockShown(theme, block, page) {
         if (!block || block.visible === false) {
             return false;
+        }
+        if (page === "shell") {
+            return block.type === "header" || block.type === "footer" || block.type === "announcement";
         }
         if (block.type === "header") {
             return !theme.header || theme.header.mode !== "hidden";
@@ -951,7 +1034,30 @@
         if (html) {
             removeClass(html, "pd-active");
             removeClass(html, "pd-replace");
+            removeClass(html, "pd-shell");
         }
+    }
+
+    function hideNativeBars(doc) {
+        var nodes = doc.querySelectorAll ? doc.querySelectorAll("header, [role='banner'], .aui-header, .cv-smart-portal-header, .cv-help-center-header, .cv-page-header, .cv-header, .jsd-header") : [];
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === "pd-header" || owned(nodes[i])) {
+                continue;
+            }
+            nodes[i].setAttribute("data-pd-native-bar", "1");
+        }
+    }
+
+    function arrangeShell(doc) {
+        var pageNode = doc.getElementById("pd-page");
+        if (pageNode && doc.body && doc.body.firstChild !== pageNode) {
+            doc.body.insertBefore(pageNode, doc.body.firstChild);
+        }
+        var footer = doc.getElementById("pd-slot-footer");
+        if (footer && doc.body) {
+            doc.body.appendChild(footer);
+        }
+        hideNativeBars(doc);
     }
 
     function showOriginal(doc, label) {
@@ -1002,15 +1108,22 @@
             showOriginal(doc, options.originalLabel);
             return;
         }
-        if (page !== "home" && page !== "mine" && page !== "profile") {
+        if (page !== "home" && page !== "mine" && page !== "profile" && page !== "create" && page !== "request") {
             dropPage(doc);
             if (options.preview) {
                 showKept(doc, options.keptLabel);
             }
             return;
         }
+        var shell = page === "create" || page === "request";
         addClass(html, "pd-active");
-        addClass(html, "pd-replace");
+        if (shell) {
+            addClass(html, "pd-shell");
+            removeClass(html, "pd-replace");
+        } else {
+            addClass(html, "pd-replace");
+            removeClass(html, "pd-shell");
+        }
         setAttr(html, "data-pd-header-mode", (theme.header && theme.header.mode) || "replace");
         setAttr(html, "data-pd-footer-mode", (theme.footer && theme.footer.mode) || "replace");
         setAttr(html, "data-pd-sticky", theme.header && theme.header.sticky === false ? "0" : "1");
@@ -1025,7 +1138,22 @@
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        replacePage(doc, theme, ctx, page, options.account || null, options.catalog || null);
+        replacePage(doc, theme, ctx, shell ? "shell" : page, options.account || null, options.catalog || null);
+        if (shell) {
+            arrangeShell(doc);
+            if (options.preview) {
+                var held = doc.getElementById("pd-held");
+                var pageNode = doc.getElementById("pd-page");
+                if (!held && pageNode) {
+                    held = el(doc, "div", "pd-kept");
+                    held.id = "pd-held";
+                    pageNode.appendChild(held);
+                }
+                if (held) {
+                    held.textContent = options.keptLabel || "";
+                }
+            }
+        }
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
@@ -1035,6 +1163,7 @@
         var html = doc.documentElement;
         removeClass(html, "pd-active");
         removeClass(html, "pd-replace");
+        removeClass(html, "pd-shell");
         var built = doc.getElementById("pd-page");
         if (built && built.parentNode) {
             built.parentNode.removeChild(built);
@@ -1142,7 +1271,7 @@
                 var status = item.currentStatus && (item.currentStatus.status || item.currentStatus.statusName) || "";
                 rows.push({
                     key: key,
-                    summary: plainText(item.summary || item.requestFieldValues || ""),
+                    summary: requestSummary(item),
                     status: plainText(status),
                     href: href || "#"
                 });

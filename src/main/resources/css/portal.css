@@ -9,6 +9,33 @@ html.pd-replace body > :not(#pd-page) {
     display: none !important;
 }
 
+html.pd-shell body {
+    margin: 0;
+    background: var(--pd-bg);
+    color: var(--pd-text);
+    font-family: var(--pd-font);
+    font-size: var(--pd-base);
+}
+
+html.pd-shell #pd-page {
+    display: block;
+    min-height: 0;
+}
+
+html.pd-shell [data-pd-native-bar],
+html.pd-shell .cv-smart-portal-header,
+html.pd-shell .cv-help-center-header,
+html.pd-shell .cv-page-header,
+html.pd-shell .aui-header {
+    display: none !important;
+}
+
+html.pd-shell .cv-page,
+html.pd-shell .cv-smart-portal,
+html.pd-shell #jsd-portal-container {
+    background: transparent !important;
+}
+
 html.pd-active .pd-tile {
     cursor: grab;
 }

@@ -110,6 +110,10 @@ public final class DesignPreviewServer {
                 send(exchange, 200, "text/html; charset=UTF-8", customerHtml("<header id=\"jira-header\">Jira Service Management</header>").getBytes(StandardCharsets.UTF_8));
                 return;
             }
+            if ("/servicedesk/customer/portal/1/ATS-1".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(requestBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             if ("/servicedesk/customer/portal/1/create/10".equals(path)) {
                 send(exchange, 200, "text/html; charset=UTF-8", customerHtml(createBody()).getBytes(StandardCharsets.UTF_8));
                 return;
@@ -198,6 +202,12 @@ public final class DesignPreviewServer {
                 + "<a href=\"/servicedesk/customer/portal/1/create/11\">Не работает сервис <p>Сбой в рабочей системе</p></a>";
     }
 
+    private static String requestBody() {
+        return "<header class=\"cv-smart-portal-header\">Центр поддержки</header>"
+                + "<form id=\"create-form\"><h1>Что я просматриваю?</h1>"
+                + "<p>Описание запроса</p></form>";
+    }
+
     private static String createBody() {
         return "<header id=\"jira-header\">Jira Service Management</header>"
                 + "<form id=\"create-form\"><h1>Новая заявка</h1>"
@@ -273,8 +283,21 @@ public final class DesignPreviewServer {
     private static Map<String, Object> request(String key, String summary, String status) {
         Map<String, Object> item = new LinkedHashMap<String, Object>();
         item.put("issueKey", key);
-        item.put("summary", summary);
         item.put("serviceDeskId", "1");
+        List<Map<String, Object>> fields = new ArrayList<Map<String, Object>>();
+        Map<String, Object> summaryField = new LinkedHashMap<String, Object>();
+        summaryField.put("fieldId", "summary");
+        summaryField.put("label", "Тема");
+        summaryField.put("value", summary);
+        fields.add(summaryField);
+        Map<String, Object> other = new LinkedHashMap<String, Object>();
+        other.put("fieldId", "customfield_10050");
+        other.put("label", "Лишнее");
+        Map<String, Object> nested = new LinkedHashMap<String, Object>();
+        nested.put("displayName", "Не тема");
+        other.put("value", nested);
+        fields.add(other);
+        item.put("requestFieldValues", fields);
         Map<String, Object> current = new LinkedHashMap<String, Object>();
         current.put("status", status);
         item.put("currentStatus", current);
