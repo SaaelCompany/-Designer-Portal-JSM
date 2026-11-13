@@ -47,6 +47,26 @@ public class ThemePipelineTest {
     }
 
     @Test
+    public void switchingThePluginOffRestoresEveryPortal() {
+        publish("global", true);
+        PortalTheme own = ThemePresets.classic();
+        own.enabled = true;
+        own.useGlobal = false;
+        service.save("12", Json.stringify(ThemeMapper.toMap(own)));
+        assertEquals(Boolean.TRUE, service.publicTheme("12").get("enabled"));
+
+        service.setPluginActive(false);
+        assertEquals(Boolean.FALSE, service.publicTheme("global").get("enabled"));
+        assertEquals(Boolean.FALSE, service.publicTheme("12").get("enabled"));
+        assertEquals("off", service.publicTheme("12").get("source"));
+        assertFalse(service.publicTheme("global").containsKey("css"));
+
+        service.setPluginActive(true);
+        assertEquals(Boolean.TRUE, service.publicTheme("global").get("enabled"));
+        assertEquals(Boolean.TRUE, service.publicTheme("12").get("enabled"));
+    }
+
+    @Test
     public void saveStripsScriptFromCustomHtml() {
         PortalTheme theme = ThemePresets.classic();
         theme.enabled = true;

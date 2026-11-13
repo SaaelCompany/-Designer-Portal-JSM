@@ -22,7 +22,8 @@
             structure: "Страница",
             style: "Стиль",
             designedPage: "Конструктор",
-            originalPortal: "Портал Jira",
+            originalPortal: "Выключить",
+            pluginOff: "Плагин выключен на всех порталах. Посетители видят обычный портал Jira.",
             originalLive: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
             originalLabel: "Так портал выглядит без плагина: услуги Jira, без собранной страницы.",
             pageHint: "Это состав страницы. Перетащите блок на другой блок, чтобы поменять порядок. Скрытый блок на портал не попадает.",
@@ -180,7 +181,8 @@
             structure: "Page",
             style: "Style",
             designedPage: "Builder",
-            originalPortal: "Jira portal",
+            originalPortal: "Turn off",
+            pluginOff: "The plugin is off for every portal. Visitors see the standard Jira portal.",
             originalLive: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
             originalLabel: "This is the portal without the plugin: Jira's services, with no constructed page.",
             pageHint: "These are the blocks of the page. Drag one onto another to reorder them. A hidden block is not on the portal.",
@@ -350,6 +352,7 @@
         section: "page",
         blockId: "header",
         asUser: false,
+        pluginActive: true,
         dirty: false,
         past: [],
         future: [],
@@ -610,7 +613,7 @@
         if (!box) {
             return;
         }
-        var types = state.requestTypes.length ? state.requestTypes : SAMPLE;
+        var types = cardSource();
         var sig = state.portalId + ":" + types.map(function (item) { return item.id + ":" + item.name; }).join("|");
         if (box.getAttribute("data-sig") === sig) {
             return;
@@ -619,10 +622,12 @@
         while (box.firstChild) {
             box.removeChild(box.firstChild);
         }
-        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "1";
+        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "";
         types.forEach(function (type) {
             var link = doc.createElement("a");
-            link.href = "/servicedesk/customer/portal/" + portal + "/create/" + type.id;
+            link.href = portal
+                ? "/servicedesk/customer/portal/" + portal + "/create/" + type.id
+                : "/servicedesk/customer/portal/" + type.id;
             link.appendChild(doc.createTextNode(type.name || ""));
             if (type.description) {
                 var note = doc.createElement("p");
@@ -756,7 +761,8 @@
             page: state.page,
             preview: true,
             keptLabel: t("keptPage"),
-            original: !(state.theme && state.theme.enabled),
+            original: state.pluginActive === false || !(state.theme && state.theme.enabled),
+            catalog: previewCatalog(),
             originalLabel: t("originalLabel"),
             account: state.asUser ? {name: "Анна Ковалева", username: "anna"} : null,
             onRender: function (rendered) {
@@ -775,7 +781,9 @@
             return;
         }
         var messages = [];
-        if (!state.theme.enabled) {
+        if (state.pluginActive === false) {
+            messages.push(t("pluginOff"));
+        } else if (!state.theme.enabled) {
             messages.push(t("unpublished"));
         }
         if (state.portalId !== "global" && state.theme.useGlobal) {
@@ -861,20 +869,8 @@
             renderSegments();
             paintPreview();
         });
-        fillSeg("mode", [["designed", "designedPage"], ["original", "originalPortal"]], state.theme && state.theme.enabled ? "designed" : "original", function (id) {
-            if (!state.theme) {
-                return;
-            }
-            if (id === "original") {
-                useOriginal();
-                return;
-            }
-            remember();
-            state.theme.enabled = true;
-            markDirty();
-            renderSegments();
-            paintPreview();
-            paintBanner();
+        fillSeg("mode", [["designed", "designedPage"], ["original", "originalPortal"]], state.pluginActive === false ? "original" : "designed", function (id) {
+            setSwitch(id !== "original");
         });
         fillSeg("audience", [["guest", "guest"], ["user", "signedIn"]], state.asUser ? "user" : "guest", function (id) {
             state.asUser = id === "user";
@@ -1336,31 +1332,69 @@
         return field(key, label, input);
     }
 
-    function useOriginal() {
-        if (!state.theme) {
-            return;
+    function cardSource() {
+        if (/^[0-9]+$/.test(state.portalId)) {
+            return state.requestTypes.length ? state.requestTypes : SAMPLE;
         }
-        if (!state.theme.enabled && (state.portalId === "global" || !state.theme.useGlobal)) {
+        if (state.portals.length) {
+            return state.portals.map(function (portal) {
+                return {id: portal.id, name: portal.projectName || portal.projectKey || "", description: ""};
+            });
+        }
+        return SAMPLE;
+    }
+
+    function previewCatalog() {
+        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "";
+        return cardSource().map(function (item) {
+            return {
+                id: String(item.id),
+                name: item.name || "",
+                description: item.description || "",
+                href: portal
+                    ? "/servicedesk/customer/portal/" + portal + "/create/" + item.id
+                    : "/servicedesk/customer/portal/" + item.id
+            };
+        });
+    }
+
+    function setSwitch(active) {
+        if (state.pluginActive === active && (!active || !state.theme || state.theme.enabled)) {
             paintPreview();
-            paintBanner();
             return;
         }
-        remember();
-        state.theme.enabled = false;
-        if (state.portalId !== "global") {
-            state.theme.useGlobal = false;
+        var previous = state.pluginActive;
+        var previousEnabled = state.theme ? state.theme.enabled : false;
+        state.pluginActive = active;
+        if (active && state.theme && !state.theme.enabled) {
+            remember();
+            state.theme.enabled = true;
+            markDirty();
         }
-        markDirty();
         renderSegments();
         paintPreview();
         paintBanner();
-        state.afterSaveError = function () {
-            state.theme.enabled = true;
-            renderSegments();
-            paintPreview();
-            paintBanner();
-        };
-        saveTheme();
+        api("PUT", "/rest/portal-designer/1.0/admin/switch", {active: active}, function (err) {
+            if (err) {
+                state.pluginActive = previous;
+                if (state.theme) {
+                    state.theme.enabled = previousEnabled;
+                }
+                toast(t("saveError"));
+                renderSegments();
+                paintPreview();
+                paintBanner();
+            }
+        });
+    }
+
+    function loadSwitch(done) {
+        api("GET", "/rest/portal-designer/1.0/admin/switch", null, function (err, data) {
+            state.pluginActive = !(data && data.active === false);
+            if (done) {
+                done();
+            }
+        });
     }
 
     function renderTheme(host) {
@@ -1635,6 +1669,9 @@
     }
 
     function saveTheme() {
+        if (state.pluginActive !== false && state.theme) {
+            state.theme.enabled = true;
+        }
         var button = document.getElementById("save");
         var onError = state.afterSaveError;
         var revision = state.revision || 0;
@@ -1802,6 +1839,8 @@
     }
     renderShell();
     loadPresets(function () {
-        loadPortals();
+        loadSwitch(function () {
+            loadPortals();
+        });
     });
 })();

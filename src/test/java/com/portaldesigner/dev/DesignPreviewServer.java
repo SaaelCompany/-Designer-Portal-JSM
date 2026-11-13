@@ -116,6 +116,11 @@ public final class DesignPreviewServer {
         String method = exchange.getRequestMethod();
         if (path.endsWith("/public-theme") && "GET".equals(method)) {
             sendJson(exchange, themes.publicTheme(portalId));
+        } else if (path.endsWith("/admin/switch") && "GET".equals(method)) {
+            sendJson(exchange, switchBody(themes));
+        } else if (path.endsWith("/admin/switch") && "PUT".equals(method)) {
+            themes.setPluginActive(!"{\"active\":false}".equals(body(exchange).replace(" ", "")));
+            sendJson(exchange, switchBody(themes));
         } else if (path.endsWith("/admin/presets") && "GET".equals(method)) {
             sendJson(exchange, themes.presets());
         } else if (path.endsWith("/admin/theme") && "GET".equals(method)) {
@@ -170,7 +175,8 @@ public final class DesignPreviewServer {
         return "<header id=\"jira-header\">Jira Service Management</header>"
                 + "<h1>Порталы</h1>"
                 + "<a href=\"/servicedesk/customer/portal/1\">IT поддержка <p>Техника и доступы</p></a>"
-                + "<a href=\"/servicedesk/customer/portal/4\">Кадры <p>Отпуска и справки</p></a>";
+                + "<a href=\"/servicedesk/customer/portal/4\">Кадры <p>Отпуска и справки</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/99\">Случайная заявка</a>";
     }
 
     private static String projectBody() {
@@ -190,9 +196,20 @@ public final class DesignPreviewServer {
     private static Map<String, Object> samplePortals() {
         List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
         values.add(portal("1", "IT", "IT поддержка"));
-        values.add(portal("4", "HR", "Кадры"));
+        values.add(portal("2", "HR", "Кадры"));
+        values.add(portal("3", "FIN", "Финансы"));
+        values.add(portal("4", "LEG", "Юристы"));
+        values.add(portal("5", "FAC", "АХО"));
+        values.add(portal("6", "SEC", "Безопасность"));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
+        return body;
+    }
+
+    private static Map<String, Object> switchBody(ThemeService themes) {
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("active", Boolean.valueOf(themes.pluginActive()));
         return body;
     }
 
@@ -214,6 +231,7 @@ public final class DesignPreviewServer {
         values.add(type("15", "Пропуск в офис", "Гость или постоянный доступ"));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
         return body;
     }
 

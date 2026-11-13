@@ -449,11 +449,16 @@
         return false;
     }
 
-    function readCatalog(doc) {
+    function plainText(value) {
+        return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    }
+
+    function readCatalog(doc, portalId) {
         var requests = [];
         var portals = [];
         var seenRequest = {};
         var seenPortal = {};
+        var specific = portalId && portalId !== "global";
         var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
         for (var i = 0; i < links.length; i++) {
             var link = links[i];
@@ -461,24 +466,99 @@
                 continue;
             }
             var href = (link.getAttribute("href") || "").split("?")[0];
-            var name = String(link.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            var name = plainText(link.textContent || "");
             var description = "";
             var notes = link.getElementsByTagName("p");
             if (notes.length) {
-                description = String(notes[0].textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-                name = name.replace(description, "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+                description = plainText(notes[0].textContent || "");
+                name = plainText(name.replace(description, ""));
             }
-            var created = /\/portal\/\d+\/create\/(\d+)\/?$/.exec(href);
+            var created = /\/portal\/(\d+)\/(?:group\/\d+\/)?create\/(\d+)\/?$/.exec(href);
             var portal = /\/portal\/(\d+)\/?$/.exec(href);
-            if (created && !seenRequest[created[1]]) {
-                seenRequest[created[1]] = true;
-                requests.push({id: created[1], name: name, description: description, href: href});
-            } else if (portal && name && !seenPortal[portal[1]]) {
+            if (specific && created && created[1] === String(portalId) && !seenRequest[created[2]]) {
+                seenRequest[created[2]] = true;
+                requests.push({id: created[2], name: name, description: description, href: href});
+            } else if (!specific && portal && name && !seenPortal[portal[1]]) {
                 seenPortal[portal[1]] = true;
                 portals.push({id: portal[1], name: name, description: description, href: href});
             }
         }
-        return requests.length ? requests : portals;
+        return specific ? requests : portals;
+    }
+
+    function fetchValues(contextPath, path, cb) {
+        var collected = [];
+        var headers = {"X-Experimental-Api": "opt-in"};
+        function page(start) {
+            var join = path.indexOf("?") >= 0 ? "&" : "?";
+            getJson(contextPath + path + join + "start=" + start + "&limit=50", function (err, data) {
+                if (err || !data || !data.values) {
+                    cb(err || new Error("empty"), collected);
+                    return;
+                }
+                for (var i = 0; i < data.values.length && collected.length < 200; i++) {
+                    collected.push(data.values[i]);
+                }
+                var more = data.isLastPage === false && data.values.length && collected.length < 200;
+                if (more) {
+                    page((data.start || 0) + (data.limit || data.values.length));
+                } else {
+                    cb(null, collected);
+                }
+            }, headers);
+        }
+        page(0);
+    }
+
+    function fetchCatalog(contextPath, portalId, cb) {
+        var base = contextPath || "";
+        if (portalId && portalId !== "global") {
+            fetchValues(base, "/rest/servicedeskapi/servicedesk/" + encodeURIComponent(portalId) + "/requesttype", function (err, values) {
+                if (err || !values || !values.length) {
+                    cb(null);
+                    return;
+                }
+                var items = [];
+                for (var i = 0; i < values.length; i++) {
+                    var type = values[i];
+                    if (!type || type.id == null || !plainText(type.name)) {
+                        continue;
+                    }
+                    items.push({
+                        id: String(type.id),
+                        name: plainText(type.name),
+                        description: plainText(type.description || ""),
+                        href: base + "/servicedesk/customer/portal/" + portalId + "/create/" + type.id
+                    });
+                }
+                cb(items.length ? items : null);
+            });
+            return;
+        }
+        fetchValues(base, "/rest/servicedeskapi/servicedesk", function (err, values) {
+            if (err || !values || !values.length) {
+                cb(null);
+                return;
+            }
+            var items = [];
+            for (var j = 0; j < values.length; j++) {
+                var desk = values[j];
+                if (!desk || desk.id == null) {
+                    continue;
+                }
+                var name = plainText(desk.projectName || desk.projectKey || "");
+                if (!name) {
+                    continue;
+                }
+                items.push({
+                    id: String(desk.id),
+                    name: name,
+                    description: "",
+                    href: base + "/servicedesk/customer/portal/" + desk.id
+                });
+            }
+            cb(items.length ? items : null);
+        });
     }
 
     function ordered(items, order) {
@@ -544,7 +624,7 @@
         }
     }
 
-    function renderCards(doc, parent, theme) {
+    function renderCards(doc, parent, theme, ctx, catalog) {
         var box = doc.getElementById("pd-cards");
         if (!box) {
             box = el(doc, "div");
@@ -555,7 +635,8 @@
         }
         box.setAttribute("data-pd-region", "requests");
         box.setAttribute("data-pd-select", "requests");
-        var items = ordered(readCatalog(doc), theme.requests && theme.requests.order);
+        var source = catalog && catalog.length ? catalog : readCatalog(doc, ctx && ctx.portalId);
+        var items = ordered(source, theme.requests && theme.requests.order);
         var sig = items.map(function (item) { return item.id + "\n" + item.name + "\n" + item.description; }).join("|");
         var showDesc = !theme.requests || theme.requests.showDescription !== false;
         sig += showDesc ? ":desc" : ":plain";
@@ -679,7 +760,7 @@
         parent.appendChild(box);
     }
 
-    function replacePage(doc, theme, ctx, page, account) {
+    function replacePage(doc, theme, ctx, page, account, catalog) {
         if (!doc.body) {
             return;
         }
@@ -712,7 +793,7 @@
             } else if (block.type === "search") {
                 renderSearch(doc, parent, theme);
             } else if (block.type === "requests") {
-                renderCards(doc, parent, theme);
+                renderCards(doc, parent, theme, ctx, catalog);
             } else if (block.type === "footer") {
                 renderFooter(doc, parent, theme, ctx);
             } else if (block.type === "text") {
@@ -809,7 +890,7 @@
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        replacePage(doc, theme, ctx, page, options.account || null);
+        replacePage(doc, theme, ctx, page, options.account || null, options.catalog || null);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
@@ -841,10 +922,17 @@
         }
     }
 
-    function getJson(url, cb) {
+    function getJson(url, cb, headers) {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.setRequestHeader("Accept", "application/json");
+        if (headers) {
+            for (var name in headers) {
+                if (headers.hasOwnProperty(name)) {
+                    xhr.setRequestHeader(name, headers[name]);
+                }
+            }
+        }
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) {
                 return;
@@ -874,12 +962,13 @@
         var timer = 0;
         var account = null;
         var accountState = "pending";
+        var catalog = null;
 
         function paint(data, id) {
             suppress++;
             try {
-                if (!data || !data.enabled || !data.theme) {
-                    current = null;
+                if (!data || data.active === false || !data.enabled || !data.theme) {
+                    current = data || {enabled: false, active: false};
                     teardown(document);
                     return;
                 }
@@ -891,7 +980,8 @@
                     contextPath: contextPath,
                     portalId: id,
                     page: pageKind(window.location.pathname),
-                    account: account
+                    account: account,
+                    catalog: catalog
                 });
                 if (accountState === "pending") {
                     accountState = "loading";
@@ -934,11 +1024,31 @@
                 return;
             }
             currentId = id;
-            getJson(contextPath + "/rest/portal-designer/1.0/public-theme?portalId=" + encodeURIComponent(id), function (err, data) {
-                if (err) {
+            var token = {};
+            load.token = token;
+            var pending = 2;
+            var themeData = null;
+            var failed = false;
+            var items = null;
+            function finish() {
+                if (load.token !== token || --pending) {
                     return;
                 }
-                paint(data, id);
+                if (failed) {
+                    teardown(document);
+                    return;
+                }
+                catalog = items;
+                paint(themeData, id);
+            }
+            getJson(contextPath + "/rest/portal-designer/1.0/public-theme?portalId=" + encodeURIComponent(id), function (err, data) {
+                failed = !!err;
+                themeData = data;
+                finish();
+            });
+            fetchCatalog(contextPath, id, function (list) {
+                items = list;
+                finish();
             });
         }
 

@@ -3,6 +3,7 @@ package com.portaldesigner.rest;
 import com.atlassian.jira.security.GlobalPermissionManager;
 import com.atlassian.jira.security.JiraAuthenticationContext;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
+import com.portaldesigner.json.Json;
 import com.portaldesigner.security.AdminGuard;
 import com.portaldesigner.service.ThemeService;
 import com.portaldesigner.theme.ThemeException;
@@ -100,6 +101,56 @@ public class AdminThemeResource {
         } catch (ThemeException ex) {
             return Responses.error(400, ex.code());
         }
+    }
+
+    @GET
+    @Path("/switch")
+    public Response getSwitch() {
+        Response denied = guard();
+        if (denied != null) {
+            return denied;
+        }
+        return Responses.ok(switchBody());
+    }
+
+    @PUT
+    @Path("/switch")
+    public Response putSwitch(String body) {
+        Response denied = guard();
+        if (denied != null) {
+            return denied;
+        }
+        Boolean active = readActive(body);
+        if (active == null) {
+            return Responses.error(400, "invalid_json");
+        }
+        themes.setPluginActive(active.booleanValue());
+        return Responses.ok(switchBody());
+    }
+
+    private java.util.Map<String, Object> switchBody() {
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<String, Object>();
+        body.put("active", Boolean.valueOf(themes.pluginActive()));
+        return body;
+    }
+
+    private static Boolean readActive(String body) {
+        if (body == null || body.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            Object parsed = Json.parse(body);
+            if (!(parsed instanceof java.util.Map)) {
+                return null;
+            }
+            Object active = ((java.util.Map<?, ?>) parsed).get("active");
+            if (active instanceof Boolean) {
+                return (Boolean) active;
+            }
+        } catch (RuntimeException ex) {
+            return null;
+        }
+        return null;
     }
 
     @GET
