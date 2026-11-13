@@ -47,7 +47,7 @@ public final class ThemeMapper {
         Map<String, Object> type = map(raw.get("typography"));
         theme.typography.font = oneOf(str(type.get("font")), theme.typography.font,
                 "system", "serif", "mono", "humanist", "condensed");
-        theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 13, 22, "typography.baseSize", warnings);
+        theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 12, 48, "typography.baseSize", warnings);
         theme.typography.headingWeight = snapWeight(intVal(type.get("headingWeight"), theme.typography.headingWeight));
         theme.typography.lineHeight = clampDouble(doubleVal(type.get("lineHeight"), theme.typography.lineHeight), 1.15d, 1.9d);
 
@@ -270,7 +270,7 @@ public final class ThemeMapper {
         screen.columns = clamp(intVal(raw.get("columns"), defaults.columns), 1, 4, name + ".columns", warnings);
         screen.heroHeight = clamp(intVal(raw.get("heroHeight"), defaults.heroHeight), 0, 640, name + ".heroHeight", warnings);
         screen.pagePadding = clamp(intVal(raw.get("pagePadding"), defaults.pagePadding), 0, 48, name + ".pagePadding", warnings);
-        screen.baseSize = clamp(intVal(raw.get("baseSize"), defaults.baseSize), 13, 22, name + ".baseSize", warnings);
+        screen.baseSize = clamp(intVal(raw.get("baseSize"), defaults.baseSize), 12, 48, name + ".baseSize", warnings);
         screen.headerHeight = clamp(intVal(raw.get("headerHeight"), defaults.headerHeight), 48, 120, name + ".headerHeight", warnings);
         screen.showHero = bool(raw.get("showHero"), defaults.showHero);
         screen.showHeaderTitle = bool(raw.get("showHeaderTitle"), defaults.showHeaderTitle);
@@ -280,7 +280,7 @@ public final class ThemeMapper {
     private static List<PortalTheme.Column> columns(Object raw, List<String> warnings) {
         List<PortalTheme.Column> columns = new ArrayList<PortalTheme.Column>();
         if (!(raw instanceof List)) {
-            columns.add(new PortalTheme.Column("Поддержка", new PortalTheme.Link("Мои заявки", "/servicedesk/customer/user/requests")));
+            columns.add(new PortalTheme.Column("Поддержка", new PortalTheme.Link("Мои запросы", "/servicedesk/customer/user/requests")));
             return columns;
         }
         List<?> list = (List<?>) raw;
@@ -333,6 +333,16 @@ public final class ThemeMapper {
             block.title = text(item.get("title"), "", 160);
             block.text = text(item.get("text"), "", 600);
             block.links = links(item.get("links"), 8, warnings);
+            block.free = bool(item.get("free"), false);
+            block.x = clamp(intVal(item.get("x"), 0), 0, 90, "blocks.x", warnings);
+            block.y = clamp(intVal(item.get("y"), 0), 0, 2400, "blocks.y", warnings);
+            block.width = clamp(intVal(item.get("width"), 100), 20, 100, "blocks.width", warnings);
+            block.fontSize = clamp(intVal(item.get("fontSize"), 0), 0, 96, "blocks.fontSize", warnings);
+            if (block.fontSize > 0 && block.fontSize < 12) {
+                block.fontSize = 12;
+            }
+            block.font = oneOf(str(item.get("font")), "", "", "system", "serif", "mono", "humanist", "condensed");
+            block.align = oneOf(str(item.get("align")), "", "", "left", "center", "right");
             blocks.add(block);
             seen.add(id);
             if (core) {
@@ -355,6 +365,13 @@ public final class ThemeMapper {
             item.put("title", block.title);
             item.put("text", block.text);
             item.put("links", linkMaps(block.links));
+            item.put("free", block.free);
+            item.put("x", block.x);
+            item.put("y", block.y);
+            item.put("width", block.width);
+            item.put("fontSize", block.fontSize);
+            item.put("font", block.font);
+            item.put("align", block.align);
             out.add(item);
         }
         return out;

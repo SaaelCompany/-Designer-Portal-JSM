@@ -67,6 +67,40 @@ public class ThemePipelineTest {
     }
 
     @Test
+    public void blockPlacementRoundTrips() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.enabled = true;
+        PortalTheme.Block block = new PortalTheme.Block();
+        block.id = "hero";
+        block.type = "hero";
+        block.free = true;
+        block.x = 12;
+        block.y = 40;
+        block.width = 60;
+        block.fontSize = 28;
+        block.font = "serif";
+        block.align = "right";
+        theme.blocks.add(block);
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> blocks = (List<Map<String, Object>>) cast(saved.get("theme")).get("blocks");
+        Map<String, Object> hero = null;
+        for (Map<String, Object> item : blocks) {
+            if ("hero".equals(item.get("id"))) {
+                hero = item;
+            }
+        }
+        assertNotNull(hero);
+        assertEquals(Boolean.TRUE, hero.get("free"));
+        assertEquals(Integer.valueOf(12), hero.get("x"));
+        assertEquals(Integer.valueOf(40), hero.get("y"));
+        assertEquals(Integer.valueOf(60), hero.get("width"));
+        assertEquals(Integer.valueOf(28), hero.get("fontSize"));
+        assertEquals("serif", hero.get("font"));
+        assertEquals("right", hero.get("align"));
+    }
+
+    @Test
     public void saveStripsScriptFromCustomHtml() {
         PortalTheme theme = ThemePresets.classic();
         theme.enabled = true;

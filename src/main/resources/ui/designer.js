@@ -8,6 +8,8 @@
             all: "Все порталы",
             portalPh: "ID",
             home: "Главная",
+            mine: "Запросы",
+            profile: "Профиль",
             login: "Вход",
             create: "Заявка",
             desktop: "Компьютер",
@@ -26,7 +28,16 @@
             pluginOff: "Плагин выключен на всех порталах. Посетители видят обычный портал Jira.",
             originalLive: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
             originalLabel: "Так портал выглядит без плагина: услуги Jira, без собранной страницы.",
-            pageHint: "Это состав страницы. Перетащите блок на другой блок, чтобы поменять порядок. Скрытый блок на портал не попадает.",
+            pageHint: "Это состав страницы. Перетащите блок на другой блок, чтобы поменять порядок. На макете кнопка «Переместить» ставит блок в любое место, правый край меняет ширину.",
+            place: "Положение и размер",
+            freePlace: "Свободное положение",
+            placeHint: "Свободный блок можно перетащить куда угодно и сделать шире или уже. Размер шрифта 0 оставляет шрифт страницы.",
+            posX: "Слева, %",
+            posY: "Сверху, px",
+            blockWidth: "Ширина, %",
+            blockFont: "Шрифт блока",
+            blockSize: "Размер шрифта",
+            inheritFont: "Как на странице",
             addText: "Текстовый блок",
             addLinks: "Блок ссылок",
             blockTitle: "Заголовок",
@@ -35,7 +46,7 @@
             showBlock: "Показать",
             guest: "Гость",
             signedIn: "Вошёл",
-            profileHint: "У гостя здесь кнопка входа. Если посетитель уже вошёл, вместо неё показывается его имя, заявки и выход.",
+            profileHint: "Кнопка входа только у гостя. У вошедшего здесь его имя: профиль, запросы и выход.",
             save: "Сохранить",
             saving: "Сохраняем…",
             saved: "Сохранено",
@@ -102,7 +113,7 @@
             gap: "Интервал",
             cardStyle: "Вид карточек",
             descriptions: "Описания на карточках",
-            replaceHint: "Конструктор не перекрашивает портал Jira. Опубликованная страница целиком заменяет список порталов и страницу проекта. Форма заявки и вход остаются страницами Jira.",
+            replaceHint: "Опубликованная страница заменяет список порталов, страницу проекта, мои запросы и профиль. Форма новой заявки и страница входа остаются страницами Jira.",
             cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
             keptPage: "Форма входа и форма заявки остаются страницами Jira. Конструктор их не собирает заново.",
             layoutMode: "Раскладка",
@@ -122,6 +133,7 @@
             homeOnly: "Только главная",
             allPages: "Все страницы",
             start: "Слева",
+            rightAlign: "Справа",
             center: "По центру",
             grid: "Плитка",
             list: "Список",
@@ -167,6 +179,8 @@
             all: "All portals",
             portalPh: "ID",
             home: "Home",
+            mine: "Requests",
+            profile: "Profile",
             login: "Login",
             create: "Request",
             desktop: "Desktop",
@@ -185,7 +199,16 @@
             pluginOff: "The plugin is off for every portal. Visitors see the standard Jira portal.",
             originalLive: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
             originalLabel: "This is the portal without the plugin: Jira's services, with no constructed page.",
-            pageHint: "These are the blocks of the page. Drag one onto another to reorder them. A hidden block is not on the portal.",
+            pageHint: "These are the blocks of the page. Drag one onto another to reorder them. On the canvas, Move places a block anywhere and the right edge changes its width.",
+            place: "Place and size",
+            freePlace: "Free position",
+            placeHint: "A free block can be dragged anywhere and made wider or narrower. Font size 0 keeps the page font.",
+            posX: "From the left, %",
+            posY: "From the top, px",
+            blockWidth: "Width, %",
+            blockFont: "Block font",
+            blockSize: "Font size",
+            inheritFont: "Same as the page",
             addText: "Text block",
             addLinks: "Link row",
             blockTitle: "Heading",
@@ -194,7 +217,7 @@
             showBlock: "Show",
             guest: "Guest",
             signedIn: "Signed in",
-            profileHint: "A guest sees the login button. A signed-in visitor sees their name, their requests and a way out.",
+            profileHint: "Only a guest sees the login button. A signed-in visitor sees their name, with profile, requests and sign out.",
             save: "Save",
             saving: "Saving…",
             saved: "Saved",
@@ -261,7 +284,7 @@
             gap: "Gap",
             cardStyle: "Card style",
             descriptions: "Card descriptions",
-            replaceHint: "The designer does not restyle the Jira portal. The published page replaces the portal list and the project page. The request form and the login page stay Jira pages.",
+            replaceHint: "The published page replaces the portal list, the project page, my requests and the profile. The new-request form and the login page stay Jira pages.",
             cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
             keptPage: "The login page and the request form stay Jira pages. The designer does not rebuild them.",
             layoutMode: "Layout",
@@ -281,6 +304,7 @@
             homeOnly: "Home only",
             allPages: "Every page",
             start: "Start",
+            rightAlign: "Right",
             center: "Center",
             grid: "Grid",
             list: "List",
@@ -669,6 +693,61 @@
             }
         }, true);
         doc.addEventListener("pointerdown", function (event) {
+            var handle = event.target.closest ? event.target.closest(".pd-move, .pd-resize") : null;
+            if (!handle || !state.theme) {
+                return;
+            }
+            var slot = handle.closest(".pd-slot");
+            var page = doc.getElementById("pd-page");
+            if (!slot || !page) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            var block = findBlock(slot.getAttribute("data-pd-block"));
+            if (!block) {
+                return;
+            }
+            remember();
+            var resizing = (" " + handle.className + " ").indexOf(" pd-resize ") >= 0;
+            var rect = page.getBoundingClientRect();
+            var slotRect = slot.getBoundingClientRect();
+            if (!block.free) {
+                block.free = true;
+                block.x = Math.max(0, Math.min(80, (slotRect.left - rect.left) / rect.width * 100));
+                block.y = Math.max(0, slotRect.top - rect.top);
+                block.width = Math.max(20, Math.min(100, slotRect.width / rect.width * 100));
+            }
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var originX = block.x || 0;
+            var originY = block.y || 0;
+            var originW = block.width || 100;
+            function move(ev) {
+                if (resizing) {
+                    block.width = Math.max(20, Math.min(100, originW + (ev.clientX - startX) / rect.width * 100));
+                } else {
+                    block.x = Math.max(0, Math.min(80, originX + (ev.clientX - startX) / rect.width * 100));
+                    block.y = Math.max(0, Math.min(2400, originY + (ev.clientY - startY)));
+                }
+                slot.style.position = "absolute";
+                slot.style.left = block.x + "%";
+                slot.style.top = block.y + "px";
+                slot.style.width = block.width + "%";
+                if ((" " + slot.className + " ").indexOf(" pd-free ") < 0) {
+                    slot.className += " pd-free";
+                }
+            }
+            function up() {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                markDirty();
+                scheduleCompile();
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        }, true);
+        doc.addEventListener("pointerdown", function (event) {
             var tile = event.target.closest ? event.target.closest(".pd-tile") : null;
             if (!tile || !state.theme) {
                 return;
@@ -764,11 +843,31 @@
             original: state.pluginActive === false || !(state.theme && state.theme.enabled),
             catalog: previewCatalog(),
             originalLabel: t("originalLabel"),
-            account: state.asUser ? {name: "Анна Ковалева", username: "anna"} : null,
+            account: state.asUser ? {name: "Анна Ковалева", username: "anna", email: "anna@example.com"} : null,
+            accountState: state.asUser ? "ready" : "anonymous",
+            requests: [
+                {key: "STP-50", summary: "Тест", status: "Ожидание поддержки", href: "#"},
+                {key: "STP-47", summary: "Заявка", status: "Ожидание поддержки", href: "#"}
+            ],
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind]");
                 for (var i = 0; i < bound.length; i++) {
                     bound[i].setAttribute("contenteditable", "true");
+                }
+                var slots = rendered.querySelectorAll(".pd-slot");
+                for (var s = 0; s < slots.length; s++) {
+                    if (slots[s].querySelector(".pd-move")) {
+                        continue;
+                    }
+                    var move = rendered.createElement("button");
+                    move.type = "button";
+                    move.className = "pd-move";
+                    move.textContent = t("freePlace");
+                    var resize = rendered.createElement("button");
+                    resize.type = "button";
+                    resize.className = "pd-resize";
+                    slots[s].appendChild(move);
+                    slots[s].appendChild(resize);
                 }
             }
         });
@@ -864,7 +963,7 @@
     }
 
     function renderSegments() {
-        fillSeg("pages", [["home", "home"], ["login", "login"], ["create", "create"]], state.page, function (id) {
+        fillSeg("pages", [["home", "home"], ["mine", "mine"], ["profile", "profile"], ["login", "login"], ["create", "create"]], state.page, function (id) {
             state.page = id;
             renderSegments();
             paintPreview();
@@ -1308,6 +1407,75 @@
             block.links = block.links || [];
             host.appendChild(linkEditor(block.links));
         }
+        host.appendChild(placeControls(block));
+    }
+
+    function placeControls(block) {
+        if (!block.width) {
+            block.width = 100;
+        }
+        var box = h("div");
+        box.appendChild(h("div", {class: "block-label", text: t("place")}));
+        box.appendChild(h("p", {class: "hint", text: t("placeHint")}));
+        var free = h("input", {type: "checkbox", checked: !!block.free});
+        free.addEventListener("change", function () {
+            remember();
+            block.free = free.checked;
+            if (block.free && !block.width) {
+                block.width = 80;
+            }
+            markDirty();
+            renderInspector();
+            scheduleCompile();
+        });
+        box.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePlace"))]));
+        if (block.free) {
+            box.appendChild(blockNumber(block, "x", t("posX"), 0, 80));
+            box.appendChild(blockNumber(block, "y", t("posY"), 0, 2400));
+            box.appendChild(blockNumber(block, "width", t("blockWidth"), 20, 100));
+        }
+        box.appendChild(blockNumber(block, "fontSize", t("blockSize"), 0, 96));
+        box.appendChild(blockChoice(block, "font", t("blockFont"), [
+            ["", "inheritFont"], ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
+        ]));
+        box.appendChild(blockChoice(block, "align", t("align"), [
+            ["", "inheritFont"], ["left", "start"], ["center", "center"], ["right", "rightAlign"]
+        ]));
+        return box;
+    }
+
+    function blockNumber(block, key, label, min, max) {
+        var input = h("input", {type: "number", min: String(min), max: String(max), step: "1", value: block[key] || 0});
+        input.addEventListener("change", function () {
+            remember();
+            var value = Number(input.value);
+            if (isNaN(value)) {
+                value = 0;
+            }
+            block[key] = Math.max(min, Math.min(max, value));
+            input.value = String(block[key]);
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function blockChoice(block, key, label, options) {
+        var input = h("select");
+        options.forEach(function (option) {
+            var node = h("option", {value: option[0], text: t(option[1])});
+            if ((block[key] || "") === option[0]) {
+                node.selected = true;
+            }
+            input.appendChild(node);
+        });
+        input.addEventListener("change", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
     }
 
     function plainField(block, key, label) {
@@ -1427,7 +1595,7 @@
         host.appendChild(field("typography.font", t("font"), selectInput("typography.font", [
             ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
         ])));
-        host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 13, 22)));
+        host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 12, 48)));
         host.appendChild(field("typography.headingWeight", t("weight"), selectInput("typography.headingWeight", [
             ["400", "400"], ["500", "500"], ["600", "600"], ["700", "700"], ["800", "800"]
         ])));

@@ -98,6 +98,18 @@ public final class DesignPreviewServer {
                 send(exchange, 200, "text/html; charset=UTF-8", customerHtml(projectBody()).getBytes(StandardCharsets.UTF_8));
                 return;
             }
+            if ("/rest/api/2/myself".equals(path)) {
+                sendJson(exchange, sampleUser());
+                return;
+            }
+            if ("/rest/servicedeskapi/request".equals(path)) {
+                sendJson(exchange, sampleRequests());
+                return;
+            }
+            if ("/servicedesk/customer/user/requests".equals(path) || "/servicedesk/customer/user/profile".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml("<header id=\"jira-header\">Jira Service Management</header>").getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             if ("/servicedesk/customer/portal/1/create/10".equals(path)) {
                 send(exchange, 200, "text/html; charset=UTF-8", customerHtml(createBody()).getBytes(StandardCharsets.UTF_8));
                 return;
@@ -233,6 +245,40 @@ public final class DesignPreviewServer {
         body.put("values", values);
         body.put("isLastPage", Boolean.TRUE);
         return body;
+    }
+
+    private static Map<String, Object> sampleUser() {
+        Map<String, Object> user = new LinkedHashMap<String, Object>();
+        user.put("name", "anna");
+        user.put("key", "anna");
+        user.put("displayName", "Анна Ковалева");
+        user.put("emailAddress", "anna@example.com");
+        Map<String, Object> avatars = new LinkedHashMap<String, Object>();
+        avatars.put("24x24", "");
+        user.put("avatarUrls", avatars);
+        return user;
+    }
+
+    private static Map<String, Object> sampleRequests() {
+        List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
+        values.add(request("STP-50", "Тест", "Ожидание поддержки"));
+        values.add(request("STP-47", "Заявка", "Ожидание поддержки"));
+        values.add(request("STP-46", "Доступ", "Ожидание поддержки"));
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
+        return body;
+    }
+
+    private static Map<String, Object> request(String key, String summary, String status) {
+        Map<String, Object> item = new LinkedHashMap<String, Object>();
+        item.put("issueKey", key);
+        item.put("summary", summary);
+        item.put("serviceDeskId", "1");
+        Map<String, Object> current = new LinkedHashMap<String, Object>();
+        current.put("status", status);
+        item.put("currentStatus", current);
+        return item;
     }
 
     private static Map<String, Object> type(String id, String name, String description) {

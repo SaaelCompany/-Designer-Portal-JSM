@@ -160,6 +160,14 @@ public final class PortalTheme {
         public String title = "";
         public String text = "";
         public List<Link> links = new ArrayList<Link>();
+        /** When true, the block is placed by x/y/width instead of the normal stack. */
+        public boolean free;
+        public int x;
+        public int y;
+        public int width = 100;
+        public int fontSize;
+        public String font = "";
+        public String align = "";
     }
 
     public static final class Link {

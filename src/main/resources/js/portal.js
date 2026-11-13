@@ -44,6 +44,12 @@
         if (/\/servicedesk\/customer\/portal\/\d+$/.test(clean)) {
             return "home";
         }
+        if (/\/user\/requests\/?$/.test(clean)) {
+            return "mine";
+        }
+        if (/\/user\/profile\/?$/.test(clean)) {
+            return "profile";
+        }
         if (/\/login$/.test(clean)) {
             return "login";
         }
@@ -237,6 +243,9 @@
 
     function accountNode(doc, theme, ctx, account) {
         var base = ctx.contextPath || "";
+        if (ctx.accountState === "pending") {
+            return el(doc, "span", "pd-account-wait");
+        }
         if (account && (account.name || account.username)) {
             var box = el(doc, "div", "pd-account");
             var button = el(doc, "button", "pd-account-btn");
@@ -251,10 +260,13 @@
             }
             button.appendChild(el(doc, "span", "pd-account-name", account.name || account.username));
             var menu = el(doc, "div", "pd-account-menu");
-            var requests = el(doc, "a", null, "Мои заявки");
+            var profile = el(doc, "a", null, "Профиль");
+            profile.href = account.profileHref || (base + "/servicedesk/customer/user/profile");
+            var requests = el(doc, "a", null, "Мои запросы");
             requests.href = account.requestsHref || (base + "/servicedesk/customer/user/requests");
             var logout = el(doc, "a", null, "Выйти");
             logout.href = account.logoutHref || (base + "/logout");
+            menu.appendChild(profile);
             menu.appendChild(requests);
             menu.appendChild(logout);
             button.addEventListener("click", function (event) {
@@ -291,8 +303,8 @@
     function renderHeader(doc, parent, theme, ctx, account) {
         var header = doc.getElementById("pd-header");
         var editing = doc.activeElement && parent.contains && parent.contains(doc.activeElement);
-        var who = account ? ((account.name || "") + "|" + (account.avatar || "")) : "";
-        var sig = signature(theme) + "\n" + who;
+        var who = account ? ((account.name || "") + "|" + (account.avatar || "") + "|" + (account.email || "")) : "";
+        var sig = signature(theme) + "\n" + who + "\n" + (ctx.accountState || "");
         if (header && header.parentNode !== parent) {
             parent.appendChild(header);
         }
@@ -690,10 +702,10 @@
             return !theme.footer || theme.footer.mode !== "hidden";
         }
         if (block.type === "hero") {
-            return showHero(theme, page);
+            return page !== "mine" && page !== "profile" && showHero(theme, page);
         }
         if (block.type === "search") {
-            return !theme.search || theme.search.visible !== false;
+            return page !== "mine" && page !== "profile" && (!theme.search || theme.search.visible !== false);
         }
         if (block.type === "announcement") {
             return !!(theme.announcement && theme.announcement.visible && theme.announcement.text);
@@ -760,6 +772,111 @@
         parent.appendChild(box);
     }
 
+    function placeBlock(node, block) {
+        if (!block || !block.free) {
+            removeClass(node, "pd-free");
+            node.style.left = "";
+            node.style.top = "";
+            node.style.width = "";
+            node.style.fontSize = "";
+            node.removeAttribute("data-pd-font");
+            node.removeAttribute("data-pd-align");
+            return;
+        }
+        addClass(node, "pd-free");
+        node.style.left = (block.x || 0) + "%";
+        node.style.top = (block.y || 0) + "px";
+        node.style.width = (block.width || 100) + "%";
+        node.style.fontSize = block.fontSize ? block.fontSize + "px" : "";
+        if (block.font) {
+            node.setAttribute("data-pd-font", block.font);
+        } else {
+            node.removeAttribute("data-pd-font");
+        }
+        if (block.align) {
+            node.setAttribute("data-pd-align", block.align);
+        } else {
+            node.removeAttribute("data-pd-align");
+        }
+    }
+
+    function renderMine(doc, parent, ctx) {
+        var box = parent.querySelector ? parent.querySelector(".pd-mine") : null;
+        var rows = ctx.requests || [];
+        var sig = rows.map(function (row) {
+            return row.key + "\n" + row.summary + "\n" + row.status;
+        }).join("|");
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-mine");
+        box.setAttribute("data-pd-sig", sig);
+        box.appendChild(el(doc, "h2", null, "Мои запросы"));
+        var filter = doc.createElement("input");
+        filter.type = "search";
+        filter.className = "pd-mine-filter";
+        filter.placeholder = "Поиск по запросам";
+        filter.addEventListener("input", function () {
+            var query = String(filter.value || "").toLowerCase();
+            var links = box.getElementsByClassName("pd-row");
+            for (var i = 0; i < links.length; i++) {
+                var text = String(links[i].textContent || "").toLowerCase();
+                links[i].style.display = !query || text.indexOf(query) >= 0 ? "" : "none";
+            }
+        });
+        box.appendChild(filter);
+        if (!rows.length) {
+            box.appendChild(el(doc, "p", "pd-empty", "Запросов пока нет"));
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var link = el(doc, "a", "pd-row");
+            link.href = row.href || "#";
+            link.appendChild(el(doc, "span", "pd-key", row.key || ""));
+            link.appendChild(el(doc, "span", "pd-summary", row.summary || ""));
+            link.appendChild(el(doc, "span", "pd-status", row.status || ""));
+            box.appendChild(link);
+        }
+        parent.appendChild(box);
+    }
+
+    function renderProfile(doc, parent, ctx) {
+        var account = ctx.account;
+        clearNode(parent);
+        var box = el(doc, "div", "pd-profile");
+        box.appendChild(el(doc, "h2", null, "Профиль"));
+        if (!account || !(account.name || account.username)) {
+            var guest = el(doc, "p", null, "Войдите, чтобы открыть профиль.");
+            var login = el(doc, "a", "pd-login", "Войти");
+            login.href = loginHref(ctx);
+            box.appendChild(guest);
+            box.appendChild(login);
+            parent.appendChild(box);
+            return;
+        }
+        var card = el(doc, "div", "pd-profile-card");
+        if (account.avatar) {
+            var img = doc.createElement("img");
+            img.src = account.avatar;
+            img.alt = "";
+            card.appendChild(img);
+        } else {
+            card.appendChild(el(doc, "span", "pd-account-mark", (account.name || account.username).charAt(0).toUpperCase()));
+        }
+        var text = el(doc, "div");
+        text.appendChild(el(doc, "strong", null, account.name || account.username));
+        if (account.username) {
+            text.appendChild(el(doc, "p", null, account.username));
+        }
+        if (account.email) {
+            text.appendChild(el(doc, "p", null, account.email));
+        }
+        card.appendChild(text);
+        box.appendChild(card);
+        parent.appendChild(box);
+    }
+
     function replacePage(doc, theme, ctx, page, account, catalog) {
         if (!doc.body) {
             return;
@@ -776,6 +893,7 @@
         }
         var blocks = blocksOf(theme);
         var keep = {};
+        var floor = 0;
         for (var i = 0; i < blocks.length; i++) {
             var block = blocks[i];
             if (!blockShown(theme, block, page)) {
@@ -793,7 +911,13 @@
             } else if (block.type === "search") {
                 renderSearch(doc, parent, theme);
             } else if (block.type === "requests") {
-                renderCards(doc, parent, theme, ctx, catalog);
+                if (page === "mine") {
+                    renderMine(doc, parent, ctx);
+                } else if (page === "profile") {
+                    renderProfile(doc, parent, ctx);
+                } else {
+                    renderCards(doc, parent, theme, ctx, catalog);
+                }
             } else if (block.type === "footer") {
                 renderFooter(doc, parent, theme, ctx);
             } else if (block.type === "text") {
@@ -801,7 +925,15 @@
             } else if (block.type === "links") {
                 renderLinksBlock(doc, parent, block, ctx);
             }
+            placeBlock(parent, block);
+            if (block.free) {
+                var depth = (block.y || 0) + 220;
+                if (depth > floor) {
+                    floor = depth;
+                }
+            }
         }
+        pageNode.style.minHeight = floor ? (floor + 40) + "px" : "";
         var slots = pageNode.getElementsByClassName("pd-slot");
         for (var s = slots.length - 1; s >= 0; s--) {
             if (!keep[slots[s].getAttribute("data-pd-block")]) {
@@ -860,14 +992,17 @@
         var page = options.page || pageKind(window.location.pathname);
         var ctx = {
             contextPath: options.contextPath || "",
-            portalId: options.portalId || "global"
+            portalId: options.portalId || "global",
+            account: options.account || null,
+            accountState: options.accountState || (options.account ? "ready" : "anonymous"),
+            requests: options.requests || []
         };
         if (options.original) {
             dropPage(doc);
             showOriginal(doc, options.originalLabel);
             return;
         }
-        if (page !== "home") {
+        if (page !== "home" && page !== "mine" && page !== "profile") {
             dropPage(doc);
             if (options.preview) {
                 showKept(doc, options.keptLabel);
@@ -957,12 +1092,63 @@
         window.__PD_BOOTED = true;
         var contextPath = detectContext();
         var currentId = null;
+        var currentKind = null;
         var current = null;
         var suppress = 0;
         var timer = 0;
         var account = null;
         var accountState = "pending";
         var catalog = null;
+        var mine = null;
+
+        function loadAccount() {
+            var dom = readVisitor(document);
+            getJson(contextPath + "/rest/api/2/myself", function (err, me) {
+                if (err || !me || (!me.displayName && !me.name && !me.key)) {
+                    account = null;
+                    accountState = "anonymous";
+                } else {
+                    var urls = me.avatarUrls || {};
+                    account = {
+                        username: me.name || me.key || "",
+                        name: me.displayName || me.name || me.key,
+                        email: me.emailAddress || "",
+                        avatar: urls["48x48"] || urls["24x24"] || urls["16x16"] || "",
+                        logoutHref: (dom && dom.logoutHref) || (contextPath + "/logout"),
+                        requestsHref: contextPath + "/servicedesk/customer/user/requests",
+                        profileHref: contextPath + "/servicedesk/customer/user/profile"
+                    };
+                    accountState = "ready";
+                }
+                if (current) {
+                    paint(current, currentId);
+                }
+            });
+        }
+
+        function mineRows(values) {
+            var rows = [];
+            var base = contextPath || "";
+            for (var i = 0; i < values.length; i++) {
+                var item = values[i] || {};
+                var key = item.issueKey || "";
+                if (!key) {
+                    continue;
+                }
+                var href = item._links && item._links.web ? item._links.web : "";
+                if (!href && item.serviceDeskId) {
+                    href = base + "/servicedesk/customer/portal/" + item.serviceDeskId + "/" + key;
+                }
+                var status = item.currentStatus && (item.currentStatus.status || item.currentStatus.statusName) || "";
+                rows.push({
+                    key: key,
+                    summary: plainText(item.summary || item.requestFieldValues || ""),
+                    status: plainText(status),
+                    href: href || "#"
+                });
+            }
+            return rows;
+        }
 
         function paint(data, id) {
             suppress++;
@@ -981,32 +1167,10 @@
                     portalId: id,
                     page: pageKind(window.location.pathname),
                     account: account,
+                    accountState: accountState,
+                    requests: mine,
                     catalog: catalog
                 });
-                if (accountState === "pending") {
-                    accountState = "loading";
-                    var found = readVisitor(document);
-                    if (!found) {
-                        accountState = "ready";
-                    } else {
-                        account = found;
-                        paint(data, id);
-                        getJson(contextPath + "/rest/api/2/myself", function (err, me) {
-                            if (err || !me) {
-                                return;
-                            }
-                            if (me.displayName) {
-                                found.name = me.displayName;
-                            }
-                            var urls = me.avatarUrls || {};
-                            found.avatar = urls["24x24"] || urls["16x16"] || "";
-                            account = found;
-                            if (current) {
-                                paint(current, currentId);
-                            }
-                        });
-                    }
-                }
             } catch (e) {
                 if (window.console && console.warn) {
                     console.warn("Portal Designer skipped a render", e);
@@ -1019,14 +1183,17 @@
 
         function load(force) {
             var id = portalIdFromPath(window.location.pathname);
-            if (!force && current && currentId === id) {
+            var kindNow = pageKind(window.location.pathname);
+            if (!force && current && currentId === id && currentKind === kindNow) {
                 paint(current, id);
                 return;
             }
             currentId = id;
+            currentKind = kindNow;
             var token = {};
+            var kind = pageKind(window.location.pathname);
             load.token = token;
-            var pending = 2;
+            var pending = kind === "mine" ? 3 : 2;
             var themeData = null;
             var failed = false;
             var items = null;
@@ -1050,6 +1217,14 @@
                 items = list;
                 finish();
             });
+            if (kind === "mine") {
+                fetchValues(contextPath, "/rest/servicedeskapi/request", function (err, values) {
+                    mine = mineRows(values || []);
+                    finish();
+                });
+            } else {
+                mine = null;
+            }
         }
 
         function schedule() {
@@ -1063,6 +1238,7 @@
         }
 
         load(true);
+        loadAccount();
         if (window.MutationObserver && document.body) {
             var observer = new MutationObserver(schedule);
             observer.observe(document.body, {childList: true, subtree: true});
