@@ -209,10 +209,10 @@ public final class DesignPreviewServer {
     }
 
     private static String createBody() {
-        return "<header id=\"jira-header\">Jira Service Management</header>"
-                + "<form id=\"create-form\"><h1>Новая заявка</h1>"
-                + "<label>Тема<input name=\"summary\"/></label>"
-                + "<button type=\"submit\">Отправить</button></form>";
+        return "<div class=\"help-center-bar\" style=\"height:56px;background:#0747a6;color:#fff\">Центр поддержки</div>"
+                + "<form id=\"create-form\" class=\"aui-page-panel\"><h1>Новая заявка</h1>"
+                + "<label>Тема<input name=\"summary\" type=\"text\"/></label>"
+                + "<button type=\"submit\" class=\"aui-button-primary\">Создать</button></form>";
     }
 
     private static Map<String, Object> samplePortals() {

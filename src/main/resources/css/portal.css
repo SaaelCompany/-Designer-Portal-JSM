@@ -9,9 +9,10 @@ html.pd-replace body > :not(#pd-page) {
     display: none !important;
 }
 
+html.pd-shell,
 html.pd-shell body {
     margin: 0;
-    background: var(--pd-bg);
+    background: var(--pd-bg) !important;
     color: var(--pd-text);
     font-family: var(--pd-font);
     font-size: var(--pd-base);
@@ -32,8 +33,38 @@ html.pd-shell .aui-header {
 
 html.pd-shell .cv-page,
 html.pd-shell .cv-smart-portal,
-html.pd-shell #jsd-portal-container {
+html.pd-shell #jsd-portal-container,
+html.pd-shell #content,
+html.pd-shell .aui-page-panel {
     background: transparent !important;
+}
+
+html.pd-shell .pd-native-form {
+    background: var(--pd-card) !important;
+    color: var(--pd-text);
+    border: 1px solid var(--pd-border);
+    border-radius: var(--pd-radius);
+}
+
+html.pd-shell .aui-button-primary,
+html.pd-shell .pd-native-form button[type="submit"],
+html.pd-shell .pd-native-form input[type="submit"] {
+    background: var(--pd-primary) !important;
+    color: var(--pd-primary-text) !important;
+    border-color: var(--pd-primary) !important;
+    border-radius: var(--pd-radius) !important;
+}
+
+html.pd-shell .pd-native-form input,
+html.pd-shell .pd-native-form textarea,
+html.pd-shell .pd-native-form select {
+    border-color: var(--pd-border) !important;
+    color: var(--pd-text);
+    border-radius: 3px;
+}
+
+html.pd-shell .pd-native-form a {
+    color: var(--pd-link);
 }
 
 html.pd-active .pd-tile {

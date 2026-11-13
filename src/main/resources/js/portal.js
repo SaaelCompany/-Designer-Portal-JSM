@@ -53,11 +53,14 @@
         if (/\/login$/.test(clean)) {
             return "login";
         }
-        if (/\/portal\/\d+\/(?:group\/\d+\/)?create\/\d+$/.test(clean)) {
+        if (/\/create\/-?\d+/.test(clean)) {
             return "create";
         }
-        if (/\/portal\/\d+\/[A-Za-z][A-Za-z0-9_]*-\d+$/.test(clean) || /\/request\/[^/]+$/.test(clean)) {
+        if (/\/[A-Za-z][A-Za-z0-9_]*-\d+$/.test(clean) || /\/request\/[^/]+$/.test(clean)) {
             return "request";
+        }
+        if (clean.indexOf("/servicedesk/customer/") >= 0) {
+            return "shell";
         }
         return "other";
     }
@@ -1038,13 +1041,61 @@
         }
     }
 
+    function isChromeBlue(color) {
+        var match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color || "");
+        if (!match) {
+            return false;
+        }
+        var red = Number(match[1]);
+        var green = Number(match[2]);
+        var blue = Number(match[3]);
+        return blue > 100 && blue > red + 20 && blue > green && red < 90;
+    }
+
+    function isPageWash(color) {
+        var match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color || "");
+        if (!match) {
+            return false;
+        }
+        var red = Number(match[1]);
+        var green = Number(match[2]);
+        var blue = Number(match[3]);
+        return red > 228 && green > 228 && blue > 228 && Math.abs(red - blue) < 24;
+    }
+
     function hideNativeBars(doc) {
+        var view = doc.defaultView || window;
         var nodes = doc.querySelectorAll ? doc.querySelectorAll("header, [role='banner'], .aui-header, .cv-smart-portal-header, .cv-help-center-header, .cv-page-header, .cv-header, .jsd-header") : [];
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i].id === "pd-header" || owned(nodes[i])) {
                 continue;
             }
             nodes[i].setAttribute("data-pd-native-bar", "1");
+        }
+        if (!doc.body || !view.getComputedStyle) {
+            return;
+        }
+        var all = doc.body.getElementsByTagName("*");
+        var width = doc.documentElement.clientWidth || 0;
+        var limit = Math.min(all.length, 500);
+        for (var n = 0; n < limit; n++) {
+            var el = all[n];
+            if (owned(el) || el.id === "pd-header" || el.getAttribute("data-pd-native-bar")) {
+                continue;
+            }
+            var rect = el.getBoundingClientRect();
+            var bg = view.getComputedStyle(el).backgroundColor;
+            if (rect.top < 180 && rect.height >= 36 && rect.height <= 160 && rect.width > 320 && isChromeBlue(bg)) {
+                el.setAttribute("data-pd-native-bar", "1");
+            } else if (width && rect.width > width * 0.9 && rect.height > 400 && isPageWash(bg)) {
+                el.style.backgroundColor = "transparent";
+            }
+        }
+        var forms = doc.getElementsByTagName("form");
+        for (var f = 0; f < forms.length; f++) {
+            if (!owned(forms[f])) {
+                addClass(forms[f], "pd-native-form");
+            }
         }
     }
 
@@ -1108,14 +1159,14 @@
             showOriginal(doc, options.originalLabel);
             return;
         }
-        if (page !== "home" && page !== "mine" && page !== "profile" && page !== "create" && page !== "request") {
+        if (page !== "home" && page !== "mine" && page !== "profile" && page !== "create" && page !== "request" && page !== "shell") {
             dropPage(doc);
             if (options.preview) {
                 showKept(doc, options.keptLabel);
             }
             return;
         }
-        var shell = page === "create" || page === "request";
+        var shell = page === "create" || page === "request" || page === "shell";
         addClass(html, "pd-active");
         if (shell) {
             addClass(html, "pd-shell");
