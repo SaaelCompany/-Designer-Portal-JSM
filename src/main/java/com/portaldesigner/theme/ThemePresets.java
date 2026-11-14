@@ -22,10 +22,10 @@ public final class ThemePresets {
 
     public static PortalTheme classic() {
         PortalTheme theme = new PortalTheme();
-        theme.header.links.add(new PortalTheme.Link("Мои заявки", "/servicedesk/customer/user/requests"));
+        theme.header.links.add(new PortalTheme.Link("Мои запросы", "/servicedesk/customer/user/requests"));
         theme.footer.columns.add(new PortalTheme.Column(
                 "Поддержка",
-                new PortalTheme.Link("Мои заявки", "/servicedesk/customer/user/requests")));
+                new PortalTheme.Link("Мои запросы", "/servicedesk/customer/user/requests")));
         theme.footer.columns.add(new PortalTheme.Column(
                 "Портал",
                 new PortalTheme.Link("Все порталы", "/servicedesk/customer/portals")));

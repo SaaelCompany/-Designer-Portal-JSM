@@ -20,12 +20,15 @@ public final class PortalTheme {
     public Announcement announcement = new Announcement();
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
+    public List<Block> blocks = new ArrayList<Block>();
+    /** Positions of native pieces on the request form, such as the title and the form. */
+    public List<Placement> placements = new ArrayList<Placement>();
     public String customCss = "";
 
     public static final class Colors {
         public String primary = "#0B5FFF";
         public String primaryText = "#FFFFFF";
-        public String background = "#F4F1EA";
+        public String background = "#FFFFFF";
         public String surface = "#FFFFFF";
         public String text = "#1C1915";
         public String muted = "#6B645C";
@@ -94,6 +97,7 @@ public final class PortalTheme {
         public int gap = 16;
         public boolean showDescription = true;
         public String cardStyle = "elevated";
+        public List<String> order = new ArrayList<String>();
     }
 
     public static final class Announcement {
@@ -148,6 +152,32 @@ public final class PortalTheme {
             screen.showHeaderTitle = true;
             return screen;
         }
+    }
+
+    /** One piece of the constructed page, in the order it is drawn. */
+    public static final class Block {
+        public String id = "";
+        public String type = "text";
+        public boolean visible = true;
+        public String title = "";
+        public String text = "";
+        public List<Link> links = new ArrayList<Link>();
+        /** When true, the block is placed by x/y/width instead of the normal stack. */
+        public boolean free;
+        public int x;
+        public int y;
+        public int width = 100;
+        public int fontSize;
+        public String font = "";
+        public String align = "";
+    }
+
+    /** A native portal piece placed by the constructor. x and width are percents, y is pixels. */
+    public static final class Placement {
+        public String id = "";
+        public int x;
+        public int y;
+        public int width;
     }
 
     public static final class Link {

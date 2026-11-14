@@ -47,7 +47,7 @@ public final class ThemeMapper {
         Map<String, Object> type = map(raw.get("typography"));
         theme.typography.font = oneOf(str(type.get("font")), theme.typography.font,
                 "system", "serif", "mono", "humanist", "condensed");
-        theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 13, 22, "typography.baseSize", warnings);
+        theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 12, 48, "typography.baseSize", warnings);
         theme.typography.headingWeight = snapWeight(intVal(type.get("headingWeight"), theme.typography.headingWeight));
         theme.typography.lineHeight = clampDouble(doubleVal(type.get("lineHeight"), theme.typography.lineHeight), 1.15d, 1.9d);
 
@@ -93,6 +93,7 @@ public final class ThemeMapper {
         theme.requests.gap = clamp(intVal(requests.get("gap"), theme.requests.gap), 0, 40, "requests.gap", warnings);
         theme.requests.showDescription = bool(requests.get("showDescription"), theme.requests.showDescription);
         theme.requests.cardStyle = oneOf(str(requests.get("cardStyle")), theme.requests.cardStyle, "elevated", "outline", "flat");
+        theme.requests.order = idList(requests.get("order"), warnings);
 
         Map<String, Object> announcement = map(raw.get("announcement"));
         theme.announcement.visible = bool(announcement.get("visible"), theme.announcement.visible);
@@ -121,6 +122,8 @@ public final class ThemeMapper {
             warnings.add("customCss");
         }
         theme.customCss = cleanCss;
+        theme.blocks = blocks(raw.get("blocks"), warnings);
+        theme.placements = placements(raw.get("placements"), warnings);
         return new MappedTheme(theme, warnings);
     }
 
@@ -203,6 +206,7 @@ public final class ThemeMapper {
         requests.put("gap", theme.requests.gap);
         requests.put("showDescription", theme.requests.showDescription);
         requests.put("cardStyle", theme.requests.cardStyle);
+        requests.put("order", theme.requests.order);
         root.put("requests", requests);
 
         Map<String, Object> announcement = new LinkedHashMap<String, Object>();
@@ -232,6 +236,8 @@ public final class ThemeMapper {
         responsive.put("tablet", screenMap(theme.responsive.tablet));
         root.put("responsive", responsive);
         root.put("customCss", theme.customCss);
+        root.put("blocks", blockMaps(theme.blocks));
+        root.put("placements", placementMaps(theme.placements));
         return root;
     }
 
@@ -266,7 +272,7 @@ public final class ThemeMapper {
         screen.columns = clamp(intVal(raw.get("columns"), defaults.columns), 1, 4, name + ".columns", warnings);
         screen.heroHeight = clamp(intVal(raw.get("heroHeight"), defaults.heroHeight), 0, 640, name + ".heroHeight", warnings);
         screen.pagePadding = clamp(intVal(raw.get("pagePadding"), defaults.pagePadding), 0, 48, name + ".pagePadding", warnings);
-        screen.baseSize = clamp(intVal(raw.get("baseSize"), defaults.baseSize), 13, 22, name + ".baseSize", warnings);
+        screen.baseSize = clamp(intVal(raw.get("baseSize"), defaults.baseSize), 12, 48, name + ".baseSize", warnings);
         screen.headerHeight = clamp(intVal(raw.get("headerHeight"), defaults.headerHeight), 48, 120, name + ".headerHeight", warnings);
         screen.showHero = bool(raw.get("showHero"), defaults.showHero);
         screen.showHeaderTitle = bool(raw.get("showHeaderTitle"), defaults.showHeaderTitle);
@@ -276,7 +282,7 @@ public final class ThemeMapper {
     private static List<PortalTheme.Column> columns(Object raw, List<String> warnings) {
         List<PortalTheme.Column> columns = new ArrayList<PortalTheme.Column>();
         if (!(raw instanceof List)) {
-            columns.add(new PortalTheme.Column("Поддержка", new PortalTheme.Link("Мои заявки", "/servicedesk/customer/user/requests")));
+            columns.add(new PortalTheme.Column("Поддержка", new PortalTheme.Link("Мои запросы", "/servicedesk/customer/user/requests")));
             return columns;
         }
         List<?> list = (List<?>) raw;
@@ -294,6 +300,125 @@ public final class ThemeMapper {
             }
         }
         return columns;
+    }
+
+    private static List<PortalTheme.Block> blocks(Object raw, List<String> warnings) {
+        List<PortalTheme.Block> blocks = new ArrayList<PortalTheme.Block>();
+        if (!(raw instanceof List)) {
+            return blocks;
+        }
+        List<?> list = (List<?>) raw;
+        List<String> seen = new ArrayList<String>();
+        List<String> seenTypes = new ArrayList<String>();
+        for (int i = 0; i < list.size() && blocks.size() < 24; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String type = oneOf(str(item.get("type")), "", "announcement", "header", "hero", "search", "requests", "footer", "text", "links");
+            if (type.isEmpty()) {
+                warnings.add("blocks");
+                continue;
+            }
+            boolean core = !"text".equals(type) && !"links".equals(type);
+            if (core && seenTypes.contains(type)) {
+                continue;
+            }
+            String id = str(item.get("id")).trim();
+            if (!id.matches("[A-Za-z0-9_-]{1,40}")) {
+                id = type + blocks.size();
+            }
+            if (seen.contains(id)) {
+                continue;
+            }
+            PortalTheme.Block block = new PortalTheme.Block();
+            block.id = id;
+            block.type = type;
+            block.visible = bool(item.get("visible"), true);
+            block.title = text(item.get("title"), "", 160);
+            block.text = text(item.get("text"), "", 600);
+            block.links = links(item.get("links"), 8, warnings);
+            block.free = bool(item.get("free"), false);
+            block.x = clamp(intVal(item.get("x"), 0), 0, 90, "blocks.x", warnings);
+            block.y = clamp(intVal(item.get("y"), 0), 0, 2400, "blocks.y", warnings);
+            block.width = clamp(intVal(item.get("width"), 100), 20, 100, "blocks.width", warnings);
+            block.fontSize = clamp(intVal(item.get("fontSize"), 0), 0, 96, "blocks.fontSize", warnings);
+            if (block.fontSize > 0 && block.fontSize < 12) {
+                block.fontSize = 12;
+            }
+            block.font = oneOf(str(item.get("font")), "", "", "system", "serif", "mono", "humanist", "condensed");
+            block.align = oneOf(str(item.get("align")), "", "", "left", "center", "right");
+            blocks.add(block);
+            seen.add(id);
+            if (core) {
+                seenTypes.add(type);
+            }
+        }
+        return blocks;
+    }
+
+    private static List<PortalTheme.Placement> placements(Object raw, List<String> warnings) {
+        List<PortalTheme.Placement> placements = new ArrayList<PortalTheme.Placement>();
+        if (!(raw instanceof List)) {
+            return placements;
+        }
+        List<?> list = (List<?>) raw;
+        List<String> seen = new ArrayList<String>();
+        for (int i = 0; i < list.size() && placements.size() < 40; i++) {
+            Map<String, Object> item = map(list.get(i));
+            String id = str(item.get("id")).trim();
+            if (!id.matches("[A-Za-z0-9_-]{1,80}") || seen.contains(id)) {
+                warnings.add("placements");
+                continue;
+            }
+            PortalTheme.Placement placement = new PortalTheme.Placement();
+            placement.id = id;
+            placement.x = clamp(intVal(item.get("x"), 0), 0, 90, "placements.x", warnings);
+            placement.y = clamp(intVal(item.get("y"), 0), 0, 2400, "placements.y", warnings);
+            int width = intVal(item.get("width"), 0);
+            placement.width = width == 0 ? 0 : clamp(width, 8, 100, "placements.width", warnings);
+            placements.add(placement);
+            seen.add(id);
+        }
+        return placements;
+    }
+
+    private static List<Map<String, Object>> placementMaps(List<PortalTheme.Placement> placements) {
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        if (placements == null) {
+            return out;
+        }
+        for (PortalTheme.Placement placement : placements) {
+            Map<String, Object> item = new LinkedHashMap<String, Object>();
+            item.put("id", placement.id);
+            item.put("x", placement.x);
+            item.put("y", placement.y);
+            item.put("width", placement.width);
+            out.add(item);
+        }
+        return out;
+    }
+
+    private static List<Map<String, Object>> blockMaps(List<PortalTheme.Block> blocks) {
+        List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
+        if (blocks == null) {
+            return out;
+        }
+        for (PortalTheme.Block block : blocks) {
+            Map<String, Object> item = new LinkedHashMap<String, Object>();
+            item.put("id", block.id);
+            item.put("type", block.type);
+            item.put("visible", block.visible);
+            item.put("title", block.title);
+            item.put("text", block.text);
+            item.put("links", linkMaps(block.links));
+            item.put("free", block.free);
+            item.put("x", block.x);
+            item.put("y", block.y);
+            item.put("width", block.width);
+            item.put("fontSize", block.fontSize);
+            item.put("font", block.font);
+            item.put("align", block.align);
+            out.add(item);
+        }
+        return out;
     }
 
     private static List<PortalTheme.Link> links(Object raw, int max, List<String> warnings) {
@@ -472,5 +597,22 @@ public final class ThemeMapper {
             }
         }
         return fallback;
+    }
+
+    private static List<String> idList(Object raw, List<String> warnings) {
+        List<String> ids = new ArrayList<String>();
+        if (!(raw instanceof List)) {
+            return ids;
+        }
+        List<?> list = (List<?>) raw;
+        for (int i = 0; i < list.size() && ids.size() < 40; i++) {
+            String id = str(list.get(i)).trim();
+            if (id.matches("[A-Za-z0-9_-]{1,40}")) {
+                ids.add(id);
+            } else if (!id.isEmpty()) {
+                warnings.add("requests.order");
+            }
+        }
+        return ids;
     }
 }

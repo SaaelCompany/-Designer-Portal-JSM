@@ -23,6 +23,7 @@ import java.util.Map;
 public class ThemeService {
     public static final int MAX_STORED_CHARS = 200000;
     private static final Logger log = LoggerFactory.getLogger(ThemeService.class);
+    private static final String SWITCH_KEY = "switch";
 
     private final ThemeRepository repository;
     private final ThemeCompiler compiler;
@@ -39,9 +40,16 @@ public class ThemeService {
 
     public Map<String, Object> publicTheme(String portalId) {
         String key = requiredKey(portalId);
-        Resolved resolved = resolve(key);
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("portalId", key);
+        if (!pluginActive()) {
+            body.put("enabled", Boolean.FALSE);
+            body.put("active", Boolean.FALSE);
+            body.put("source", "off");
+            return body;
+        }
+        Resolved resolved = resolve(key);
+        body.put("active", Boolean.TRUE);
         body.put("enabled", resolved.theme != null && resolved.theme.enabled);
         body.put("source", resolved.source);
         if (resolved.theme == null || !resolved.theme.enabled) {
@@ -84,6 +92,36 @@ public class ThemeService {
 
     public void delete(String portalId) {
         repository.delete(requiredKey(portalId));
+    }
+
+    /**
+     * One switch for the whole plugin. While it is off, no portal is replaced,
+     * including portals that keep their own published theme.
+     */
+    public boolean pluginActive() {
+        String json = repository.get(SWITCH_KEY);
+        if (json == null || json.trim().isEmpty()) {
+            return true;
+        }
+        try {
+            Object parsed = Json.parse(json);
+            if (parsed instanceof Map) {
+                Object active = ((Map<?, ?>) parsed).get("active");
+                if (active instanceof Boolean) {
+                    return (Boolean) active;
+                }
+            }
+        } catch (RuntimeException ex) {
+            log.warn("Ignoring unreadable Portal Designer switch");
+        }
+        return true;
+    }
+
+    public Map<String, Object> setPluginActive(boolean active) {
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("active", Boolean.valueOf(active));
+        repository.put(SWITCH_KEY, Json.stringify(body));
+        return body;
     }
 
     public List<Map<String, Object>> presets() {

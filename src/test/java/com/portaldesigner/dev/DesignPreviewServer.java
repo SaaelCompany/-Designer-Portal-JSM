@@ -2,6 +2,7 @@ package com.portaldesigner.dev;
 
 import com.portaldesigner.json.Json;
 import com.portaldesigner.service.ThemeService;
+import com.portaldesigner.servlet.PortalSnippet;
 import com.portaldesigner.store.MemoryThemeRepository;
 import com.portaldesigner.theme.ThemeException;
 import com.sun.net.httpserver.Headers;
@@ -51,7 +52,7 @@ public final class DesignPreviewServer {
                         .replace("@@CONTEXT_JSON@@", "\"\"")
                         .replace("@@KEY_JSON@@", Json.stringify(PLUGIN_KEY))
                         .replace("@@PROJECT_JSON@@", "\"IT\"");
-                send(exchange, 200, "text/html; charset=UTF-8", html.getBytes(StandardCharsets.UTF_8));
+                send(exchange, 200, "text/html; charset=UTF-8", embedInJiraChrome(html).getBytes(StandardCharsets.UTF_8));
                 return;
             }
             if (path.startsWith("/download/resources/" + PLUGIN_KEY + ":")) {
@@ -90,6 +91,34 @@ public final class DesignPreviewServer {
                 routeTheme(exchange, themes, path, query);
                 return;
             }
+            if ("/servicedesk/customer/portals".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(portalsBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/servicedesk/customer/portal/1".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(projectBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/rest/api/2/myself".equals(path)) {
+                sendJson(exchange, sampleUser());
+                return;
+            }
+            if ("/rest/servicedeskapi/request".equals(path)) {
+                sendJson(exchange, sampleRequests());
+                return;
+            }
+            if ("/servicedesk/customer/user/requests".equals(path) || "/servicedesk/customer/user/profile".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml("<header id=\"jira-header\">Jira Service Management</header>").getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/servicedesk/customer/portal/1/ATS-1".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(requestBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
+            if ("/servicedesk/customer/portal/1/create/10".equals(path)) {
+                send(exchange, 200, "text/html; charset=UTF-8", customerHtml(createBody()).getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             send(exchange, 404, "text/plain", "not found".getBytes(StandardCharsets.UTF_8));
         } catch (ThemeException ex) {
             sendJson(exchange, 400, error(ex.code()));
@@ -104,6 +133,11 @@ public final class DesignPreviewServer {
         String method = exchange.getRequestMethod();
         if (path.endsWith("/public-theme") && "GET".equals(method)) {
             sendJson(exchange, themes.publicTheme(portalId));
+        } else if (path.endsWith("/admin/switch") && "GET".equals(method)) {
+            sendJson(exchange, switchBody(themes));
+        } else if (path.endsWith("/admin/switch") && "PUT".equals(method)) {
+            themes.setPluginActive(!"{\"active\":false}".equals(body(exchange).replace(" ", "")));
+            sendJson(exchange, switchBody(themes));
         } else if (path.endsWith("/admin/presets") && "GET".equals(method)) {
             sendJson(exchange, themes.presets());
         } else if (path.endsWith("/admin/theme") && "GET".equals(method)) {
@@ -120,12 +154,87 @@ public final class DesignPreviewServer {
         }
     }
 
+    /** Stand-in for Jira's atl.admin decorator: header plus the administration menu. */
+    private static String embedInJiraChrome(String page) {
+        int headStart = page.indexOf("<head>");
+        int headEnd = page.indexOf("</head>");
+        int bodyStart = page.indexOf("<body>");
+        int bodyEnd = page.indexOf("</body>");
+        String head = page.substring(headStart + "<head>".length(), headEnd);
+        String body = page.substring(bodyStart + "<body>".length(), bodyEnd);
+        return "<!DOCTYPE html><html lang=\"ru\"><head>" + head + "<style>"
+                + "#header{height:40px;background:#0747a6;color:#fff;display:flex;align-items:center;padding:0 16px;font:14px/1.2 sans-serif}"
+                + "#header span{margin-left:24px;opacity:.85}"
+                + "#content{display:flex;align-items:stretch;min-height:calc(100vh - 40px)}"
+                + "#admin-menu{width:220px;flex:0 0 220px;background:#f4f5f7;border-right:1px solid #dfe1e6;padding:16px;font:14px/1.4 sans-serif;color:#172b4d}"
+                + "#admin-menu strong{display:block;margin-bottom:8px}"
+                + "#admin-menu .on{background:#fff;border-radius:3px;padding:6px 8px}"
+                + "#admin-content{flex:1;min-width:0;padding:20px}"
+                + "</style></head><body>"
+                + "<header id=\"header\">Jira<span>Администрирование</span></header>"
+                + "<div id=\"content\"><nav id=\"admin-menu\"><strong>Клиентский портал</strong>"
+                + "<div class=\"on\">Конструктор портала</div></nav>"
+                + "<div id=\"admin-content\">" + body + "</div></div></body></html>";
+    }
+
+    private static String customerHtml(String body) {
+        String html = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
+                + "<meta name=\"ajs-remote-user\" content=\"anna\"/>"
+                + "<meta name=\"ajs-remote-user-fullname\" content=\"Анна Ковалева\"/>"
+                + "<link rel=\"stylesheet\" href=\"/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.css\"/>"
+                + "</head><body>" + body
+                + "<a href=\"/logout\" style=\"display:none\">Выйти</a>"
+                + "</body></html>";
+        return PortalSnippet.inject(html, "/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js");
+    }
+
+    private static String portalsBody() {
+        return "<header id=\"jira-header\">Jira Service Management</header>"
+                + "<h1>Порталы</h1>"
+                + "<a href=\"/servicedesk/customer/portal/1\">IT поддержка <p>Техника и доступы</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/4\">Кадры <p>Отпуска и справки</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/99\">Случайная заявка</a>";
+    }
+
+    private static String projectBody() {
+        return "<header id=\"jira-header\">Jira Service Management</header>"
+                + "<h1>IT поддержка</h1>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/10\">Доступ к системе <p>Учётная запись, права, VPN</p></a>"
+                + "<a href=\"/servicedesk/customer/portal/1/create/11\">Не работает сервис <p>Сбой в рабочей системе</p></a>";
+    }
+
+    private static String requestBody() {
+        return "<header class=\"cv-smart-portal-header\">Центр поддержки</header>"
+                + "<form id=\"create-form\"><h1>Что я просматриваю?</h1>"
+                + "<p>Описание запроса</p></form>";
+    }
+
+    private static String createBody() {
+        return "<div class=\"help-center-bar\" style=\"height:56px;background:#0747a6;color:#fff\">Центр поддержки</div>"
+                + "<div class=\"create-layout\" style=\"display:flex;align-items:flex-start;gap:32px\">"
+                + "<div class=\"request-intro\" style=\"width:220px\"><div>Центр поддержки / STP</div><h2>Техническая поддержка</h2></div>"
+                + "<form id=\"create-form\" class=\"aui-page-panel\"><label>Тема<input name=\"summary\" type=\"text\"/></label>"
+                + "<button type=\"submit\" class=\"aui-button-primary\">Создать</button></form>"
+                + "<p class=\"cv-powered-by\">Работает на базе Jira Service Management</p></div>";
+    }
+
     private static Map<String, Object> samplePortals() {
         List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
         values.add(portal("1", "IT", "IT поддержка"));
-        values.add(portal("4", "HR", "Кадры"));
+        values.add(portal("2", "HR", "Кадры"));
+        values.add(portal("3", "FIN", "Финансы"));
+        values.add(portal("4", "LEG", "Юристы"));
+        values.add(portal("5", "FAC", "АХО"));
+        values.add(portal("6", "SEC", "Безопасность"));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
+        return body;
+    }
+
+    private static Map<String, Object> switchBody(ThemeService themes) {
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("active", Boolean.valueOf(themes.pluginActive()));
         return body;
     }
 
@@ -147,7 +256,55 @@ public final class DesignPreviewServer {
         values.add(type("15", "Пропуск в офис", "Гость или постоянный доступ"));
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
         return body;
+    }
+
+    private static Map<String, Object> sampleUser() {
+        Map<String, Object> user = new LinkedHashMap<String, Object>();
+        user.put("name", "anna");
+        user.put("key", "anna");
+        user.put("displayName", "Анна Ковалева");
+        user.put("emailAddress", "anna@example.com");
+        Map<String, Object> avatars = new LinkedHashMap<String, Object>();
+        avatars.put("24x24", "");
+        user.put("avatarUrls", avatars);
+        return user;
+    }
+
+    private static Map<String, Object> sampleRequests() {
+        List<Map<String, Object>> values = new ArrayList<Map<String, Object>>();
+        values.add(request("STP-50", "Тест", "Ожидание поддержки"));
+        values.add(request("STP-47", "Заявка", "Ожидание поддержки"));
+        values.add(request("STP-46", "Доступ", "Ожидание поддержки"));
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("values", values);
+        body.put("isLastPage", Boolean.TRUE);
+        return body;
+    }
+
+    private static Map<String, Object> request(String key, String summary, String status) {
+        Map<String, Object> item = new LinkedHashMap<String, Object>();
+        item.put("issueKey", key);
+        item.put("serviceDeskId", "1");
+        List<Map<String, Object>> fields = new ArrayList<Map<String, Object>>();
+        Map<String, Object> summaryField = new LinkedHashMap<String, Object>();
+        summaryField.put("fieldId", "summary");
+        summaryField.put("label", "Тема");
+        summaryField.put("value", summary);
+        fields.add(summaryField);
+        Map<String, Object> other = new LinkedHashMap<String, Object>();
+        other.put("fieldId", "customfield_10050");
+        other.put("label", "Лишнее");
+        Map<String, Object> nested = new LinkedHashMap<String, Object>();
+        nested.put("displayName", "Не тема");
+        other.put("value", nested);
+        fields.add(other);
+        item.put("requestFieldValues", fields);
+        Map<String, Object> current = new LinkedHashMap<String, Object>();
+        current.put("status", status);
+        item.put("currentStatus", current);
+        return item;
     }
 
     private static Map<String, Object> type(String id, String name, String description) {

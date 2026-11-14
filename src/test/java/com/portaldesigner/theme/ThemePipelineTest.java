@@ -9,6 +9,9 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -41,6 +44,87 @@ public class ThemePipelineTest {
         assertEquals(Boolean.FALSE, service.publicTheme("12").get("enabled"));
         assertEquals("portal", service.publicTheme("12").get("source"));
         assertEquals(Boolean.TRUE, service.publicTheme("13").get("enabled"));
+    }
+
+    @Test
+    public void switchingThePluginOffRestoresEveryPortal() {
+        publish("global", true);
+        PortalTheme own = ThemePresets.classic();
+        own.enabled = true;
+        own.useGlobal = false;
+        service.save("12", Json.stringify(ThemeMapper.toMap(own)));
+        assertEquals(Boolean.TRUE, service.publicTheme("12").get("enabled"));
+
+        service.setPluginActive(false);
+        assertEquals(Boolean.FALSE, service.publicTheme("global").get("enabled"));
+        assertEquals(Boolean.FALSE, service.publicTheme("12").get("enabled"));
+        assertEquals("off", service.publicTheme("12").get("source"));
+        assertFalse(service.publicTheme("global").containsKey("css"));
+
+        service.setPluginActive(true);
+        assertEquals(Boolean.TRUE, service.publicTheme("global").get("enabled"));
+        assertEquals(Boolean.TRUE, service.publicTheme("12").get("enabled"));
+    }
+
+    @Test
+    public void blockPlacementRoundTrips() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.enabled = true;
+        PortalTheme.Block block = new PortalTheme.Block();
+        block.id = "hero";
+        block.type = "hero";
+        block.free = true;
+        block.x = 12;
+        block.y = 40;
+        block.width = 60;
+        block.fontSize = 28;
+        block.font = "serif";
+        block.align = "right";
+        theme.blocks.add(block);
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> blocks = (List<Map<String, Object>>) cast(saved.get("theme")).get("blocks");
+        Map<String, Object> hero = null;
+        for (Map<String, Object> item : blocks) {
+            if ("hero".equals(item.get("id"))) {
+                hero = item;
+            }
+        }
+        assertNotNull(hero);
+        assertEquals(Boolean.TRUE, hero.get("free"));
+        assertEquals(Integer.valueOf(12), hero.get("x"));
+        assertEquals(Integer.valueOf(40), hero.get("y"));
+        assertEquals(Integer.valueOf(60), hero.get("width"));
+        assertEquals(Integer.valueOf(28), hero.get("fontSize"));
+        assertEquals("serif", hero.get("font"));
+        assertEquals("right", hero.get("align"));
+    }
+
+    @Test
+    public void piecePlacementRoundTrips() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.enabled = true;
+        PortalTheme.Placement title = new PortalTheme.Placement();
+        title.id = "title";
+        title.x = 18;
+        title.y = 120;
+        title.width = 32;
+        theme.placements.add(title);
+        PortalTheme.Placement text = new PortalTheme.Placement();
+        text.id = "divn2-h2n1";
+        text.x = 40;
+        text.y = 80;
+        theme.placements.add(text);
+        Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> placements = (List<Map<String, Object>>) cast(saved.get("theme")).get("placements");
+        assertEquals(2, placements.size());
+        assertEquals("title", placements.get(0).get("id"));
+        assertEquals(Integer.valueOf(18), placements.get(0).get("x"));
+        assertEquals(Integer.valueOf(120), placements.get(0).get("y"));
+        assertEquals(Integer.valueOf(32), placements.get(0).get("width"));
+        assertEquals("divn2-h2n1", placements.get(1).get("id"));
+        assertEquals(Integer.valueOf(40), placements.get(1).get("x"));
     }
 
     @Test
@@ -89,9 +173,55 @@ public class ThemePipelineTest {
             assertTrue("missing " + token, css.contains(token));
         }
         String js = read("/js/portal.js");
+        assertTrue(css.contains("pd-replace"));
         assertTrue(js.contains("PortalDesigner"));
         assertTrue(js.contains("public-theme"));
         assertTrue(js.contains("MutationObserver"));
+        assertTrue(js.contains("pd-replace"));
+        assertTrue(js.contains("readCatalog"));
+    }
+
+    @Test
+    public void pageBlocksRoundTripAndDropUnknownTypes() {
+        Map<String, Object> stored = ThemeMapper.toMap(ThemePresets.classic());
+        List<Map<String, Object>> blocks = new ArrayList<Map<String, Object>>();
+        Map<String, Object> text = new LinkedHashMap<String, Object>();
+        text.put("id", "note");
+        text.put("type", "text");
+        text.put("visible", Boolean.TRUE);
+        text.put("title", "Справка");
+        text.put("text", "Позвоните");
+        Map<String, Object> evil = new LinkedHashMap<String, Object>();
+        evil.put("id", "script");
+        evil.put("type", "script");
+        evil.put("title", "nope");
+        blocks.add(text);
+        blocks.add(evil);
+        stored.put("blocks", blocks);
+        MappedTheme mapped = ThemeMapper.fromMap(stored);
+        assertEquals(1, mapped.theme.blocks.size());
+        assertEquals("note", mapped.theme.blocks.get(0).id);
+        assertEquals("Справка", mapped.theme.blocks.get(0).title);
+        assertTrue(mapped.warnings.contains("blocks"));
+    }
+
+    @Test
+    public void requestOrderRoundTripsAndDropsUnsafeIds() {
+        PortalTheme theme = ThemePresets.classic();
+        theme.requests.order.add("12");
+        theme.requests.order.add("10");
+        Map<String, Object> stored = ThemeMapper.toMap(theme);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> requests = (Map<String, Object>) stored.get("requests");
+        @SuppressWarnings("unchecked")
+        java.util.List<String> incoming = new java.util.ArrayList<String>();
+        incoming.add("15");
+        incoming.add("../etc");
+        incoming.add("11");
+        requests.put("order", incoming);
+        MappedTheme mapped = ThemeMapper.fromMap(stored);
+        assertEquals(java.util.Arrays.asList("15", "11"), mapped.theme.requests.order);
+        assertTrue(mapped.warnings.contains("requests.order"));
     }
 
     @Test
