@@ -170,6 +170,19 @@ public final class PortalTheme {
         public int fontSize;
         public String font = "";
         public String align = "";
+        /** 0 keeps the block as tall as its content. */
+        public int height;
+        public String color = "";
+        public String fill = "";
+        /** -1 means this screen uses the desktop frame. */
+        public int tabletX = -1;
+        public int tabletY = -1;
+        public int tabletW = -1;
+        public int tabletH = -1;
+        public int mobileX = -1;
+        public int mobileY = -1;
+        public int mobileW = -1;
+        public int mobileH = -1;
     }
 
     /** A native portal piece placed by the constructor. x and width are percents, y is pixels. */

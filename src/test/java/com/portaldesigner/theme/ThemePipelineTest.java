@@ -78,8 +78,14 @@ public class ThemePipelineTest {
         block.y = 40;
         block.width = 60;
         block.fontSize = 28;
-        block.font = "serif";
+        block.font = "Manrope";
         block.align = "right";
+        block.color = "#112233";
+        block.fill = "#abcdef";
+        block.height = 80;
+        block.mobileX = 4;
+        block.mobileY = 20;
+        block.mobileW = 90;
         theme.blocks.add(block);
         Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
         @SuppressWarnings("unchecked")
@@ -96,8 +102,17 @@ public class ThemePipelineTest {
         assertEquals(Integer.valueOf(40), hero.get("y"));
         assertEquals(Integer.valueOf(60), hero.get("width"));
         assertEquals(Integer.valueOf(28), hero.get("fontSize"));
-        assertEquals("serif", hero.get("font"));
+        assertEquals("Manrope", hero.get("font"));
         assertEquals("right", hero.get("align"));
+        assertEquals("#112233", hero.get("color"));
+        assertEquals("#ABCDEF", hero.get("fill"));
+        assertEquals(Integer.valueOf(80), hero.get("height"));
+        assertEquals(Integer.valueOf(4), hero.get("mobileX"));
+        assertEquals(Integer.valueOf(20), hero.get("mobileY"));
+        assertEquals(Integer.valueOf(90), hero.get("mobileW"));
+        theme.typography.font = "Manrope";
+        String css = new ThemeCompiler().compile(theme);
+        assertTrue(css.contains("\"Manrope\""));
     }
 
     @Test

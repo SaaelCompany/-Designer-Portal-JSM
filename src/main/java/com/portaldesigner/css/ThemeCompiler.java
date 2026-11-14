@@ -76,6 +76,10 @@ public final class ThemeCompiler {
     }
 
     static String fontStack(String key) {
+        String system = "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif";
+        if (key == null || key.trim().isEmpty() || "system".equals(key)) {
+            return system;
+        }
         if ("serif".equals(key)) {
             return "Georgia, \"Iowan Old Style\", \"Palatino Linotype\", Palatino, serif";
         }
@@ -88,7 +92,10 @@ public final class ThemeCompiler {
         if ("condensed".equals(key)) {
             return "\"Arial Narrow\", \"Segoe UI\", sans-serif";
         }
-        return "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif";
+        if (!key.matches("[A-Za-z0-9][A-Za-z0-9 .,'\\-]{0,60}")) {
+            return system;
+        }
+        return "\"" + key.replace("\"", "") + "\", " + system;
     }
 
     private static String trim(double value) {

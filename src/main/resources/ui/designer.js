@@ -28,10 +28,10 @@
             pluginOff: "Плагин выключен на всех порталах. Посетители видят обычный портал Jira.",
             originalLive: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
             originalLabel: "Так портал выглядит без плагина: услуги Jira, без собранной страницы.",
-            pageHint: "Это состав страницы. Перетащите блок на другой блок, чтобы поменять порядок. На макете кнопка «Переместить» ставит блок в любое место, правый край меняет ширину.",
+            pageHint: "Макет — это холст выбранного экрана. Тяните объект мышью, правый край меняет ширину. Снизу задаются положение, свой шрифт и цвет именно этого объекта.",
             place: "Положение и размер",
             freePlace: "Свободное положение",
-            placeHint: "Свободный блок можно перетащить куда угодно и сделать шире или уже. Размер шрифта 0 оставляет шрифт страницы.",
+            placeHint: "Числа относятся к выбранному экрану: компьютер, планшет или телефон. Свой шрифт — это имя семейства, например Manrope или Georgia. Пустой цвет оставляет цвет страницы.",
             dragPiece: "Перетащить",
             posX: "Слева, %",
             posY: "Сверху, px",
@@ -41,6 +41,11 @@
             inheritFont: "Как на странице",
             addText: "Текстовый блок",
             addLinks: "Блок ссылок",
+            addShape: "Фигура",
+            customFont: "Свой шрифт",
+            fontColor: "Цвет шрифта",
+            fillColor: "Заливка",
+            blockHeight: "Высота, px",
             blockTitle: "Заголовок",
             blockText: "Текст",
             hideBlock: "Скрыть",
@@ -200,10 +205,10 @@
             pluginOff: "The plugin is off for every portal. Visitors see the standard Jira portal.",
             originalLive: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
             originalLabel: "This is the portal without the plugin: Jira's services, with no constructed page.",
-            pageHint: "These are the blocks of the page. Drag one onto another to reorder them. On the canvas, Move places a block anywhere and the right edge changes its width.",
+            pageHint: "The canvas is the screen selected above. Drag an object, and drag its right edge to change the width. Position, a custom font and color below belong to that object.",
             place: "Place and size",
             freePlace: "Free position",
-            placeHint: "A free block can be dragged anywhere and made wider or narrower. Font size 0 keeps the page font.",
+            placeHint: "The numbers follow the selected screen: computer, tablet or phone. A custom font is a family name, such as Manrope or Georgia. An empty color keeps the page color.",
             dragPiece: "Drag",
             posX: "From the left, %",
             posY: "From the top, px",
@@ -213,6 +218,11 @@
             inheritFont: "Same as the page",
             addText: "Text block",
             addLinks: "Link row",
+            addShape: "Shape",
+            customFont: "Custom font",
+            fontColor: "Font color",
+            fillColor: "Fill",
+            blockHeight: "Height, px",
             blockTitle: "Heading",
             blockText: "Text",
             hideBlock: "Hide",
@@ -726,47 +736,77 @@
             }
         }, true);
         doc.addEventListener("pointerdown", function (event) {
-            var handle = event.target.closest ? event.target.closest(".pd-move, .pd-resize") : null;
-            if (!handle || !state.theme) {
+            if (!state.theme || !event.target.closest) {
                 return;
             }
-            var slot = handle.closest(".pd-slot");
+            if (event.target.closest("input, textarea, select, button, a, .pd-tile")) {
+                return;
+            }
+            var handle = event.target.closest(".pd-move, .pd-resize, .pd-slot");
+            if (!handle) {
+                return;
+            }
+            var slot = handle.classList && handle.classList.contains("pd-slot") ? handle : handle.closest(".pd-slot");
             var page = doc.getElementById("pd-page");
             if (!slot || !page) {
                 return;
             }
-            event.preventDefault();
-            event.stopPropagation();
             var block = findBlock(slot.getAttribute("data-pd-block"));
             if (!block) {
                 return;
             }
-            remember();
-            var resizing = (" " + handle.className + " ").indexOf(" pd-resize ") >= 0;
-            var rect = page.getBoundingClientRect();
-            var slotRect = slot.getBoundingClientRect();
-            if (!block.free) {
-                block.free = true;
-                block.x = Math.max(0, Math.min(80, (slotRect.left - rect.left) / rect.width * 100));
-                block.y = Math.max(0, slotRect.top - rect.top);
-                block.width = Math.max(20, Math.min(100, slotRect.width / rect.width * 100));
-            }
+            var resizing = handle !== slot && (" " + handle.className + " ").indexOf(" pd-resize ") >= 0;
+            var fromHandle = handle !== slot;
             var startX = event.clientX;
             var startY = event.clientY;
-            var originX = block.x || 0;
-            var originY = block.y || 0;
-            var originW = block.width || 100;
+            var dragging = false;
+            function keys() {
+                if (state.device === "mobile") {
+                    return {x: "mobileX", y: "mobileY", w: "mobileW"};
+                }
+                if (state.device === "tablet") {
+                    return {x: "tabletX", y: "tabletY", w: "tabletW"};
+                }
+                return {x: "x", y: "y", w: "width"};
+            }
+            function begin() {
+                if (dragging) {
+                    return;
+                }
+                dragging = true;
+                remember();
+                var rect = page.getBoundingClientRect();
+                var slotRect = slot.getBoundingClientRect();
+                var frame = keys();
+                block.free = true;
+                if (block[frame.x] == null || block[frame.x] < 0) {
+                    block[frame.x] = Math.max(0, Math.min(80, (slotRect.left - rect.left) / rect.width * 100));
+                    block[frame.y] = Math.max(0, slotRect.top - rect.top);
+                    block[frame.w] = Math.max(20, Math.min(100, slotRect.width / rect.width * 100));
+                }
+            }
+            var origin = null;
             function move(ev) {
+                if (!dragging) {
+                    if (!fromHandle && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 4) {
+                        return;
+                    }
+                    begin();
+                    var frameNow = keys();
+                    origin = {x: block[frameNow.x] || 0, y: block[frameNow.y] || 0, w: block[frameNow.w] || block.width || 100};
+                }
+                var rect = page.getBoundingClientRect();
+                var frame = keys();
                 if (resizing) {
-                    block.width = Math.max(20, Math.min(100, originW + (ev.clientX - startX) / rect.width * 100));
+                    block[frame.w] = Math.max(20, Math.min(100, origin.w + (ev.clientX - startX) / rect.width * 100));
                 } else {
-                    block.x = Math.max(0, Math.min(80, originX + (ev.clientX - startX) / rect.width * 100));
-                    block.y = Math.max(0, Math.min(2400, originY + (ev.clientY - startY)));
+                    block[frame.x] = Math.max(0, Math.min(80, origin.x + (ev.clientX - startX) / rect.width * 100));
+                    block[frame.y] = Math.max(0, Math.min(2400, origin.y + (ev.clientY - startY)));
                 }
                 slot.style.position = "absolute";
-                slot.style.left = block.x + "%";
-                slot.style.top = block.y + "px";
-                slot.style.width = block.width + "%";
+                slot.style.left = block[frame.x] + "%";
+                slot.style.top = block[frame.y] + "px";
+                slot.style.width = block[frame.w] + "%";
                 if ((" " + slot.className + " ").indexOf(" pd-free ") < 0) {
                     slot.className += " pd-free";
                 }
@@ -774,8 +814,17 @@
             function up() {
                 doc.removeEventListener("pointermove", move);
                 doc.removeEventListener("pointerup", up);
+                if (!dragging) {
+                    return;
+                }
                 markDirty();
                 scheduleCompile();
+            }
+            if (fromHandle) {
+                event.preventDefault();
+                begin();
+                var frame = keys();
+                origin = {x: block[frame.x] || 0, y: block[frame.y] || 0, w: block[frame.w] || block.width || 100};
             }
             doc.addEventListener("pointermove", move);
             doc.addEventListener("pointerup", up);
@@ -876,6 +925,7 @@
             keptLabel: t("keptPage"),
             original: state.pluginActive === false || !(state.theme && state.theme.enabled),
             catalog: previewCatalog(),
+            screen: state.device,
             originalLabel: t("originalLabel"),
             account: state.asUser ? {name: "Анна Ковалева", username: "anna", email: "anna@example.com"} : null,
             accountState: state.asUser ? "ready" : "anonymous",
@@ -1044,6 +1094,7 @@
             renderSegments();
             renderInspector();
             layoutDevice();
+            paintPreview();
         });
     }
 
@@ -1275,8 +1326,8 @@
     }
 
     function blockLabel(block) {
-        if (block.type === "text" || block.type === "links") {
-            return block.title || t(block.type === "text" ? "addText" : "addLinks");
+        if (block.type === "text" || block.type === "links" || block.type === "shape") {
+            return block.title || t(block.type === "text" ? "addText" : block.type === "shape" ? "addShape" : "addLinks");
         }
         return t(block.type === "requests" ? "requests" : block.type);
     }
@@ -1379,7 +1430,7 @@
                 renderInspector();
                 scheduleCompile();
             }}));
-            if (block.type === "text" || block.type === "links") {
+            if (block.type === "text" || block.type === "links" || block.type === "shape") {
                 row.appendChild(h("button", {type: "button", class: "mini", text: "×", onclick: function () {
                     remember();
                     state.theme.blocks = state.theme.blocks.filter(function (item) { return item.id !== block.id; });
@@ -1393,6 +1444,7 @@
         });
         host.appendChild(list);
         host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addText"), onclick: function () { addBlock("text"); }}));
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addShape"), onclick: function () { addBlock("shape"); }}));
         host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addLinks"), onclick: function () { addBlock("links"); }}));
     }
 
@@ -1431,9 +1483,16 @@
             id: id,
             type: type,
             visible: true,
-            title: type === "text" ? t("addText") : t("addLinks"),
+            title: type === "shape" ? t("addShape") : type === "text" ? t("addText") : t("addLinks"),
             text: "",
-            links: type === "links" ? [{label: t("newLink"), href: "/"}] : []
+            links: type === "links" ? [{label: t("newLink"), href: "/"}] : [],
+            free: true,
+            x: 8,
+            y: 180,
+            width: type === "shape" ? 28 : 40,
+            height: type === "shape" ? 120 : 0,
+            fill: type === "shape" ? "#E8EEF9" : "",
+            color: ""
         });
         state.blockId = id;
         state.section = "block";
@@ -1462,9 +1521,11 @@
             renderAnnouncement(host);
         } else if (block.type === "footer") {
             renderFooter(host);
-        } else if (block.type === "text") {
+        } else if (block.type === "text" || block.type === "shape") {
             host.appendChild(plainField(block, "title", t("blockTitle")));
-            host.appendChild(plainArea(block, "text", t("blockText")));
+            if (block.type === "text") {
+                host.appendChild(plainArea(block, "text", t("blockText")));
+            }
         } else if (block.type === "links") {
             host.appendChild(plainField(block, "title", t("blockTitle")));
             block.links = block.links || [];
@@ -1478,6 +1539,7 @@
             block.width = 100;
         }
         var box = h("div");
+        var frame = frameKeys();
         box.appendChild(h("div", {class: "block-label", text: t("place")}));
         box.appendChild(h("p", {class: "hint", text: t("placeHint")}));
         var free = h("input", {type: "checkbox", checked: !!block.free});
@@ -1492,19 +1554,69 @@
             scheduleCompile();
         });
         box.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePlace"))]));
-        if (block.free) {
-            box.appendChild(blockNumber(block, "x", t("posX"), 0, 80));
-            box.appendChild(blockNumber(block, "y", t("posY"), 0, 2400));
-            box.appendChild(blockNumber(block, "width", t("blockWidth"), 20, 100));
-        }
+        box.appendChild(frameNumber(block, frame.x, block.x, t("posX"), 0, 80));
+        box.appendChild(frameNumber(block, frame.y, block.y, t("posY"), 0, 2400));
+        box.appendChild(frameNumber(block, frame.w, block.width, t("blockWidth"), 20, 100));
+        box.appendChild(frameNumber(block, frame.h, block.height, t("blockHeight"), 0, 1600));
         box.appendChild(blockNumber(block, "fontSize", t("blockSize"), 0, 96));
-        box.appendChild(blockChoice(block, "font", t("blockFont"), [
-            ["", "inheritFont"], ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
-        ]));
+        box.appendChild(plainField(block, "font", t("customFont")));
+        box.appendChild(blockColor(block, "color", t("fontColor")));
+        box.appendChild(blockColor(block, "fill", t("fillColor")));
         box.appendChild(blockChoice(block, "align", t("align"), [
             ["", "inheritFont"], ["left", "start"], ["center", "center"], ["right", "rightAlign"]
         ]));
         return box;
+    }
+
+    function frameKeys() {
+        if (state.device === "mobile") {
+            return {x: "mobileX", y: "mobileY", w: "mobileW", h: "mobileH"};
+        }
+        if (state.device === "tablet") {
+            return {x: "tabletX", y: "tabletY", w: "tabletW", h: "tabletH"};
+        }
+        return {x: "x", y: "y", w: "width", h: "height"};
+    }
+
+    function frameNumber(block, key, fallback, label, min, max) {
+        var shown = block[key] != null && block[key] >= 0 ? block[key] : (fallback || 0);
+        var input = h("input", {type: "number", min: String(min), max: String(max), step: "1", value: shown});
+        input.addEventListener("change", function () {
+            remember();
+            var value = Number(input.value);
+            if (isNaN(value)) {
+                value = 0;
+            }
+            block.free = true;
+            block[key] = Math.max(min, Math.min(max, value));
+            input.value = String(block[key]);
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function blockColor(block, key, label) {
+        var current = /^#[0-9a-fA-F]{6}$/.test(block[key] || "") ? block[key] : "#000000";
+        var picker = h("input", {type: "color", value: current});
+        var text = h("input", {type: "text", value: block[key] || ""});
+        function write(next) {
+            remember();
+            block[key] = next;
+            markDirty();
+            scheduleCompile();
+        }
+        picker.addEventListener("input", function () {
+            text.value = picker.value.toUpperCase();
+            write(text.value);
+        });
+        text.addEventListener("change", function () {
+            write(text.value.trim());
+            if (/^#[0-9a-fA-F]{6}$/.test(text.value)) {
+                picker.value = text.value;
+            }
+        });
+        return field(key, label, h("div", {class: "color-row"}, [picker, text]));
     }
 
     function blockNumber(block, key, label, min, max) {
@@ -1658,6 +1770,7 @@
         host.appendChild(field("typography.font", t("font"), selectInput("typography.font", [
             ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
         ])));
+        host.appendChild(field("typography.font", t("customFont"), textInput("typography.font")));
         host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 12, 48)));
         host.appendChild(field("typography.headingWeight", t("weight"), selectInput("typography.headingWeight", [
             ["400", "400"], ["500", "500"], ["600", "600"], ["700", "700"], ["800", "800"]

@@ -43,6 +43,31 @@ html.pd-shell .aui-page-panel {
     background: transparent !important;
 }
 
+html.pd-replace #pd-slot-native {
+    box-sizing: border-box;
+    width: min(760px, calc(100% - 32px));
+    margin: 28px auto 40px;
+}
+
+html.pd-replace #pd-slot-native .pd-native-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+html.pd-active .pd-shape {
+    min-height: 48px;
+    border-radius: var(--pd-radius);
+    box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+    html.pd-replace #pd-slot-native {
+        width: calc(100% - 16px);
+        margin: 16px auto 24px;
+    }
+}
+
 html.pd-replace #pd-slot-native .aui-header,
 html.pd-replace #pd-slot-native .cv-smart-portal-header,
 html.pd-replace #pd-slot-native .cv-help-center-header,
@@ -118,6 +143,18 @@ html.pd-replace #pd-page {
 
 html.pd-replace #pd-slot-footer:last-child {
     margin-top: auto;
+}
+
+html.pd-replace[data-pd-page="create"] #pd-page,
+html.pd-replace[data-pd-page="request"] #pd-page,
+html.pd-replace[data-pd-page="shell"] #pd-page {
+    min-height: 0;
+}
+
+html.pd-replace[data-pd-page="create"] #pd-slot-footer,
+html.pd-replace[data-pd-page="request"] #pd-slot-footer,
+html.pd-replace[data-pd-page="shell"] #pd-slot-footer {
+    margin-top: 24px;
 }
 
 .pd-original {

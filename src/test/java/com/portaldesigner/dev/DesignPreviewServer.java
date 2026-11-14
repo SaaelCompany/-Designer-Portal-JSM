@@ -211,6 +211,7 @@ public final class DesignPreviewServer {
 
     private static String createBody() {
         return "<div class=\"help-center-bar\" style=\"height:56px;background:#0747a6;color:#fff\">Центр поддержки</div>"
+                + "<form class=\"cv-search\"><h2>В чем требуется помощь?</h2><input type=\"search\" placeholder=\"Поиск\"/></form>"
                 + "<div class=\"create-layout\" style=\"display:flex;align-items:flex-start;gap:32px\">"
                 + "<div class=\"request-intro\" style=\"width:220px\"><div>Центр поддержки / STP</div><h2>Техническая поддержка</h2></div>"
                 + "<form id=\"create-form\" class=\"aui-page-panel\"><label>Тема<input name=\"summary\" type=\"text\"/></label>"

@@ -839,6 +839,21 @@
         parent.appendChild(box);
     }
 
+    function renderShape(doc, parent, block) {
+        var box = parent.querySelector ? parent.querySelector(".pd-shape") : null;
+        var title = block.title || "";
+        if (box && box.getAttribute("data-pd-sig") === title) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-shape");
+        box.setAttribute("data-pd-sig", title);
+        if (title) {
+            box.appendChild(doc.createTextNode(title));
+        }
+        parent.appendChild(box);
+    }
+
     function renderLinksBlock(doc, parent, block, ctx) {
         var box = parent.querySelector ? parent.querySelector(".pd-links-block") : null;
         var sig = (block.title || "") + "\n" + JSON.stringify(block.links || []);
@@ -891,32 +906,70 @@
         spacer.style.height = (gap > 0 ? gap : 0) + "px";
     }
 
-    function placeBlock(node, block) {
-        if (!block || !block.free) {
-            removeClass(node, "pd-free");
-            node.style.left = "";
-            node.style.top = "";
-            node.style.width = "";
-            node.style.fontSize = "";
-            node.removeAttribute("data-pd-font");
-            node.removeAttribute("data-pd-align");
-            return;
+    function screenOf(view) {
+        var width = view && view.innerWidth ? view.innerWidth : 1280;
+        if (width <= 640) {
+            return "mobile";
         }
-        addClass(node, "pd-free");
-        node.style.left = (block.x || 0) + "%";
-        node.style.top = (block.y || 0) + "px";
-        node.style.width = (block.width || 100) + "%";
+        if (width <= 1024) {
+            return "tablet";
+        }
+        return "desktop";
+    }
+
+    function frameOf(block, screen) {
+        if (screen === "mobile" && block.mobileX != null && block.mobileX >= 0) {
+            return {x: block.mobileX, y: block.mobileY || 0, width: block.mobileW || block.width || 100, height: block.mobileH || 0};
+        }
+        if (screen === "tablet" && block.tabletX != null && block.tabletX >= 0) {
+            return {x: block.tabletX, y: block.tabletY || 0, width: block.tabletW || block.width || 100, height: block.tabletH || 0};
+        }
+        return {x: block.x || 0, y: block.y || 0, width: block.width || 100, height: block.height || 0};
+    }
+
+    function paintLook(node, block, height) {
+        var known = {system: 1, serif: 1, mono: 1, humanist: 1, condensed: 1};
         node.style.fontSize = block.fontSize ? block.fontSize + "px" : "";
-        if (block.font) {
-            node.setAttribute("data-pd-font", block.font);
-        } else {
+        if (block.font && !known[block.font]) {
+            node.style.fontFamily = block.font + ", sans-serif";
             node.removeAttribute("data-pd-font");
+        } else {
+            node.style.fontFamily = "";
+            if (block.font) {
+                node.setAttribute("data-pd-font", block.font);
+            } else {
+                node.removeAttribute("data-pd-font");
+            }
         }
         if (block.align) {
             node.setAttribute("data-pd-align", block.align);
         } else {
             node.removeAttribute("data-pd-align");
         }
+        node.style.color = block.color || "";
+        node.style.backgroundColor = block.fill || "";
+        node.style.height = height ? height + "px" : "";
+    }
+
+    function placeBlock(node, block) {
+        if (!block) {
+            return;
+        }
+        var screen = node.ownerDocument.documentElement.getAttribute("data-pd-screen") || "desktop";
+        var frame = frameOf(block, screen);
+        if (!block.free) {
+            removeClass(node, "pd-free");
+            node.style.left = "";
+            node.style.top = "";
+            node.style.width = "";
+            paintLook(node, block, frame.height);
+            return;
+        }
+        addClass(node, "pd-free");
+        node.style.left = frame.x + "%";
+        node.style.top = frame.y + "px";
+        node.style.width = frame.width + "%";
+        paintLook(node, block, frame.height);
     }
 
     function renderMine(doc, parent, ctx) {
@@ -1042,6 +1095,8 @@
                 renderTextBlock(doc, parent, block);
             } else if (block.type === "links") {
                 renderLinksBlock(doc, parent, block, ctx);
+            } else if (block.type === "shape") {
+                renderShape(doc, parent, block);
             }
             placeBlock(parent, block);
         }
@@ -1076,17 +1131,18 @@
         } else if (slot.parentNode !== pageNode) {
             pageNode.appendChild(slot);
         }
-        var form = nativeForm(doc);
-        if (form) {
-            addClass(form, "pd-native-form");
-            if (form.parentNode !== slot) {
-                slot.appendChild(form);
-            }
+        var host = requestSurface(doc, pageNode);
+        if (!host) {
             return;
         }
-        var root = nativeRoot(doc, pageNode);
-        if (root && root.parentNode !== slot) {
-            slot.appendChild(root);
+        while (slot.firstChild && slot.firstChild !== host && !(host.compareDocumentPosition(slot.firstChild) & 8)) {
+            doc.body.appendChild(slot.firstChild);
+        }
+        if (host.tagName === "FORM") {
+            addClass(host, "pd-native-form");
+        }
+        if (host.parentNode !== slot) {
+            slot.appendChild(host);
         }
     }
 
@@ -1103,21 +1159,87 @@
         }
     }
 
-    function nativeForm(doc) {
-        var slot = doc.getElementById("pd-slot-native");
-        if (slot) {
-            var hosted = slot.getElementsByTagName("form");
-            if (hosted.length) {
-                return hosted[0];
+    function controlCount(node) {
+        if (!node || !node.querySelectorAll) {
+            return 0;
+        }
+        var nodes = node.querySelectorAll("textarea, select, input");
+        var count = 0;
+        for (var i = 0; i < nodes.length; i++) {
+            var type = (nodes[i].getAttribute("type") || "text").toLowerCase();
+            if (type !== "hidden" && type !== "submit" && type !== "button" && type !== "search") {
+                count++;
             }
         }
+        return count;
+    }
+
+    function searchLike(node) {
+        var id = ((node.id || "") + " " + (node.className || "")).toLowerCase();
+        var text = (node.textContent || "").slice(0, 240);
+        if (id.indexOf("search") >= 0 || id.indexOf("cv-search") >= 0) {
+            return controlCount(node) <= 1;
+        }
+        if (text.indexOf("В чем требуется помощь") >= 0 && controlCount(node) <= 1) {
+            return true;
+        }
+        var only = node.querySelector ? node.querySelector("input") : null;
+        return !!(only && (only.getAttribute("type") || "").toLowerCase() === "search" && controlCount(node) === 0);
+    }
+
+    function requestSurface(doc, pageNode) {
         var forms = doc.getElementsByTagName("form");
+        var best = null;
+        var bestScore = 0;
         for (var i = 0; i < forms.length; i++) {
-            if (!owned(forms[i])) {
-                return forms[i];
+            var form = forms[i];
+            if (form === pageNode || pageNode.contains(form) && form.parentNode && form.parentNode.id === "pd-slot-native") {
+                /* a form already inside the slot can still win if it is the request form */
+            }
+            if (pageNode.contains(form) && (!form.parentNode || form.parentNode.id !== "pd-slot-native")) {
+                continue;
+            }
+            if (searchLike(form)) {
+                continue;
+            }
+            var score = controlCount(form) + (form.querySelector("textarea, select") ? 3 : 0) + (form.querySelector("button, [type='submit']") ? 2 : 0);
+            if (score > bestScore) {
+                best = form;
+                bestScore = score;
             }
         }
-        return null;
+        if (best) {
+            return best;
+        }
+        var nodes = doc.querySelectorAll ? doc.querySelectorAll("div, section, form") : [];
+        var rich = null;
+        var richCount = 1;
+        var limit = Math.min(nodes.length, 500);
+        for (var n = 0; n < limit; n++) {
+            var node = nodes[n];
+            if (!node || node === pageNode || node.contains(pageNode) || (pageNode.contains(node) && node.id !== "pd-slot-native")) {
+                continue;
+            }
+            if (searchLike(node)) {
+                continue;
+            }
+            var count = controlCount(node);
+            if (count > richCount) {
+                rich = node;
+                richCount = count;
+            }
+        }
+        if (!rich) {
+            return nativeRoot(doc, pageNode);
+        }
+        var deep = rich;
+        var kids = rich.getElementsByTagName("*");
+        for (var k = 0; k < kids.length; k++) {
+            if (controlCount(kids[k]) === richCount && !searchLike(kids[k])) {
+                deep = kids[k];
+            }
+        }
+        return deep;
     }
 
     function nativeRoot(doc, pageNode) {
@@ -1804,6 +1926,7 @@
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");
         setAttr(html, "data-pd-page", page);
+        setAttr(html, "data-pd-screen", options.screen || screenOf(doc.defaultView || window));
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
@@ -1971,6 +2094,7 @@
                     contextPath: contextPath,
                     portalId: id,
                     page: pageKind(window.location.pathname),
+                    screen: screenOf(window),
                     account: account,
                     accountState: accountState,
                     requests: mine,
@@ -2055,6 +2179,17 @@
         }
 
         load(true);
+        var currentScreen = screenOf(window);
+        window.addEventListener("resize", function () {
+            var next = screenOf(window);
+            if (next === currentScreen) {
+                return;
+            }
+            currentScreen = next;
+            if (current) {
+                paint(current, currentId);
+            }
+        });
         loadAccount();
         getJson(contextPath + "/rest/portal-designer/1.0/admin/theme?portalId=global", function (err) {
             arrange = !err;

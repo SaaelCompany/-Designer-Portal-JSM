@@ -45,8 +45,7 @@ public final class ThemeMapper {
         theme.colors.card = color(colors, "card", theme.colors.card, warnings);
 
         Map<String, Object> type = map(raw.get("typography"));
-        theme.typography.font = oneOf(str(type.get("font")), theme.typography.font,
-                "system", "serif", "mono", "humanist", "condensed");
+        theme.typography.font = fontName(str(type.get("font")), theme.typography.font);
         theme.typography.baseSize = clamp(intVal(type.get("baseSize"), theme.typography.baseSize), 12, 48, "typography.baseSize", warnings);
         theme.typography.headingWeight = snapWeight(intVal(type.get("headingWeight"), theme.typography.headingWeight));
         theme.typography.lineHeight = clampDouble(doubleVal(type.get("lineHeight"), theme.typography.lineHeight), 1.15d, 1.9d);
@@ -312,12 +311,12 @@ public final class ThemeMapper {
         List<String> seenTypes = new ArrayList<String>();
         for (int i = 0; i < list.size() && blocks.size() < 24; i++) {
             Map<String, Object> item = map(list.get(i));
-            String type = oneOf(str(item.get("type")), "", "announcement", "header", "hero", "search", "requests", "footer", "text", "links");
+            String type = oneOf(str(item.get("type")), "", "announcement", "header", "hero", "search", "requests", "footer", "text", "links", "shape");
             if (type.isEmpty()) {
                 warnings.add("blocks");
                 continue;
             }
-            boolean core = !"text".equals(type) && !"links".equals(type);
+            boolean core = !"text".equals(type) && !"links".equals(type) && !"shape".equals(type);
             if (core && seenTypes.contains(type)) {
                 continue;
             }
@@ -343,8 +342,19 @@ public final class ThemeMapper {
             if (block.fontSize > 0 && block.fontSize < 12) {
                 block.fontSize = 12;
             }
-            block.font = oneOf(str(item.get("font")), "", "", "system", "serif", "mono", "humanist", "condensed");
+            block.font = fontName(str(item.get("font")), "");
             block.align = oneOf(str(item.get("align")), "", "", "left", "center", "right");
+            block.height = clamp(intVal(item.get("height"), 0), 0, 1600, "blocks.height", warnings);
+            block.color = optionalColor(item.get("color"));
+            block.fill = optionalColor(item.get("fill"));
+            block.tabletX = framePct(item.get("tabletX"), "blocks.tabletX", warnings);
+            block.tabletY = frame(item.get("tabletY"), "blocks.tabletY", warnings);
+            block.tabletW = framePct(item.get("tabletW"), "blocks.tabletW", warnings);
+            block.tabletH = frame(item.get("tabletH"), "blocks.tabletH", warnings);
+            block.mobileX = framePct(item.get("mobileX"), "blocks.mobileX", warnings);
+            block.mobileY = frame(item.get("mobileY"), "blocks.mobileY", warnings);
+            block.mobileW = framePct(item.get("mobileW"), "blocks.mobileW", warnings);
+            block.mobileH = frame(item.get("mobileH"), "blocks.mobileH", warnings);
             blocks.add(block);
             seen.add(id);
             if (core) {
@@ -416,6 +426,17 @@ public final class ThemeMapper {
             item.put("fontSize", block.fontSize);
             item.put("font", block.font);
             item.put("align", block.align);
+            item.put("height", block.height);
+            item.put("color", block.color);
+            item.put("fill", block.fill);
+            item.put("tabletX", block.tabletX);
+            item.put("tabletY", block.tabletY);
+            item.put("tabletW", block.tabletW);
+            item.put("tabletH", block.tabletH);
+            item.put("mobileX", block.mobileX);
+            item.put("mobileY", block.mobileY);
+            item.put("mobileW", block.mobileW);
+            item.put("mobileH", block.mobileH);
             out.add(item);
         }
         return out;
@@ -512,6 +533,51 @@ public final class ThemeMapper {
             return min;
         }
         return Math.max(min, Math.min(max, value));
+    }
+
+    private static String fontName(String value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        String cleaned = value.trim();
+        if (cleaned.isEmpty()) {
+            return fallback == null ? "" : fallback;
+        }
+        if (!cleaned.matches("[A-Za-z0-9][A-Za-z0-9 .,'\\-]{0,60}")) {
+            return fallback == null ? "" : fallback;
+        }
+        return cleaned;
+    }
+
+    private static String optionalColor(Object value) {
+        String text = str(value).trim();
+        if (text.isEmpty()) {
+            return "";
+        }
+        String normalized = normalizeColor(text);
+        return normalized == null ? "" : normalized;
+    }
+
+    private static int framePct(Object value, String field, List<String> warnings) {
+        if (value == null || "".equals(str(value))) {
+            return -1;
+        }
+        int number = intVal(value, -1);
+        if (number < 0) {
+            return -1;
+        }
+        return clamp(number, 0, 100, field, warnings);
+    }
+
+    private static int frame(Object value, String field, List<String> warnings) {
+        if (value == null || "".equals(str(value))) {
+            return -1;
+        }
+        int number = intVal(value, -1);
+        if (number < 0) {
+            return -1;
+        }
+        return clamp(number, 0, 2400, field, warnings);
     }
 
     private static String oneOf(String value, String fallback, String... allowed) {
