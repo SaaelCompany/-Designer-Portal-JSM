@@ -96,6 +96,7 @@ html.pd-replace #pd-page {
     display: flex !important;
     flex-direction: column;
     min-height: 100vh;
+    position: relative;
 }
 
 html.pd-replace #pd-slot-footer:last-child {
@@ -335,12 +336,22 @@ html.pd-replace #pd-page {
 
 html.pd-active .pd-slot {
     position: relative;
+    z-index: 2;
+}
+
+html.pd-active #pd-slot-footer {
+    z-index: 1;
+}
+
+#pd-flow {
+    width: 100%;
+    flex: none;
 }
 
 html.pd-active .pd-slot.pd-free {
     position: absolute;
     margin: 0;
-    z-index: 2;
+    z-index: 4;
 }
 
 html.pd-active .pd-slot.pd-free .pd-header-inner,

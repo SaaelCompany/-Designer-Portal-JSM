@@ -858,6 +858,35 @@
         parent.appendChild(box);
     }
 
+    function liftFooter(pageNode) {
+        var free = pageNode.getElementsByClassName("pd-free");
+        var floor = 0;
+        for (var i = 0; i < free.length; i++) {
+            var bottom = free[i].offsetTop + free[i].offsetHeight;
+            if (bottom > floor) {
+                floor = bottom;
+            }
+        }
+        var spacer = pageNode.querySelector("#pd-flow");
+        if (!floor) {
+            if (spacer && spacer.parentNode) {
+                spacer.parentNode.removeChild(spacer);
+            }
+            return;
+        }
+        if (!spacer) {
+            spacer = pageNode.ownerDocument.createElement("div");
+            spacer.id = "pd-flow";
+            pageNode.appendChild(spacer);
+        }
+        var footer = pageNode.querySelector("#pd-slot-footer");
+        if (footer && spacer.nextSibling !== footer) {
+            pageNode.insertBefore(spacer, footer);
+        }
+        var gap = floor - spacer.offsetTop;
+        spacer.style.height = (gap > 0 ? gap : 0) + "px";
+    }
+
     function placeBlock(node, block) {
         if (!block || !block.free) {
             removeClass(node, "pd-free");
@@ -979,7 +1008,6 @@
         }
         var blocks = blocksOf(theme);
         var keep = {};
-        var floor = 0;
         for (var i = 0; i < blocks.length; i++) {
             var block = blocks[i];
             if (!blockShown(theme, block, page)) {
@@ -1012,14 +1040,8 @@
                 renderLinksBlock(doc, parent, block, ctx);
             }
             placeBlock(parent, block);
-            if (block.free) {
-                var depth = (block.y || 0) + 220;
-                if (depth > floor) {
-                    floor = depth;
-                }
-            }
         }
-        pageNode.style.minHeight = floor ? (floor + 40) + "px" : "";
+        liftFooter(pageNode);
         var slots = pageNode.getElementsByClassName("pd-slot");
         for (var s = slots.length - 1; s >= 0; s--) {
             if (!keep[slots[s].getAttribute("data-pd-block")]) {
