@@ -114,9 +114,9 @@
             gap: "Интервал",
             cardStyle: "Вид карточек",
             descriptions: "Описания на карточках",
-            replaceHint: "Опубликованная страница заменяет список порталов, страницу проекта, мои запросы и профиль. Форма новой заявки и страница входа остаются страницами Jira.",
+            replaceHint: "Опубликованная страница заменяет портал Jira: список, проект, запросы, профиль и форму заявки. Поля заявки остаются полями Jira и стоят внутри этой страницы. Страница входа не меняется.",
             cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
-            keptPage: "Форма входа остаётся страницей Jira. На заявке и в открытом запросе любой текст, поле или форму можно перетащить. «Выше» берёт весь блок, «Вернуть» ставит его обратно.",
+            keptPage: "Страница входа остаётся страницей Jira.",
             layoutMode: "Раскладка",
             tone: "Тон",
             text: "Текст",
@@ -286,9 +286,9 @@
             gap: "Gap",
             cardStyle: "Card style",
             descriptions: "Card descriptions",
-            replaceHint: "The published page replaces the portal list, the project page, my requests and the profile. The new-request form and the login page stay Jira pages.",
+            replaceHint: "The published page replaces the Jira portal: the list, the project, requests, the profile and the request form. The fields stay Jira fields and sit inside this page. The login page is unchanged.",
             cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
-            keptPage: "The login page stays a Jira page. On a request you can drag any text, field or the form. Up selects the whole block, and Reset puts it back.",
+            keptPage: "The login page stays a Jira page.",
             layoutMode: "Layout",
             tone: "Tone",
             text: "Text",
@@ -537,6 +537,9 @@
         theme.layout = theme.layout || {};
         theme.header = theme.header || {};
         theme.header.links = theme.header.links || [];
+        if (theme.header.mode === "theme") {
+            theme.header.mode = "replace";
+        }
         theme.hero = theme.hero || {};
         theme.search = theme.search || {};
         theme.requests = theme.requests || {};
@@ -546,6 +549,9 @@
         theme.announcement = theme.announcement || {};
         theme.footer = theme.footer || {};
         theme.footer.columns = theme.footer.columns || [];
+        if (theme.footer.mode === "theme") {
+            theme.footer.mode = "replace";
+        }
         theme.responsive = theme.responsive || {};
         theme.responsive.mobile = theme.responsive.mobile || {};
         theme.responsive.tablet = theme.responsive.tablet || {};
@@ -633,6 +639,30 @@
             "<div id=\"pd-source\"></div>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
+    }
+
+    function ensureSampleForm(doc) {
+        if (state.page !== "create" && state.page !== "request") {
+            return;
+        }
+        if (doc.getElementById("create-form")) {
+            return;
+        }
+        var form = doc.createElement("form");
+        form.id = "create-form";
+        var label = doc.createElement("label");
+        label.appendChild(doc.createTextNode("Тема"));
+        var input = doc.createElement("input");
+        input.type = "text";
+        input.name = "summary";
+        label.appendChild(input);
+        form.appendChild(label);
+        var button = doc.createElement("button");
+        button.type = "submit";
+        button.className = "aui-button-primary";
+        button.appendChild(doc.createTextNode("Создать"));
+        form.appendChild(button);
+        doc.body.appendChild(form);
     }
 
     function fillCards(doc) {
@@ -834,6 +864,7 @@
             return;
         }
         fillCards(doc);
+        ensureSampleForm(doc);
         runtime.apply({
             document: doc,
             theme: state.previewTheme,
@@ -852,7 +883,7 @@
                 {key: "STP-50", summary: "Тест", status: "Ожидание поддержки", href: "#"},
                 {key: "STP-47", summary: "Заявка", status: "Ожидание поддержки", href: "#"}
             ],
-            arrange: state.page === "create" || state.page === "request",
+            arrange: false,
             dragLabel: t("dragPiece"),
             onPlace: function (place) {
                 ensureShape(state.theme);
@@ -1641,7 +1672,7 @@
     }
 
     function renderHeader(host) {
-        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));
         host.appendChild(checkInput("header.showTitle", t("showTitle")));
         host.appendChild(checkInput("header.sticky", t("sticky")));
@@ -1691,7 +1722,7 @@
     }
 
     function renderFooter(host) {
-        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["hidden", "hidden"]])));
         host.appendChild(field("footer.copyright", t("copyright"), textInput("footer.copyright")));
         host.appendChild(h("div", {class: "block-label", text: t("columnsTitle")}));
         state.theme.footer.columns = state.theme.footer.columns || [];

@@ -43,7 +43,17 @@ html.pd-shell .aui-page-panel {
     background: transparent !important;
 }
 
-html.pd-shell .pd-native-form {
+html.pd-replace #pd-slot-native .aui-header,
+html.pd-replace #pd-slot-native .cv-smart-portal-header,
+html.pd-replace #pd-slot-native .cv-help-center-header,
+html.pd-replace #pd-slot-native .help-center-bar,
+html.pd-replace #pd-slot-native .cv-powered-by,
+html.pd-replace #pd-slot-native [data-pd-brand] {
+    display: none !important;
+}
+
+html.pd-shell .pd-native-form,
+html.pd-replace #pd-slot-native .pd-native-form {
     box-sizing: border-box;
     width: 680px !important;
     max-width: calc(100% - 48px) !important;
@@ -58,7 +68,9 @@ html.pd-shell .pd-native-form {
 
 html.pd-shell .aui-button-primary,
 html.pd-shell .pd-native-form button[type="submit"],
-html.pd-shell .pd-native-form input[type="submit"] {
+html.pd-shell .pd-native-form input[type="submit"],
+html.pd-replace #pd-slot-native .pd-native-form button[type="submit"],
+html.pd-replace #pd-slot-native .pd-native-form input[type="submit"] {
     background: var(--pd-primary) !important;
     color: var(--pd-primary-text) !important;
     border-color: var(--pd-primary) !important;
@@ -67,7 +79,10 @@ html.pd-shell .pd-native-form input[type="submit"] {
 
 html.pd-shell .pd-native-form input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
 html.pd-shell .pd-native-form textarea,
-html.pd-shell .pd-native-form select {
+html.pd-shell .pd-native-form select,
+html.pd-replace #pd-slot-native .pd-native-form input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
+html.pd-replace #pd-slot-native .pd-native-form textarea,
+html.pd-replace #pd-slot-native .pd-native-form select {
     box-sizing: border-box;
     width: 100%;
     background: #fff !important;
@@ -79,7 +94,9 @@ html.pd-shell .pd-native-form select {
 }
 
 html.pd-shell .pd-native-form h1,
-html.pd-shell .pd-native-form h2 {
+html.pd-shell .pd-native-form h2,
+html.pd-replace #pd-slot-native .pd-native-form h1,
+html.pd-replace #pd-slot-native .pd-native-form h2 {
     margin: 0 0 16px;
     color: var(--pd-text);
 }
@@ -671,8 +688,6 @@ html.pd-active[data-pd-header-mode="hidden"] #pd-header,
 html.pd-active[data-pd-footer-mode="replace"] [data-pd-region="footer"],
 html.pd-active[data-pd-footer-mode="hidden"] [data-pd-region="footer"],
 html.pd-active[data-pd-footer-mode="hidden"] #pd-footer,
-html.pd-active[data-pd-header-mode="theme"] #pd-header,
-html.pd-active[data-pd-footer-mode="theme"] #pd-footer,
 html.pd-active[data-pd-search="off"] [data-pd-region="search"],
 html.pd-active[data-pd-desc="off"] [data-pd-desc] {
     display: none !important;

@@ -135,6 +135,10 @@
         return base + "/servicedesk/customer/user/login";
     }
 
+    function publishedMode(mode) {
+        return mode === "hidden" ? "hidden" : "replace";
+    }
+
     function showHero(theme, page) {
         if (!theme.hero || !theme.hero.visible) {
             return false;
@@ -778,8 +782,8 @@
         if (!block || block.visible === false) {
             return false;
         }
-        if (page === "shell") {
-            return block.type === "header" || block.type === "footer" || block.type === "announcement";
+        if ((page === "create" || page === "request" || page === "shell") && (block.type === "search" || block.type === "requests")) {
+            return false;
         }
         if (block.type === "header") {
             return !theme.header || theme.header.mode !== "hidden";
@@ -1041,13 +1045,91 @@
             }
             placeBlock(parent, block);
         }
-        liftFooter(pageNode);
         var slots = pageNode.getElementsByClassName("pd-slot");
         for (var s = slots.length - 1; s >= 0; s--) {
+            if (slots[s].id === "pd-slot-native") {
+                continue;
+            }
             if (!keep[slots[s].getAttribute("data-pd-block")]) {
                 pageNode.removeChild(slots[s]);
             }
         }
+        if (page === "create" || page === "request" || page === "shell") {
+            mountNative(doc, pageNode);
+        } else {
+            releaseNative(doc);
+        }
+        liftFooter(pageNode);
+    }
+
+    function mountNative(doc, pageNode) {
+        var slot = doc.getElementById("pd-slot-native");
+        if (!slot) {
+            slot = el(doc, "div", "pd-slot");
+            slot.id = "pd-slot-native";
+        }
+        slot.setAttribute("data-pd-block", "native");
+        slot.setAttribute("data-pd-select", "requests");
+        var footer = doc.getElementById("pd-slot-footer");
+        if (footer && footer.parentNode === pageNode) {
+            pageNode.insertBefore(slot, footer);
+        } else if (slot.parentNode !== pageNode) {
+            pageNode.appendChild(slot);
+        }
+        var form = nativeForm(doc);
+        if (form) {
+            addClass(form, "pd-native-form");
+            if (form.parentNode !== slot) {
+                slot.appendChild(form);
+            }
+            return;
+        }
+        var root = nativeRoot(doc, pageNode);
+        if (root && root.parentNode !== slot) {
+            slot.appendChild(root);
+        }
+    }
+
+    function releaseNative(doc) {
+        var slot = doc.getElementById("pd-slot-native");
+        if (!slot || !doc.body) {
+            return;
+        }
+        while (slot.firstChild) {
+            doc.body.appendChild(slot.firstChild);
+        }
+        if (slot.parentNode) {
+            slot.parentNode.removeChild(slot);
+        }
+    }
+
+    function nativeForm(doc) {
+        var slot = doc.getElementById("pd-slot-native");
+        if (slot) {
+            var hosted = slot.getElementsByTagName("form");
+            if (hosted.length) {
+                return hosted[0];
+            }
+        }
+        var forms = doc.getElementsByTagName("form");
+        for (var i = 0; i < forms.length; i++) {
+            if (!owned(forms[i])) {
+                return forms[i];
+            }
+        }
+        return null;
+    }
+
+    function nativeRoot(doc, pageNode) {
+        var selectors = ["#jsd-portal-container", ".cv-smart-portal", "#content", ".cv-page"];
+        for (var i = 0; i < selectors.length; i++) {
+            var node = doc.querySelector(selectors[i]);
+            if (!node || node === pageNode || owned(node) || node.contains(pageNode)) {
+                continue;
+            }
+            return node;
+        }
+        return null;
     }
 
     function releaseHold(doc) {
@@ -1058,6 +1140,7 @@
     }
 
     function dropPage(doc) {
+        releaseNative(doc);
         var built = doc.getElementById("pd-page");
         if (built && built.parentNode) {
             built.parentNode.removeChild(built);
@@ -1671,7 +1754,7 @@
         var note = el(doc, "div");
         note.id = "pd-page";
         note.className = "pd-kept";
-        note.appendChild(el(doc, "p", null, label || "Форма входа и форма заявки остаются страницами Jira."));
+        note.appendChild(el(doc, "p", null, label || "Страница входа остаётся страницей Jira."));
         doc.body.appendChild(note);
         addClass(doc.documentElement, "pd-replace");
     }
@@ -1707,17 +1790,11 @@
             releaseHold(doc);
             return;
         }
-        var shell = page === "create" || page === "request" || page === "shell";
         addClass(html, "pd-active");
-        if (shell) {
-            addClass(html, "pd-shell");
-            removeClass(html, "pd-replace");
-        } else {
-            addClass(html, "pd-replace");
-            removeClass(html, "pd-shell");
-        }
-        setAttr(html, "data-pd-header-mode", (theme.header && theme.header.mode) || "replace");
-        setAttr(html, "data-pd-footer-mode", (theme.footer && theme.footer.mode) || "replace");
+        addClass(html, "pd-replace");
+        removeClass(html, "pd-shell");
+        setAttr(html, "data-pd-header-mode", publishedMode(theme.header && theme.header.mode));
+        setAttr(html, "data-pd-footer-mode", publishedMode(theme.footer && theme.footer.mode));
         setAttr(html, "data-pd-sticky", theme.header && theme.header.sticky === false ? "0" : "1");
         setAttr(html, "data-pd-search", theme.search && theme.search.visible === false ? "off" : "on");
         setAttr(html, "data-pd-layout", (theme.requests && theme.requests.layout) || "grid");
@@ -1730,23 +1807,7 @@
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        replacePage(doc, theme, ctx, shell ? "shell" : page, options.account || null, options.catalog || null);
-        if (shell) {
-            arrangeShell(doc);
-            layoutPieces(doc, theme, options);
-            if (options.preview) {
-                var held = doc.getElementById("pd-held");
-                var pageNode = doc.getElementById("pd-page");
-                if (!held && pageNode) {
-                    held = el(doc, "div", "pd-kept");
-                    held.id = "pd-held";
-                    pageNode.appendChild(held);
-                }
-                if (held) {
-                    held.textContent = options.keptLabel || "";
-                }
-            }
-        }
+        replacePage(doc, theme, ctx, page, options.account || null, options.catalog || null);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
@@ -1754,6 +1815,7 @@
     }
 
     function teardown(doc) {
+        releaseNative(doc);
         var html = doc.documentElement;
         removeClass(html, "pd-active");
         removeClass(html, "pd-replace");
