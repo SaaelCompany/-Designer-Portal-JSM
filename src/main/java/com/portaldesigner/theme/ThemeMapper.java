@@ -361,10 +361,10 @@ public final class ThemeMapper {
         }
         List<?> list = (List<?>) raw;
         List<String> seen = new ArrayList<String>();
-        for (int i = 0; i < list.size() && placements.size() < 8; i++) {
+        for (int i = 0; i < list.size() && placements.size() < 40; i++) {
             Map<String, Object> item = map(list.get(i));
-            String id = oneOf(str(item.get("id")), "", "title", "form");
-            if (id.isEmpty() || seen.contains(id)) {
+            String id = str(item.get("id")).trim();
+            if (!id.matches("[A-Za-z0-9_-]{1,80}") || seen.contains(id)) {
                 warnings.add("placements");
                 continue;
             }

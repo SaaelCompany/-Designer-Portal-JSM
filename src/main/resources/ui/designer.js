@@ -116,7 +116,7 @@
             descriptions: "Описания на карточках",
             replaceHint: "Опубликованная страница заменяет список порталов, страницу проекта, мои запросы и профиль. Форма новой заявки и страница входа остаются страницами Jira.",
             cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
-            keptPage: "Форма входа остаётся страницей Jira. На заявке и в открытом запросе поля остаются полями Jira. Заголовок и форму перетаскивает метка «Перетащить».",
+            keptPage: "Форма входа остаётся страницей Jira. На заявке и в открытом запросе любой текст, поле или форму можно перетащить. «Выше» берёт весь блок, «Вернуть» ставит его обратно.",
             layoutMode: "Раскладка",
             tone: "Тон",
             text: "Текст",
@@ -288,7 +288,7 @@
             descriptions: "Card descriptions",
             replaceHint: "The published page replaces the portal list, the project page, my requests and the profile. The new-request form and the login page stay Jira pages.",
             cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
-            keptPage: "The login page stays a Jira page. A request form and an open request keep Jira's fields. Drag moves the title and the form.",
+            keptPage: "The login page stays a Jira page. On a request you can drag any text, field or the form. Up selects the whole block, and Reset puts it back.",
             layoutMode: "Layout",
             tone: "Tone",
             text: "Text",
@@ -858,15 +858,20 @@
                 ensureShape(state.theme);
                 var list = state.theme.placements;
                 var found = false;
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i].id === place.id) {
+                for (var i = list.length - 1; i >= 0; i--) {
+                    if (list[i].id !== place.id) {
+                        continue;
+                    }
+                    if (place.reset) {
+                        list.splice(i, 1);
+                    } else {
                         list[i].x = place.x;
                         list[i].y = place.y;
                         list[i].width = place.width;
                         found = true;
                     }
                 }
-                if (!found) {
+                if (!place.reset && !found) {
                     list.push({id: place.id, x: place.x, y: place.y, width: place.width});
                 }
                 if (state.previewTheme) {

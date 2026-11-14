@@ -373,14 +373,27 @@ html.pd-shell .pd-piece {
     position: relative;
 }
 
-html.pd-arrange .pd-piece {
+html.pd-arrange .pd-picked {
     outline: 1px dashed var(--pd-primary);
-    outline-offset: 6px;
+    outline-offset: 4px;
+}
+
+#pd-dragbar {
+    position: fixed;
+    z-index: 40;
+    display: none;
+    gap: 4px;
+}
+
+#pd-dragbar .pd-move {
+    position: static;
+    top: auto;
+    right: auto;
+    left: auto;
 }
 
 html.pd-shell .pd-piece.pd-placed {
-    position: absolute;
-    margin: 0 !important;
+    position: relative;
     z-index: 4;
 }
 

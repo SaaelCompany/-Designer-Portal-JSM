@@ -1199,11 +1199,156 @@
         };
     }
 
+    function unlockOverflow(node) {
+        var parent = node.parentNode;
+        var steps = 0;
+        while (parent && parent.nodeType === 1 && parent !== node.ownerDocument.body && steps < 8) {
+            if (!owned(parent)) {
+                parent.style.setProperty("overflow", "visible", "important");
+            }
+            parent = parent.parentNode;
+            steps++;
+        }
+    }
+
     function applyBox(node, place) {
+        addClass(node, "pd-piece");
         addClass(node, "pd-placed");
-        node.style.left = (place.x || 0) + "%";
-        node.style.top = (place.y || 0) + "px";
-        node.style.width = place.width ? place.width + "%" : "";
+        node.style.position = "relative";
+        node.style.left = "";
+        node.style.top = "";
+        node.style.transform = "none";
+        node.style.zIndex = "4";
+        var shown = node.ownerDocument.defaultView && node.ownerDocument.defaultView.getComputedStyle(node);
+        if (shown && shown.display === "inline") {
+            node.style.display = "inline-block";
+        }
+        var body = node.ownerDocument.body;
+        var rect = node.getBoundingClientRect();
+        var bodyRect = body.getBoundingClientRect();
+        var pageX = (place.x || 0) / 100 * (body.clientWidth || 1);
+        var dx = Math.round(pageX - (rect.left - bodyRect.left));
+        var dy = Math.round((place.y || 0) - (rect.top - bodyRect.top));
+        node.style.transform = "translate(" + dx + "px, " + dy + "px)";
+        unlockOverflow(node);
+    }
+
+    function pieceKey(node) {
+        if (!node || node.nodeType !== 1) {
+            return "";
+        }
+        var mark = node.getAttribute && node.getAttribute("data-pd-piece");
+        if (mark && /^[A-Za-z0-9_-]{1,40}$/.test(mark)) {
+            return mark;
+        }
+        if (node.id && /^[A-Za-z][\w:-]{0,40}$/.test(node.id) && node.id.indexOf("pd-") !== 0) {
+            return ("id-" + node.id).replace(/[^\w-]/g, "").substring(0, 80);
+        }
+        var parts = [];
+        var current = node;
+        var guard = 0;
+        while (current && current !== node.ownerDocument.body && guard < 8) {
+            var parent = current.parentNode;
+            if (!parent || parent.nodeType !== 1) {
+                break;
+            }
+            var name = current.tagName.toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (!name) {
+                name = "n";
+            }
+            if (name.length > 10) {
+                name = name.substring(0, 10);
+            }
+            var index = 1;
+            var sibling = current;
+            while ((sibling = sibling.previousElementSibling)) {
+                if (sibling.id === "pd-page" || sibling.id === "pd-dragbar") {
+                    continue;
+                }
+                if (sibling.tagName === current.tagName) {
+                    index++;
+                }
+            }
+            parts.unshift(name + "n" + index);
+            current = parent;
+            guard++;
+        }
+        var key = parts.join("-");
+        return key.length > 80 ? key.substring(key.length - 80) : key;
+    }
+
+    function findByKey(doc, key) {
+        if (!key || !doc.body) {
+            return null;
+        }
+        if (key.indexOf("id-") === 0) {
+            return doc.getElementById(key.substring(3));
+        }
+        var parts = key.split("-");
+        var node = doc.body;
+        for (var i = 0; i < parts.length; i++) {
+            var match = /^([a-z0-9]+)n(\d+)$/.exec(parts[i]);
+            if (!match || !node) {
+                return null;
+            }
+            var children = node.children;
+            var seen = 0;
+            var next = null;
+            for (var c = 0; c < children.length; c++) {
+                var child = children[c];
+                if (child.id === "pd-page" || child.id === "pd-dragbar") {
+                    continue;
+                }
+                if (child.tagName.toLowerCase().replace(/[^a-z0-9]/g, "") === match[1]) {
+                    seen++;
+                    if (seen === Number(match[2])) {
+                        next = child;
+                        break;
+                    }
+                }
+            }
+            node = next;
+        }
+        return node;
+    }
+
+    function draggableNode(start) {
+        var node = start && start.nodeType === 1 ? start : (start && start.parentNode);
+        while (node && node !== document.body) {
+            if (node.id === "pd-dragbar") {
+                return null;
+            }
+            if (node.id === "pd-page") {
+                return null;
+            }
+            if (node.getAttribute && node.getAttribute("data-pd-piece")) {
+                return node;
+            }
+            if (node.getAttribute && (node.getAttribute("data-pd-brand") || node.getAttribute("data-pd-native-bar"))) {
+                node = node.parentNode;
+                continue;
+            }
+            if (!owned(node)) {
+                var rect = node.getBoundingClientRect();
+                if (rect.width >= 24 && rect.height >= 12 && rect.height < 900) {
+                    return node;
+                }
+            }
+            node = node.parentNode;
+        }
+        return null;
+    }
+
+    function forgetPlacement(theme, id) {
+        var list = theme && theme.placements;
+        if (!list || !id) {
+            return;
+        }
+        for (var i = list.length - 1; i >= 0; i--) {
+            if (list[i] && list[i].id === id) {
+                list.splice(i, 1);
+            }
+        }
     }
 
     function findTitle(doc, form) {
@@ -1293,20 +1438,111 @@
         form.style.order = "1";
     }
 
-    function armPiece(doc, node, theme, options) {
-        if (!options.arrange || node.getAttribute("data-pd-drag") || !doc.body) {
+    function ensureBar(doc, label) {
+        var bar = doc.getElementById("pd-dragbar");
+        if (bar) {
+            return bar;
+        }
+        bar = el(doc, "div");
+        bar.id = "pd-dragbar";
+        var move = el(doc, "button", "pd-move", label || "Перетащить");
+        move.type = "button";
+        move.setAttribute("data-pd-act", "move");
+        var up = el(doc, "button", "pd-move", "Выше");
+        up.type = "button";
+        up.setAttribute("data-pd-act", "up");
+        var reset = el(doc, "button", "pd-move", "Вернуть");
+        reset.type = "button";
+        reset.setAttribute("data-pd-act", "reset");
+        bar.appendChild(move);
+        bar.appendChild(up);
+        bar.appendChild(reset);
+        doc.body.appendChild(bar);
+        return bar;
+    }
+
+    function armArrange(doc, theme, options) {
+        if (!options.arrange || !doc.body || doc.documentElement.getAttribute("data-pd-arrange-on")) {
             return;
         }
-        node.setAttribute("data-pd-drag", "1");
-        var handle = el(doc, "button", "pd-move", options.dragLabel || "Перетащить");
-        handle.type = "button";
-        node.appendChild(handle);
-        handle.addEventListener("pointerdown", function (event) {
-            if (!doc.body) {
+        doc.documentElement.setAttribute("data-pd-arrange-on", "1");
+        addClass(doc.documentElement, "pd-arrange");
+        var bar = ensureBar(doc, options.dragLabel);
+        var picked = null;
+        function placeBar() {
+            if (!picked || !doc.body.contains(picked)) {
+                bar.style.display = "none";
+                return;
+            }
+            var rect = picked.getBoundingClientRect();
+            bar.style.display = "flex";
+            var width = bar.offsetWidth || 220;
+            var left = rect.right + 8;
+            var top = Math.max(8, rect.top);
+            if (left + width > window.innerWidth - 8) {
+                left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+                top = Math.max(8, rect.top - 34);
+            }
+            bar.style.left = left + "px";
+            bar.style.top = top + "px";
+        }
+        function pick(node) {
+            if (picked && picked !== node) {
+                removeClass(picked, "pd-picked");
+            }
+            picked = node;
+            if (picked) {
+                addClass(picked, "pd-picked");
+            }
+            placeBar();
+        }
+        function commit(place) {
+            if (typeof options.onPlace === "function") {
+                options.onPlace(place, theme);
+            }
+        }
+        doc.addEventListener("pointermove", function (event) {
+            if (doc.documentElement.getAttribute("data-pd-dragging") || bar.contains(event.target)) {
+                return;
+            }
+            var node = draggableNode(event.target);
+            if (node) {
+                pick(node);
+            }
+        });
+        bar.addEventListener("pointerdown", function (event) {
+            var act = event.target.getAttribute && event.target.getAttribute("data-pd-act");
+            if (!act || !picked) {
                 return;
             }
             event.preventDefault();
             event.stopPropagation();
+            if (act === "up") {
+                var parent = picked.parentNode;
+                if (parent && parent !== doc.body && parent.id !== "pd-dragbar" && !owned(parent)) {
+                    pick(parent);
+                }
+                return;
+            }
+            if (act === "reset") {
+                var resetKey = pieceKey(picked);
+                forgetPlacement(theme, resetKey);
+                if (picked.getAttribute("data-pd-piece")) {
+                    forgetPlacement(theme, picked.getAttribute("data-pd-piece"));
+                }
+                removeClass(picked, "pd-placed");
+                picked.style.position = "";
+                picked.style.left = "";
+                picked.style.top = "";
+                picked.style.transform = "";
+                picked.style.display = "";
+                picked.style.zIndex = "";
+                commit({id: resetKey, reset: true});
+                placeBar();
+                return;
+            }
+            var node = picked;
+            var key = pieceKey(node);
             var origin = readBox(node, doc.body);
             applyBox(node, {x: origin.x, y: origin.y, width: 0});
             doc.documentElement.setAttribute("data-pd-dragging", "1");
@@ -1319,22 +1555,22 @@
                     y: clampNum(origin.y + (ev.clientY - startY), 0, 2400),
                     width: 0
                 });
+                placeBar();
             }
             function up(ev) {
                 doc.removeEventListener("pointermove", move);
                 doc.removeEventListener("pointerup", up);
                 doc.documentElement.removeAttribute("data-pd-dragging");
                 var place = {
-                    id: node.getAttribute("data-pd-piece"),
+                    id: key,
                     x: Math.round(clampNum(origin.x + (ev.clientX - startX) / span * 100, 0, 90)),
                     y: Math.round(clampNum(origin.y + (ev.clientY - startY), 0, 2400)),
                     width: 0
                 };
                 rememberPlacement(theme, place);
                 applyBox(node, place);
-                if (typeof options.onPlace === "function") {
-                    options.onPlace(place, theme);
-                }
+                placeBar();
+                commit(place);
             }
             doc.addEventListener("pointermove", move);
             doc.addEventListener("pointerup", up);
@@ -1359,18 +1595,24 @@
         var form = pieceNode(doc, "form");
         if (title && saved.title) {
             applyBox(title, saved.title);
-        } else if (title) {
+        } else if (title && !title.className.match(/(?:^|\s)pd-placed(?:\s|$)/)) {
             stackTitle(title, form);
         }
         if (form && saved.form) {
             applyBox(form, saved.form);
         }
-        if (title) {
-            armPiece(doc, title, theme, options);
+        var list = theme && theme.placements || [];
+        for (var i = 0; i < list.length; i++) {
+            var place = list[i];
+            if (!place || !place.id || place.id === "title" || place.id === "form") {
+                continue;
+            }
+            var node = findByKey(doc, place.id);
+            if (node && (node.getAttribute("data-pd-piece") || !owned(node))) {
+                applyBox(node, place);
+            }
         }
-        if (form) {
-            armPiece(doc, form, theme, options);
-        }
+        armArrange(doc, theme, options);
     }
 
     function arrangeShell(doc) {

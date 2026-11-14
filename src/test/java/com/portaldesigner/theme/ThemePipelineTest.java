@@ -110,14 +110,21 @@ public class ThemePipelineTest {
         title.y = 120;
         title.width = 32;
         theme.placements.add(title);
+        PortalTheme.Placement text = new PortalTheme.Placement();
+        text.id = "divn2-h2n1";
+        text.x = 40;
+        text.y = 80;
+        theme.placements.add(text);
         Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> placements = (List<Map<String, Object>>) cast(saved.get("theme")).get("placements");
-        assertEquals(1, placements.size());
+        assertEquals(2, placements.size());
         assertEquals("title", placements.get(0).get("id"));
         assertEquals(Integer.valueOf(18), placements.get(0).get("x"));
         assertEquals(Integer.valueOf(120), placements.get(0).get("y"));
         assertEquals(Integer.valueOf(32), placements.get(0).get("width"));
+        assertEquals("divn2-h2n1", placements.get(1).get("id"));
+        assertEquals(Integer.valueOf(40), placements.get(1).get("x"));
     }
 
     @Test
