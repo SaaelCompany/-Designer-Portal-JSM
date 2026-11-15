@@ -31,7 +31,7 @@
             pageHint: "Макет — это холст выбранного экрана. Тяните объект мышью, правый край меняет ширину. Снизу задаются положение, свой шрифт и цвет именно этого объекта.",
             place: "Положение и размер",
             freePlace: "Свободное положение",
-            placeHint: "Числа относятся к выбранному экрану: компьютер, планшет или телефон. Свой шрифт — это имя семейства, например Manrope или Georgia. Пустой цвет оставляет цвет страницы.",
+            placeHint: "Возьмите объект на холсте и перетащите его. Правый нижний угол меняет ширину. Числа относятся к выбранному экрану. Свой шрифт — это имя семейства, например Manrope или Georgia.",
             dragPiece: "Перетащить",
             posX: "Слева, %",
             posY: "Сверху, px",
@@ -121,7 +121,7 @@
             cardStyle: "Вид карточек",
             descriptions: "Описания на карточках",
             replaceHint: "Опубликованная страница заменяет портал Jira: список, проект, запросы, профиль и форму заявки. Поля заявки остаются полями Jira и стоят внутри этой страницы. Страница входа не меняется.",
-            cardOrderHint: "Перетащите кнопку на другую кнопку в макете. Так меняется их порядок на вашей странице.",
+            cardOrderHint: "Объект двигается, если потянуть его мышью. Порядок карточек меняется, если тянуть одну на другую с зажатой клавишей Alt.",
             keptPage: "Страница входа остаётся страницей Jira.",
             layoutMode: "Раскладка",
             tone: "Тон",
@@ -209,7 +209,7 @@
             pageHint: "The canvas is the screen selected above. Drag an object, and drag its right edge to change the width. Position, a custom font and color below belong to that object.",
             place: "Place and size",
             freePlace: "Free position",
-            placeHint: "The numbers follow the selected screen: computer, tablet or phone. A custom font is a family name, such as Manrope or Georgia. An empty color keeps the page color.",
+            placeHint: "Drag an object on the canvas. The bottom-right corner changes its width. The numbers follow the selected screen. A custom font is a family name, such as Manrope or Georgia.",
             dragPiece: "Drag",
             posX: "From the left, %",
             posY: "From the top, px",
@@ -299,7 +299,7 @@
             cardStyle: "Card style",
             descriptions: "Card descriptions",
             replaceHint: "The published page replaces the Jira portal: the list, the project, requests, the profile and the request form. The fields stay Jira fields and sit inside this page. The login page is unchanged.",
-            cardOrderHint: "Drag one button onto another in the preview. That becomes their order on your page.",
+            cardOrderHint: "Drag an object to move it. Hold Alt and drag one card onto another to change their order.",
             keptPage: "The login page stays a Jira page.",
             layoutMode: "Layout",
             tone: "Tone",
@@ -647,7 +647,8 @@
         var js = (window.PD_CONTEXT || "") + "/download/resources/" + window.PD_PLUGIN_KEY + ":portal-runtime/portal.js";
         return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>" +
             "<link rel=\"stylesheet\" href=\"" + css + "\"/>" +
-            "<style id=\"pd-generated-style\"></style></head><body>" +
+            "<style id=\"pd-generated-style\"></style>" +
+            "<style>.pd-slot{cursor:grab}.pd-slot.pd-dragging{cursor:grabbing}.pd-slot.pd-selected{outline:2px solid #0c66e4;outline-offset:2px}</style></head><body>" +
             "<div id=\"pd-source\"></div>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
@@ -738,13 +739,10 @@
             }
         }, true);
         doc.addEventListener("pointerdown", function (event) {
-            if (!state.theme || !event.target.closest) {
+            if (!state.theme || !event.target.closest || event.altKey) {
                 return;
             }
-            if (event.target.closest("input, textarea, select, button, a, .pd-tile")) {
-                return;
-            }
-            var handle = event.target.closest(".pd-move, .pd-resize, .pd-slot");
+            var handle = event.target.closest(".pd-resize, .pd-slot");
             if (!handle) {
                 return;
             }
@@ -758,10 +756,13 @@
                 return;
             }
             var resizing = handle !== slot && (" " + handle.className + " ").indexOf(" pd-resize ") >= 0;
-            var fromHandle = handle !== slot;
+            if (event.target.closest("a, button")) {
+                event.preventDefault();
+            }
             var startX = event.clientX;
             var startY = event.clientY;
             var dragging = false;
+            var origin = null;
             function keys() {
                 if (state.device === "mobile") {
                     return {x: "mobileX", y: "mobileY", w: "mobileW"};
@@ -771,39 +772,58 @@
                 }
                 return {x: "x", y: "y", w: "width"};
             }
+            function measured() {
+                var rect = page.getBoundingClientRect();
+                var freeAlready = (" " + slot.className + " ").indexOf(" pd-free ") >= 0;
+                var target = freeAlready ? slot : (slot.querySelector("[data-pd-region], .pd-text-block, .pd-shape, .pd-links-block") || slot);
+                var box = target.getBoundingClientRect();
+                var width = rect.width || 1;
+                return {
+                    x: (box.left - rect.left) / width * 100,
+                    y: box.top - rect.top,
+                    w: Math.max(8, box.width / width * 100)
+                };
+            }
             function begin() {
                 if (dragging) {
                     return;
                 }
                 dragging = true;
                 remember();
-                var rect = page.getBoundingClientRect();
-                var slotRect = slot.getBoundingClientRect();
-                var frame = keys();
+                origin = measured();
                 block.free = true;
-                if (block[frame.x] == null || block[frame.x] < 0) {
-                    block[frame.x] = Math.max(0, Math.min(80, (slotRect.left - rect.left) / rect.width * 100));
-                    block[frame.y] = Math.max(0, slotRect.top - rect.top);
-                    block[frame.w] = Math.max(20, Math.min(100, slotRect.width / rect.width * 100));
+                if (slot.setPointerCapture && event.pointerId != null) {
+                    try {
+                        slot.setPointerCapture(event.pointerId);
+                    } catch (ignored) {
+                        /* capture stays inside the preview */
+                    }
+                }
+                slot.className += (slot.className.indexOf("pd-dragging") >= 0 ? "" : " pd-dragging");
+                if (doc.getSelection) {
+                    var selection = doc.getSelection();
+                    if (selection && selection.removeAllRanges) {
+                        selection.removeAllRanges();
+                    }
                 }
             }
-            var origin = null;
             function move(ev) {
                 if (!dragging) {
-                    if (!fromHandle && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 4) {
+                    if (!resizing && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 4) {
                         return;
                     }
                     begin();
-                    var frameNow = keys();
-                    origin = {x: block[frameNow.x] || 0, y: block[frameNow.y] || 0, w: block[frameNow.w] || block.width || 100};
                 }
+                ev.preventDefault();
                 var rect = page.getBoundingClientRect();
+                var width = rect.width || 1;
                 var frame = keys();
                 if (resizing) {
-                    block[frame.w] = Math.max(20, Math.min(100, origin.w + (ev.clientX - startX) / rect.width * 100));
+                    block[frame.w] = Math.max(8, Math.min(100, origin.w + (ev.clientX - startX) / width * 100));
                 } else {
-                    block[frame.x] = Math.max(0, Math.min(80, origin.x + (ev.clientX - startX) / rect.width * 100));
+                    block[frame.x] = Math.max(0, Math.min(100, origin.x + (ev.clientX - startX) / width * 100));
                     block[frame.y] = Math.max(0, Math.min(2400, origin.y + (ev.clientY - startY)));
+                    block[frame.w] = Math.max(8, Math.min(100, origin.w));
                 }
                 slot.style.position = "absolute";
                 slot.style.left = block[frame.x] + "%";
@@ -816,24 +836,24 @@
             function up() {
                 doc.removeEventListener("pointermove", move);
                 doc.removeEventListener("pointerup", up);
+                slot.className = slot.className.replace(" pd-dragging", "");
                 if (!dragging) {
                     return;
                 }
                 markDirty();
+                renderInspector();
                 scheduleCompile();
             }
-            if (fromHandle) {
+            if (resizing) {
                 event.preventDefault();
                 begin();
-                var frame = keys();
-                origin = {x: block[frame.x] || 0, y: block[frame.y] || 0, w: block[frame.w] || block.width || 100};
             }
             doc.addEventListener("pointermove", move);
             doc.addEventListener("pointerup", up);
         }, true);
         doc.addEventListener("pointerdown", function (event) {
             var tile = event.target.closest ? event.target.closest(".pd-tile") : null;
-            if (!tile || !state.theme) {
+            if (!tile || !state.theme || !event.altKey) {
                 return;
             }
             event.preventDefault();
@@ -971,11 +991,16 @@
                 }
                 var slots = rendered.querySelectorAll(".pd-slot");
                 for (var s = 0; s < slots.length; s++) {
+                    var sel = slots[s].getAttribute("data-pd-select") || "";
+                    var chosen = sel === state.blockId || sel === "block:" + state.blockId;
+                    slots[s].className = slots[s].className.replace(" pd-selected", "");
+                    if (chosen) {
+                        slots[s].className += " pd-selected";
+                    }
                     if (slots[s].querySelector(".pd-resize")) {
                         continue;
                     }
-                    var resize = rendered.createElement("button");
-                    resize.type = "button";
+                    var resize = rendered.createElement("div");
                     resize.className = "pd-resize";
                     resize.setAttribute("aria-label", t("blockWidth"));
                     slots[s].appendChild(resize);
@@ -1568,9 +1593,9 @@
             scheduleCompile();
         });
         box.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePlace"))]));
-        box.appendChild(frameNumber(block, frame.x, block.x, t("posX"), 0, 80));
+        box.appendChild(frameNumber(block, frame.x, block.x, t("posX"), 0, 100));
         box.appendChild(frameNumber(block, frame.y, block.y, t("posY"), 0, 2400));
-        box.appendChild(frameNumber(block, frame.w, block.width, t("blockWidth"), 20, 100));
+        box.appendChild(frameNumber(block, frame.w, block.width, t("blockWidth"), 8, 100));
         box.appendChild(frameNumber(block, frame.h, block.height, t("blockHeight"), 0, 1600));
         box.appendChild(blockNumber(block, "fontSize", t("blockSize"), 0, 96));
         box.appendChild(plainField(block, "font", t("customFont")));

@@ -435,10 +435,10 @@ html.pd-active .pd-slot.pd-free .pd-text-block,
 html.pd-active .pd-slot.pd-free .pd-links-block,
 html.pd-active .pd-slot.pd-free .pd-mine,
 html.pd-active .pd-slot.pd-free .pd-profile {
-    width: auto;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 
 html.pd-active .pd-slot[data-pd-font="serif"] { font-family: Georgia, "Iowan Old Style", Palatino, serif; }
@@ -517,7 +517,8 @@ html.pd-active .pd-resize {
     opacity: 0;
 }
 
-html.pd-active .pd-slot:hover .pd-resize {
+html.pd-active .pd-slot:hover .pd-resize,
+html.pd-active .pd-slot.pd-selected .pd-resize {
     opacity: 1;
 }
 
@@ -535,14 +536,15 @@ html.pd-active .pd-move {
 }
 
 html.pd-active .pd-resize {
-    top: 0;
+    top: auto;
+    bottom: 0;
     right: 0;
-    width: 12px;
-    height: 100%;
+    width: 16px;
+    height: 16px;
     border: 0;
     padding: 0;
-    background: transparent;
-    cursor: ew-resize;
+    background: #0c66e4;
+    cursor: nwse-resize;
 }
 
 html.pd-active .pd-resize:hover {
