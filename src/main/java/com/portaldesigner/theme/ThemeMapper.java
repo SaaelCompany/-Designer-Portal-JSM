@@ -122,6 +122,7 @@ public final class ThemeMapper {
         }
         theme.customCss = cleanCss;
         theme.blocks = blocks(raw.get("blocks"), warnings);
+        theme.composed = bool(raw.get("composed"), false);
         theme.placements = placements(raw.get("placements"), warnings);
         return new MappedTheme(theme, warnings);
     }
@@ -236,6 +237,7 @@ public final class ThemeMapper {
         root.put("responsive", responsive);
         root.put("customCss", theme.customCss);
         root.put("blocks", blockMaps(theme.blocks));
+        root.put("composed", theme.composed);
         root.put("placements", placementMaps(theme.placements));
         return root;
     }

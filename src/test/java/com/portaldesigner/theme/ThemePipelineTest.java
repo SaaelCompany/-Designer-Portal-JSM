@@ -87,7 +87,9 @@ public class ThemePipelineTest {
         block.mobileY = 20;
         block.mobileW = 90;
         theme.blocks.add(block);
+        theme.composed = true;
         Map<String, Object> saved = service.save("global", Json.stringify(ThemeMapper.toMap(theme)));
+        assertEquals(Boolean.TRUE, cast(saved.get("theme")).get("composed"));
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> blocks = (List<Map<String, Object>>) cast(saved.get("theme")).get("blocks");
         Map<String, Object> hero = null;

@@ -21,6 +21,8 @@ public final class PortalTheme {
     public Footer footer = new Footer();
     public Responsive responsive = new Responsive();
     public List<Block> blocks = new ArrayList<Block>();
+    /** True after the author adds or deletes a block, so an empty list stays empty. */
+    public boolean composed;
     /** Positions of native pieces on the request form, such as the title and the form. */
     public List<Placement> placements = new ArrayList<Placement>();
     public String customCss = "";

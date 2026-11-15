@@ -42,6 +42,7 @@
             addText: "Текстовый блок",
             addLinks: "Блок ссылок",
             addShape: "Фигура",
+            deleteObject: "Удалить",
             customFont: "Свой шрифт",
             fontColor: "Цвет шрифта",
             fillColor: "Заливка",
@@ -219,6 +220,7 @@
             addText: "Text block",
             addLinks: "Link row",
             addShape: "Shape",
+            deleteObject: "Delete",
             customFont: "Custom font",
             fontColor: "Font color",
             fillColor: "Fill",
@@ -613,7 +615,9 @@
         if (state.device === "tablet") {
             return 820;
         }
-        return 1180;
+        var content = state.theme && state.theme.layout ? Number(state.theme.layout.contentWidth) || 1080 : 1080;
+        var pad = state.theme && state.theme.layout ? Number(state.theme.layout.pagePadding) || 28 : 28;
+        return Math.max(960, Math.min(1600, content + pad * 2 + 24));
     }
 
     function layoutDevice() {
@@ -623,16 +627,14 @@
             return;
         }
         var w = widths();
-        var availW = Math.max(280, stage.clientWidth - 48);
         var availH = Math.max(420, stage.clientHeight - 28);
-        var scale = Math.min(1, availW / w);
         frame.style.width = w + "px";
-        frame.style.height = Math.round(availH / scale) + "px";
-        frame.style.transform = "scale(" + scale + ")";
+        frame.style.height = availH + "px";
+        frame.style.transform = "none";
         frame.style.transformOrigin = "top left";
         var device = document.getElementById("device");
-        device.style.width = Math.round(w * scale + 20) + "px";
-        device.style.height = Math.round(availH + 20) + "px";
+        device.style.width = (w + 20) + "px";
+        device.style.height = (availH + 20) + "px";
     }
 
     function frameDoc() {
@@ -969,17 +971,13 @@
                 }
                 var slots = rendered.querySelectorAll(".pd-slot");
                 for (var s = 0; s < slots.length; s++) {
-                    if (slots[s].querySelector(".pd-move")) {
+                    if (slots[s].querySelector(".pd-resize")) {
                         continue;
                     }
-                    var move = rendered.createElement("button");
-                    move.type = "button";
-                    move.className = "pd-move";
-                    move.textContent = t("freePlace");
                     var resize = rendered.createElement("button");
                     resize.type = "button";
                     resize.className = "pd-resize";
-                    slots[s].appendChild(move);
+                    resize.setAttribute("aria-label", t("blockWidth"));
                     slots[s].appendChild(resize);
                 }
             }
@@ -1058,6 +1056,12 @@
                 h("nav", {class: "nav", id: "nav"}),
                 h("div", {class: "stage-wrap"}, [
                     h("div", {id: "banner", class: "banner"}),
+                    h("div", {class: "canvas-tools", id: "canvas-tools"}, [
+                        h("button", {type: "button", class: "text-btn", text: t("addText"), onclick: function () { addBlock("text"); }}),
+                        h("button", {type: "button", class: "text-btn", text: t("addShape"), onclick: function () { addBlock("shape"); }}),
+                        h("button", {type: "button", class: "text-btn", text: t("addLinks"), onclick: function () { addBlock("links"); }}),
+                        h("button", {type: "button", class: "text-btn danger", id: "delete-object", text: t("deleteObject"), onclick: function () { deleteBlock(state.blockId); }})
+                    ]),
                     h("div", {class: "stage", id: "stage"}, [
                         h("div", {class: "device", id: "device"}, [
                             h("iframe", {id: "preview", title: "Portal preview"})
@@ -1345,7 +1349,7 @@
 
     function materializeBlocks() {
         ensureShape(state.theme);
-        if (!state.theme.blocks.length) {
+        if (!state.theme.blocks.length && !state.theme.composed) {
             state.theme.blocks = defaultBlocks(state.theme);
         }
     }
@@ -1430,16 +1434,9 @@
                 renderInspector();
                 scheduleCompile();
             }}));
-            if (block.type === "text" || block.type === "links" || block.type === "shape") {
-                row.appendChild(h("button", {type: "button", class: "mini", text: "×", onclick: function () {
-                    remember();
-                    state.theme.blocks = state.theme.blocks.filter(function (item) { return item.id !== block.id; });
-                    state.section = "page";
-                    markDirty();
-                    renderInspector();
-                    scheduleCompile();
-                }}));
-            }
+            row.appendChild(h("button", {type: "button", class: "mini", text: "×", onclick: function () {
+                deleteBlock(block.id);
+            }}));
             list.appendChild(row);
         });
         host.appendChild(list);
@@ -1475,9 +1472,26 @@
         scheduleCompile();
     }
 
+    function deleteBlock(id) {
+        if (!id || !state.theme) {
+            return;
+        }
+        remember();
+        materializeBlocks();
+        state.theme.composed = true;
+        state.theme.blocks = state.theme.blocks.filter(function (item) { return item.id !== id; });
+        state.blockId = "";
+        state.section = "page";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
     function addBlock(type) {
         remember();
         materializeBlocks();
+        state.theme.composed = true;
         var id = "b" + Math.random().toString(36).slice(2, 8);
         state.theme.blocks.push({
             id: id,
@@ -1562,6 +1576,7 @@
         box.appendChild(plainField(block, "font", t("customFont")));
         box.appendChild(blockColor(block, "color", t("fontColor")));
         box.appendChild(blockColor(block, "fill", t("fillColor")));
+        box.appendChild(h("button", {type: "button", class: "text-btn danger", text: t("deleteObject"), onclick: function () { deleteBlock(block.id); }}));
         box.appendChild(blockChoice(block, "align", t("align"), [
             ["", "inheritFont"], ["left", "start"], ["center", "center"], ["right", "rightAlign"]
         ]));
@@ -2168,6 +2183,9 @@
         } else if (!typing && (event.ctrlKey || event.metaKey) && ((event.key === "z" && event.shiftKey) || event.key === "y")) {
             event.preventDefault();
             redo();
+        } else if (!typing && (event.key === "Delete" || event.key === "Backspace") && state.blockId) {
+            event.preventDefault();
+            deleteBlock(state.blockId);
         }
     });
     window.addEventListener("beforeunload", function (event) {

@@ -329,6 +329,7 @@
         }
         header = el(doc, "header");
         header.id = "pd-header";
+        header.style.setProperty("display", "block", "important");
         header.setAttribute("data-pd-sig", sig);
         header.setAttribute("data-pd-select", "header");
         var model = theme.header || {};
@@ -386,7 +387,7 @@
             parent.appendChild(hero);
         }
         hero.setAttribute("data-pd-select", "hero");
-        var heroSig = (model.title || "") + "\n" + (model.subtitle || "");
+        var heroSig = (model.title || "") + "\n" + (model.subtitle || "") + "\n" + ((theme.colors && theme.colors.heroText) || "");
         if (hero.getAttribute("data-pd-text") === heroSig && hero.firstChild) {
             return;
         }
@@ -405,6 +406,11 @@
         var sub = el(doc, "p", null, model.subtitle || "");
         sub.id = "pd-hero-sub";
         sub.setAttribute("data-pd-bind", "hero.subtitle");
+        var heroColor = theme.colors && theme.colors.heroText ? theme.colors.heroText : "";
+        if (heroColor) {
+            title.style.setProperty("color", heroColor, "important");
+            sub.style.setProperty("color", heroColor, "important");
+        }
         inner.appendChild(title);
         inner.appendChild(sub);
         hero.appendChild(overlay);
@@ -765,8 +771,8 @@
     }
 
     function blocksOf(theme) {
-        if (theme.blocks && theme.blocks.length) {
-            return theme.blocks;
+        if (theme.composed || (theme.blocks && theme.blocks.length)) {
+            return theme.blocks || [];
         }
         return [
             {id: "announcement", type: "announcement", visible: !!(theme.announcement && theme.announcement.visible)},
