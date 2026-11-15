@@ -51,19 +51,35 @@ public class PortalInjectFilter implements Filter {
         Capture capture = new Capture(httpResponse);
         chain.doFilter(request, capture);
         byte[] raw = capture.body();
+        boolean gzipped = PortalSnippet.isGzip(httpResponse.getHeader("Content-Encoding"));
+        byte[] plain = raw;
+        if (gzipped && raw.length > 0) {
+            try {
+                plain = PortalSnippet.ungzip(raw);
+            } catch (IOException ex) {
+                log.warn("Portal Designer left a compressed portal page unchanged");
+                if (!httpResponse.isCommitted()) {
+                    writeThrough(httpResponse, raw);
+                }
+                return;
+            }
+        }
         if (!PortalSnippet.shouldRewrite(http.getMethod(), httpResponse.getStatus(),
-                httpResponse.getContentType(), httpResponse.getHeader("Content-Encoding"))
-                || raw.length == 0 || raw.length > MAX_BYTES || capture.overflow()) {
+                httpResponse.getContentType(), null)
+                || plain.length == 0 || plain.length > MAX_BYTES || capture.overflow()) {
             if (raw.length > 0 && !httpResponse.isCommitted()) {
                 writeThrough(httpResponse, raw);
             }
             return;
         }
         Charset charset = charset(httpResponse);
-        String html = new String(raw, charset);
+        String html = new String(plain, charset);
         String script = http.getContextPath()
                 + "/download/resources/" + PLUGIN_KEY + ":portal-runtime/portal.js";
         byte[] out = PortalSnippet.inject(html, script).getBytes(charset);
+        if (gzipped) {
+            out = PortalSnippet.gzip(out);
+        }
         httpResponse.setContentLength(out.length);
         writeThrough(httpResponse, out);
     }

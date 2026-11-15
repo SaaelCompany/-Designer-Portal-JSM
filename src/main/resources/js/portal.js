@@ -44,11 +44,23 @@
         if (/\/servicedesk\/customer\/portal\/\d+$/.test(clean)) {
             return "home";
         }
+        if (/\/user\/requests\/?$/.test(clean)) {
+            return "mine";
+        }
+        if (/\/user\/profile\/?$/.test(clean)) {
+            return "profile";
+        }
         if (/\/login$/.test(clean)) {
             return "login";
         }
-        if (/\/portal\/\d+\/create\/\d+$/.test(clean)) {
+        if (/\/create\/-?\d+/.test(clean)) {
             return "create";
+        }
+        if (/\/[A-Za-z][A-Za-z0-9_]*-\d+$/.test(clean) || /\/request\/[^/]+$/.test(clean)) {
+            return "request";
+        }
+        if (clean.indexOf("/servicedesk/customer/") >= 0) {
+            return "shell";
         }
         return "other";
     }
@@ -123,6 +135,10 @@
         return base + "/servicedesk/customer/user/login";
     }
 
+    function publishedMode(mode) {
+        return mode === "hidden" ? "hidden" : "replace";
+    }
+
     function showHero(theme, page) {
         if (!theme.hero || !theme.hero.visible) {
             return false;
@@ -174,7 +190,9 @@
         if (!node) {
             node = el(doc, "div");
             node.id = "pd-announcement";
-            parent.insertBefore(node, parent.firstChild);
+            parent.appendChild(node);
+        } else if (node.parentNode !== parent) {
+            parent.appendChild(node);
         }
         setAttr(node, "data-pd-tone", announcement.tone || "info");
         setAttr(node, "data-pd-select", "announcement");
@@ -184,10 +202,122 @@
         }
     }
 
-    function renderHeader(doc, parent, theme, ctx) {
+    function readVisitor(doc) {
+        var user = "";
+        var name = "";
+        var logoutHref = "";
+        var requestsHref = "";
+        var meta = doc.querySelector ? doc.querySelector("meta[name='ajs-remote-user']") : null;
+        if (meta) {
+            user = meta.getAttribute("content") || "";
+        }
+        var full = doc.querySelector ? doc.querySelector("meta[name='ajs-remote-user-fullname']") : null;
+        if (full) {
+            name = full.getAttribute("content") || "";
+        }
+        var named = doc.getElementById("header-details-user-fullname");
+        if (named && !owned(named)) {
+            var label = String(named.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            if (label) {
+                name = label;
+                user = user || label;
+            }
+        }
+        var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
+        for (var i = 0; i < links.length; i++) {
+            if (owned(links[i])) {
+                continue;
+            }
+            var href = links[i].getAttribute("href") || "";
+            if (/logout|Logout\.jspa/i.test(href)) {
+                logoutHref = href;
+                if (!user && !name) {
+                    user = "signed-in";
+                    name = "Профиль";
+                }
+            } else if (/\/user\/requests/.test(href)) {
+                requestsHref = href;
+            }
+        }
+        if (!user && !name) {
+            return null;
+        }
+        return {
+            username: user,
+            name: name || user,
+            avatar: "",
+            logoutHref: logoutHref,
+            requestsHref: requestsHref
+        };
+    }
+
+    function accountNode(doc, theme, ctx, account) {
+        var base = ctx.contextPath || "";
+        if (ctx.accountState === "pending") {
+            return el(doc, "span", "pd-account-wait");
+        }
+        if (account && (account.name || account.username)) {
+            var box = el(doc, "div", "pd-account");
+            var button = el(doc, "button", "pd-account-btn");
+            button.type = "button";
+            if (account.avatar) {
+                var img = doc.createElement("img");
+                img.src = account.avatar;
+                img.alt = "";
+                button.appendChild(img);
+            } else {
+                button.appendChild(el(doc, "span", "pd-account-mark", (account.name || account.username).charAt(0).toUpperCase()));
+            }
+            button.appendChild(el(doc, "span", "pd-account-name", account.name || account.username));
+            var menu = el(doc, "div", "pd-account-menu");
+            var profile = el(doc, "a", null, "Профиль");
+            profile.href = account.profileHref || (base + "/servicedesk/customer/user/profile");
+            var requests = el(doc, "a", null, "Мои запросы");
+            requests.href = account.requestsHref || (base + "/servicedesk/customer/user/requests");
+            var logout = el(doc, "a", null, "Выйти");
+            logout.href = account.logoutHref || (base + "/logout");
+            menu.appendChild(profile);
+            menu.appendChild(requests);
+            menu.appendChild(logout);
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if ((" " + menu.className + " ").indexOf(" open ") >= 0) {
+                    removeClass(menu, "open");
+                } else {
+                    addClass(menu, "open");
+                }
+            });
+            if (!doc.__pdAccountDoc) {
+                doc.__pdAccountDoc = true;
+                doc.addEventListener("click", function (event) {
+                    var menus = doc.getElementsByClassName("pd-account-menu");
+                    for (var i = 0; i < menus.length; i++) {
+                        var owner = menus[i].parentNode;
+                        if (owner && !owner.contains(event.target)) {
+                            removeClass(menus[i], "open");
+                        }
+                    }
+                });
+            }
+            box.appendChild(button);
+            box.appendChild(menu);
+            return box;
+        }
+        var model = theme.header || {};
+        var login = el(doc, "a", "pd-login", model.loginLabel || "Войти");
+        login.href = loginHref(ctx);
+        return login;
+    }
+
+    function renderHeader(doc, parent, theme, ctx, account) {
         var header = doc.getElementById("pd-header");
         var editing = doc.activeElement && parent.contains && parent.contains(doc.activeElement);
-        var sig = signature(theme);
+        var who = account ? ((account.name || "") + "|" + (account.avatar || "") + "|" + (account.email || "")) : "";
+        var sig = signature(theme) + "\n" + who + "\n" + (ctx.accountState || "");
+        if (header && header.parentNode !== parent) {
+            parent.appendChild(header);
+        }
         if (header && header.getAttribute("data-pd-sig") === sig) {
             return;
         }
@@ -199,6 +329,7 @@
         }
         header = el(doc, "header");
         header.id = "pd-header";
+        header.style.setProperty("display", "block", "important");
         header.setAttribute("data-pd-sig", sig);
         header.setAttribute("data-pd-select", "header");
         var model = theme.header || {};
@@ -232,9 +363,7 @@
                 nav.appendChild(link);
             }
             if (model.showLogin !== false) {
-                var login = el(doc, "a", "pd-login", model.loginLabel || "Войти");
-                login.href = loginHref(ctx);
-                nav.appendChild(login);
+                nav.appendChild(accountNode(doc, theme, ctx, account));
             }
             inner.appendChild(nav);
             header.appendChild(inner);
@@ -254,9 +383,11 @@
             hero = el(doc, "section");
             hero.id = "pd-hero";
             parent.appendChild(hero);
+        } else if (hero.parentNode !== parent) {
+            parent.appendChild(hero);
         }
         hero.setAttribute("data-pd-select", "hero");
-        var heroSig = (model.title || "") + "\n" + (model.subtitle || "");
+        var heroSig = (model.title || "") + "\n" + (model.subtitle || "") + "\n" + ((theme.colors && theme.colors.heroText) || "");
         if (hero.getAttribute("data-pd-text") === heroSig && hero.firstChild) {
             return;
         }
@@ -275,18 +406,25 @@
         var sub = el(doc, "p", null, model.subtitle || "");
         sub.id = "pd-hero-sub";
         sub.setAttribute("data-pd-bind", "hero.subtitle");
+        var heroColor = theme.colors && theme.colors.heroText ? theme.colors.heroText : "";
+        if (heroColor) {
+            title.style.setProperty("color", heroColor, "important");
+            sub.style.setProperty("color", heroColor, "important");
+        }
         inner.appendChild(title);
         inner.appendChild(sub);
         hero.appendChild(overlay);
         hero.appendChild(inner);
     }
 
-    function renderFooter(doc, theme, ctx) {
+    function renderFooter(doc, parent, theme, ctx) {
         var footer = doc.getElementById("pd-footer");
         if (!footer) {
             footer = el(doc, "footer");
             footer.id = "pd-footer";
-            doc.body.appendChild(footer);
+            parent.appendChild(footer);
+        } else if (footer.parentNode !== parent) {
+            parent.appendChild(footer);
         }
         footer.setAttribute("data-pd-select", "footer");
         var footerSig = signature(theme);
@@ -329,117 +467,1424 @@
         footer.appendChild(inner);
     }
 
-    function renderChrome(doc, theme, ctx) {
-        if (!doc.body) {
-            return;
+    function owned(node) {
+        while (node) {
+            if (node.id === "pd-page") {
+                return true;
+            }
+            node = node.parentNode;
         }
-        var chrome = doc.getElementById("pd-chrome");
-        if (!chrome) {
-            chrome = el(doc, "div");
-            chrome.id = "pd-chrome";
-            doc.body.insertBefore(chrome, doc.body.firstChild);
-        }
-        renderAnnouncement(doc, chrome, theme);
-        renderHeader(doc, chrome, theme, ctx);
-        renderHero(doc, chrome, theme);
-        renderFooter(doc, theme, ctx);
+        return false;
     }
 
-    function markRegions(doc, theme, page) {
-        var headers = doc.getElementsByTagName("header");
-        for (var h = 0; h < headers.length; h++) {
-            if (headers[h].id === "pd-header" || inChrome(headers[h])) {
-                continue;
-            }
-            setAttr(headers[h], "data-pd-region", "header");
-            break;
-        }
-        var inputs = doc.getElementsByTagName("input");
-        for (var i = 0; i < inputs.length; i++) {
-            var input = inputs[i];
-            if (inChrome(input)) {
-                continue;
-            }
-            var type = (input.getAttribute("type") || "").toLowerCase();
-            var placeholder = input.getAttribute("placeholder") || "";
-            var className = input.className || "";
-            if (type === "search" || /search|поиск/i.test(placeholder) || /search/i.test(String(className))) {
-                if (input.parentNode && !inChrome(input.parentNode)) {
-                    setAttr(input.parentNode, "data-pd-region", "search");
-                    setAttr(input.parentNode, "data-pd-select", "search");
-                }
-                if (theme.search && theme.search.placeholder && input.getAttribute("placeholder") !== theme.search.placeholder) {
-                    input.setAttribute("placeholder", theme.search.placeholder);
-                }
-                break;
-            }
-        }
-        var footers = doc.getElementsByTagName("footer");
-        for (var f = 0; f < footers.length; f++) {
-            if (footers[f].id === "pd-footer") {
-                continue;
-            }
-            setAttr(footers[f], "data-pd-region", "footer");
-        }
-        var headings = doc.getElementsByTagName("h1");
-        for (var t = 0; t < headings.length; t++) {
-            if (!inChrome(headings[t]) && headings[t].id !== "pd-hero-title") {
-                setAttr(headings[t], "data-pd-region", "native-title");
-            }
-        }
-        markCards(doc);
-        if (page === "login" || page === "create") {
-            var forms = doc.getElementsByTagName("form");
-            if (forms.length && forms[0].parentNode) {
-                setAttr(forms[0].parentNode, "data-pd-region", page === "login" ? "login" : "form");
-            }
-        }
+    function plainText(value) {
+        return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
     }
 
-    function markCards(doc) {
-        var links = doc.getElementsByTagName("a");
-        var groups = [];
+    function fieldText(value, depth) {
+        if (value == null || depth > 4) {
+            return "";
+        }
+        if (typeof value === "string" || typeof value === "number") {
+            return plainText(value);
+        }
+        if (Object.prototype.toString.call(value) === "[object Array]") {
+            var parts = [];
+            for (var i = 0; i < value.length; i++) {
+                var part = fieldText(value[i], depth + 1);
+                if (part) {
+                    parts.push(part);
+                }
+            }
+            return parts.join(", ");
+        }
+        if (typeof value === "object") {
+            if (typeof value.value === "string" || typeof value.value === "number") {
+                return plainText(value.value);
+            }
+            if (value.value != null && typeof value.value !== "object") {
+                return fieldText(value.value, depth + 1);
+            }
+            if (typeof value.displayName === "string") {
+                return plainText(value.displayName);
+            }
+            if (typeof value.name === "string" && !value.fieldId) {
+                return plainText(value.name);
+            }
+            if (typeof value.filename === "string") {
+                return plainText(value.filename);
+            }
+            if (typeof value.friendly === "string") {
+                return plainText(value.friendly);
+            }
+            if (value.value && typeof value.value === "object") {
+                return fieldText(value.value, depth + 1);
+            }
+        }
+        return "";
+    }
+
+    function requestSummary(item) {
+        if (!item) {
+            return "";
+        }
+        if (typeof item.summary === "string" || typeof item.summary === "number") {
+            return plainText(item.summary);
+        }
+        var summary = fieldText(item.summary, 0);
+        if (summary) {
+            return summary;
+        }
+        var fields = item.requestFieldValues || [];
+        for (var i = 0; i < fields.length; i++) {
+            var field = fields[i];
+            if (field && field.fieldId === "summary") {
+                return fieldText(field.value, 0);
+            }
+        }
+        return fields.length ? fieldText(fields[0] && fields[0].value, 0) : "";
+    }
+
+    function readCatalog(doc, portalId) {
+        var requests = [];
+        var portals = [];
+        var seenRequest = {};
+        var seenPortal = {};
+        var specific = portalId && portalId !== "global";
+        var links = doc.getElementsByTagName ? doc.getElementsByTagName("a") : [];
         for (var i = 0; i < links.length; i++) {
             var link = links[i];
-            if (inChrome(link)) {
+            if (owned(link)) {
                 continue;
             }
             var href = (link.getAttribute("href") || "").split("?")[0];
-            if (!/\/servicedesk\/customer\/portal\/\d+(\/create\/\d+)?\/?$/.test(href)) {
-                continue;
+            var name = plainText(link.textContent || "");
+            var description = "";
+            var notes = link.getElementsByTagName("p");
+            if (notes.length) {
+                description = plainText(notes[0].textContent || "");
+                name = plainText(name.replace(description, ""));
             }
-            var parent = link.parentNode;
-            if (!parent || parent.tagName === "NAV" || parent.tagName === "HEADER" || parent.tagName === "OL") {
-                continue;
-            }
-            var found = null;
-            for (var g = 0; g < groups.length; g++) {
-                if (groups[g].parent === parent) {
-                    found = groups[g];
-                    break;
-                }
-            }
-            if (!found) {
-                found = {parent: parent, count: 0};
-                groups.push(found);
-            }
-            found.count++;
-            link.setAttribute("data-pd-card", "1");
-            var described = link.getElementsByTagName("p");
-            if (described.length) {
-                described[0].setAttribute("data-pd-desc", "1");
+            var created = /\/portal\/(\d+)\/(?:group\/\d+\/)?create\/(\d+)\/?$/.exec(href);
+            var portal = /\/portal\/(\d+)\/?$/.exec(href);
+            if (specific && created && created[1] === String(portalId) && !seenRequest[created[2]]) {
+                seenRequest[created[2]] = true;
+                requests.push({id: created[2], name: name, description: description, href: href});
+            } else if (!specific && portal && name && !seenPortal[portal[1]]) {
+                seenPortal[portal[1]] = true;
+                portals.push({id: portal[1], name: name, description: description, href: href});
             }
         }
+        return specific ? requests : portals;
+    }
+
+    function fetchValues(contextPath, path, cb) {
+        var collected = [];
+        var headers = {"X-Experimental-Api": "opt-in"};
+        function page(start) {
+            var join = path.indexOf("?") >= 0 ? "&" : "?";
+            getJson(contextPath + path + join + "start=" + start + "&limit=50", function (err, data) {
+                if (err || !data || !data.values) {
+                    cb(err || new Error("empty"), collected);
+                    return;
+                }
+                for (var i = 0; i < data.values.length && collected.length < 200; i++) {
+                    collected.push(data.values[i]);
+                }
+                var more = data.isLastPage === false && data.values.length && collected.length < 200;
+                if (more) {
+                    page((data.start || 0) + (data.limit || data.values.length));
+                } else {
+                    cb(null, collected);
+                }
+            }, headers);
+        }
+        page(0);
+    }
+
+    function fetchCatalog(contextPath, portalId, cb) {
+        var base = contextPath || "";
+        if (portalId && portalId !== "global") {
+            fetchValues(base, "/rest/servicedeskapi/servicedesk/" + encodeURIComponent(portalId) + "/requesttype", function (err, values) {
+                if (err || !values || !values.length) {
+                    cb(null);
+                    return;
+                }
+                var items = [];
+                for (var i = 0; i < values.length; i++) {
+                    var type = values[i];
+                    if (!type || type.id == null || !plainText(type.name)) {
+                        continue;
+                    }
+                    items.push({
+                        id: String(type.id),
+                        name: plainText(type.name),
+                        description: plainText(type.description || ""),
+                        href: base + "/servicedesk/customer/portal/" + portalId + "/create/" + type.id
+                    });
+                }
+                cb(items.length ? items : null);
+            });
+            return;
+        }
+        fetchValues(base, "/rest/servicedeskapi/servicedesk", function (err, values) {
+            if (err || !values || !values.length) {
+                cb(null);
+                return;
+            }
+            var items = [];
+            for (var j = 0; j < values.length; j++) {
+                var desk = values[j];
+                if (!desk || desk.id == null) {
+                    continue;
+                }
+                var name = plainText(desk.projectName || desk.projectKey || "");
+                if (!name) {
+                    continue;
+                }
+                items.push({
+                    id: String(desk.id),
+                    name: name,
+                    description: "",
+                    href: base + "/servicedesk/customer/portal/" + desk.id
+                });
+            }
+            cb(items.length ? items : null);
+        });
+    }
+
+    function ordered(items, order) {
+        if (!order || !order.length) {
+            return items;
+        }
+        var rank = {};
+        for (var i = 0; i < order.length; i++) {
+            rank[String(order[i])] = i;
+        }
+        var copy = items.slice();
+        copy.sort(function (a, b) {
+            var ia = rank[a.id];
+            var ib = rank[b.id];
+            if (ia == null) {
+                ia = 1000;
+            }
+            if (ib == null) {
+                ib = 1000;
+            }
+            return ia - ib;
+        });
+        return copy;
+    }
+
+    function renderSearch(doc, parent, theme) {
+        var node = doc.getElementById("pd-search");
+        var model = theme.search || {};
+        if (model.visible === false) {
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+            return;
+        }
+        if (!node) {
+            node = el(doc, "div");
+            node.id = "pd-search";
+            parent.appendChild(node);
+        } else if (node.parentNode !== parent) {
+            parent.appendChild(node);
+        }
+        node.setAttribute("data-pd-region", "search");
+        node.setAttribute("data-pd-select", "search");
+        var input = node.firstChild && node.firstChild.tagName === "INPUT" ? node.firstChild : null;
+        if (!input) {
+            input = doc.createElement("input");
+            input.setAttribute("type", "search");
+            input.addEventListener("input", function () {
+                var query = String(input.value || "").toLowerCase();
+                var cards = doc.getElementById("pd-cards");
+                if (!cards) {
+                    return;
+                }
+                for (var i = 0; i < cards.children.length; i++) {
+                    var text = String(cards.children[i].textContent || "").toLowerCase();
+                    cards.children[i].style.display = !query || text.indexOf(query) >= 0 ? "" : "none";
+                }
+            });
+            node.appendChild(input);
+        }
+        if ((input.getAttribute("placeholder") || "") !== (model.placeholder || "")) {
+            input.setAttribute("placeholder", model.placeholder || "");
+        }
+    }
+
+    function dropExtraViews(parent) {
+        if (!parent || !parent.querySelectorAll) {
+            return;
+        }
+        var stale = parent.querySelectorAll(".pd-mine, .pd-profile");
+        for (var i = stale.length - 1; i >= 0; i--) {
+            if (stale[i].parentNode) {
+                stale[i].parentNode.removeChild(stale[i]);
+            }
+        }
+    }
+
+    function renderCards(doc, parent, theme, ctx, catalog) {
+        dropExtraViews(parent);
+        var box = doc.getElementById("pd-cards");
+        if (!box) {
+            box = el(doc, "div");
+            box.id = "pd-cards";
+            parent.appendChild(box);
+        } else if (box.parentNode !== parent) {
+            parent.appendChild(box);
+        }
+        box.setAttribute("data-pd-region", "requests");
+        box.setAttribute("data-pd-select", "requests");
+        var source = catalog && catalog.length ? catalog : readCatalog(doc, ctx && ctx.portalId);
+        var items = ordered(source, theme.requests && theme.requests.order);
+        var sig = items.map(function (item) { return item.id + "\n" + item.name + "\n" + item.description; }).join("|");
+        var showDesc = !theme.requests || theme.requests.showDescription !== false;
+        sig += showDesc ? ":desc" : ":plain";
+        if (box.getAttribute("data-pd-sig") === sig && box.firstChild) {
+            return;
+        }
+        box.setAttribute("data-pd-sig", sig);
+        while (box.firstChild) {
+            box.removeChild(box.firstChild);
+        }
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var link = el(doc, "a", "pd-tile");
+            link.href = item.href || "#";
+            link.setAttribute("draggable", "false");
+            link.setAttribute("data-pd-card", "1");
+            link.setAttribute("data-pd-type", item.id);
+            link.appendChild(el(doc, "span", "pd-card-icon", (item.name || "?").charAt(0).toUpperCase()));
+            link.appendChild(el(doc, "span", "pd-card-title", item.name || ""));
+            if (showDesc && item.description) {
+                var desc = el(doc, "span", "pd-card-desc", item.description);
+                desc.setAttribute("data-pd-desc", "1");
+                link.appendChild(desc);
+            }
+            box.appendChild(link);
+        }
+    }
+
+    function blocksOf(theme) {
+        if (theme.composed || (theme.blocks && theme.blocks.length)) {
+            return theme.blocks || [];
+        }
+        return [
+            {id: "announcement", type: "announcement", visible: !!(theme.announcement && theme.announcement.visible)},
+            {id: "header", type: "header", visible: !theme.header || theme.header.mode !== "hidden"},
+            {id: "hero", type: "hero", visible: !theme.hero || theme.hero.visible !== false},
+            {id: "search", type: "search", visible: !theme.search || theme.search.visible !== false},
+            {id: "requests", type: "requests", visible: true},
+            {id: "footer", type: "footer", visible: !theme.footer || theme.footer.mode !== "hidden"}
+        ];
+    }
+
+    function blockShown(theme, block, page) {
+        if (!block || block.visible === false) {
+            return false;
+        }
+        if ((page === "create" || page === "request" || page === "shell") && (block.type === "search" || block.type === "requests")) {
+            return false;
+        }
+        if (block.type === "header") {
+            return !theme.header || theme.header.mode !== "hidden";
+        }
+        if (block.type === "footer") {
+            return !theme.footer || theme.footer.mode !== "hidden";
+        }
+        if (block.type === "hero") {
+            return page !== "mine" && page !== "profile" && showHero(theme, page);
+        }
+        if (block.type === "search") {
+            return page !== "mine" && page !== "profile" && (!theme.search || theme.search.visible !== false);
+        }
+        if (block.type === "announcement") {
+            return !!(theme.announcement && theme.announcement.visible && theme.announcement.text);
+        }
+        return true;
+    }
+
+    function slot(doc, pageNode, id, select) {
+        var node = doc.getElementById("pd-slot-" + id);
+        if (!node) {
+            node = el(doc, "div", "pd-slot");
+            node.id = "pd-slot-" + id;
+        }
+        node.setAttribute("data-pd-block", id);
+        node.setAttribute("data-pd-select", select);
+        pageNode.appendChild(node);
+        return node;
+    }
+
+    function clearNode(node) {
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+    }
+
+    function renderTextBlock(doc, parent, block) {
+        var box = parent.querySelector ? parent.querySelector(".pd-text-block") : null;
+        var sig = (block.title || "") + "\n" + (block.text || "");
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-text-block");
+        box.setAttribute("data-pd-sig", sig);
+        if (block.title) {
+            box.appendChild(el(doc, "h2", null, block.title));
+        }
+        if (block.text) {
+            box.appendChild(el(doc, "p", null, block.text));
+        }
+        parent.appendChild(box);
+    }
+
+    function renderShape(doc, parent, block) {
+        var box = parent.querySelector ? parent.querySelector(".pd-shape") : null;
+        var title = block.title || "";
+        if (box && box.getAttribute("data-pd-sig") === title) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-shape");
+        box.setAttribute("data-pd-sig", title);
+        if (title) {
+            box.appendChild(doc.createTextNode(title));
+        }
+        parent.appendChild(box);
+    }
+
+    function renderLinksBlock(doc, parent, block, ctx) {
+        var box = parent.querySelector ? parent.querySelector(".pd-links-block") : null;
+        var sig = (block.title || "") + "\n" + JSON.stringify(block.links || []);
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-links-block");
+        box.setAttribute("data-pd-sig", sig);
+        if (block.title) {
+            box.appendChild(el(doc, "h2", null, block.title));
+        }
+        var row = el(doc, "div", "pd-links-row");
+        var links = block.links || [];
+        for (var i = 0; i < links.length; i++) {
+            var link = el(doc, "a", null, links[i].label || "");
+            link.href = resolveHref(links[i].href, ctx.contextPath);
+            row.appendChild(link);
+        }
+        box.appendChild(row);
+        parent.appendChild(box);
+    }
+
+    function liftFooter(pageNode) {
+        var free = pageNode.getElementsByClassName("pd-free");
+        var floor = 0;
+        for (var i = 0; i < free.length; i++) {
+            var bottom = free[i].offsetTop + free[i].offsetHeight;
+            if (bottom > floor) {
+                floor = bottom;
+            }
+        }
+        var spacer = pageNode.querySelector("#pd-flow");
+        if (!floor) {
+            if (spacer && spacer.parentNode) {
+                spacer.parentNode.removeChild(spacer);
+            }
+            return;
+        }
+        if (!spacer) {
+            spacer = pageNode.ownerDocument.createElement("div");
+            spacer.id = "pd-flow";
+            pageNode.appendChild(spacer);
+        }
+        var footer = pageNode.querySelector("#pd-slot-footer");
+        if (footer && spacer.nextSibling !== footer) {
+            pageNode.insertBefore(spacer, footer);
+        }
+        var gap = floor - spacer.offsetTop;
+        spacer.style.height = (gap > 0 ? gap : 0) + "px";
+    }
+
+    function screenOf(view) {
+        var width = view && view.innerWidth ? view.innerWidth : 1280;
+        if (width <= 640) {
+            return "mobile";
+        }
+        if (width <= 1024) {
+            return "tablet";
+        }
+        return "desktop";
+    }
+
+    function frameOf(block, screen) {
+        if (screen === "mobile" && block.mobileX != null && block.mobileX >= 0) {
+            return {x: block.mobileX, y: block.mobileY || 0, width: block.mobileW || block.width || 100, height: block.mobileH || 0};
+        }
+        if (screen === "tablet" && block.tabletX != null && block.tabletX >= 0) {
+            return {x: block.tabletX, y: block.tabletY || 0, width: block.tabletW || block.width || 100, height: block.tabletH || 0};
+        }
+        return {x: block.x || 0, y: block.y || 0, width: block.width || 100, height: block.height || 0};
+    }
+
+    function paintLook(node, block, height) {
+        var known = {system: 1, serif: 1, mono: 1, humanist: 1, condensed: 1};
+        node.style.fontSize = block.fontSize ? block.fontSize + "px" : "";
+        if (block.font && !known[block.font]) {
+            node.style.fontFamily = block.font + ", sans-serif";
+            node.removeAttribute("data-pd-font");
+        } else {
+            node.style.fontFamily = "";
+            if (block.font) {
+                node.setAttribute("data-pd-font", block.font);
+            } else {
+                node.removeAttribute("data-pd-font");
+            }
+        }
+        if (block.align) {
+            node.setAttribute("data-pd-align", block.align);
+        } else {
+            node.removeAttribute("data-pd-align");
+        }
+        node.style.color = block.color || "";
+        node.style.backgroundColor = block.fill || "";
+        node.style.height = height ? height + "px" : "";
+    }
+
+    function placeBlock(node, block) {
+        if (!block) {
+            return;
+        }
+        var screen = node.ownerDocument.documentElement.getAttribute("data-pd-screen") || "desktop";
+        var frame = frameOf(block, screen);
+        if (!block.free) {
+            removeClass(node, "pd-free");
+            node.style.left = "";
+            node.style.top = "";
+            node.style.width = "";
+            paintLook(node, block, frame.height);
+            return;
+        }
+        addClass(node, "pd-free");
+        node.style.left = frame.x + "%";
+        node.style.top = frame.y + "px";
+        node.style.width = frame.width + "%";
+        paintLook(node, block, frame.height);
+    }
+
+    function renderMine(doc, parent, ctx) {
+        var box = parent.querySelector ? parent.querySelector(".pd-mine") : null;
+        var rows = ctx.requests || [];
+        var sig = rows.map(function (row) {
+            return row.key + "\n" + row.summary + "\n" + row.status;
+        }).join("|");
+        if (box && box.getAttribute("data-pd-sig") === sig) {
+            return;
+        }
+        clearNode(parent);
+        box = el(doc, "div", "pd-mine");
+        box.setAttribute("data-pd-sig", sig);
+        box.appendChild(el(doc, "h2", null, "Мои запросы"));
+        var filter = doc.createElement("input");
+        filter.type = "search";
+        filter.className = "pd-mine-filter";
+        filter.placeholder = "Поиск по запросам";
+        filter.addEventListener("input", function () {
+            var query = String(filter.value || "").toLowerCase();
+            var links = box.getElementsByClassName("pd-row");
+            for (var i = 0; i < links.length; i++) {
+                var text = String(links[i].textContent || "").toLowerCase();
+                links[i].style.display = !query || text.indexOf(query) >= 0 ? "" : "none";
+            }
+        });
+        box.appendChild(filter);
+        if (!rows.length) {
+            box.appendChild(el(doc, "p", "pd-empty", "Запросов пока нет"));
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var link = el(doc, "a", "pd-row");
+            link.href = row.href || "#";
+            link.appendChild(el(doc, "span", "pd-key", row.key || ""));
+            link.appendChild(el(doc, "span", "pd-summary", row.summary || ""));
+            link.appendChild(el(doc, "span", "pd-status", row.status || ""));
+            box.appendChild(link);
+        }
+        parent.appendChild(box);
+    }
+
+    function renderProfile(doc, parent, ctx) {
+        var account = ctx.account;
+        clearNode(parent);
+        var box = el(doc, "div", "pd-profile");
+        box.appendChild(el(doc, "h2", null, "Профиль"));
+        if (!account || !(account.name || account.username)) {
+            var guest = el(doc, "p", null, "Войдите, чтобы открыть профиль.");
+            var login = el(doc, "a", "pd-login", "Войти");
+            login.href = loginHref(ctx);
+            box.appendChild(guest);
+            box.appendChild(login);
+            parent.appendChild(box);
+            return;
+        }
+        var card = el(doc, "div", "pd-profile-card");
+        if (account.avatar) {
+            var img = doc.createElement("img");
+            img.src = account.avatar;
+            img.alt = "";
+            card.appendChild(img);
+        } else {
+            card.appendChild(el(doc, "span", "pd-account-mark", (account.name || account.username).charAt(0).toUpperCase()));
+        }
+        var text = el(doc, "div");
+        text.appendChild(el(doc, "strong", null, account.name || account.username));
+        if (account.username) {
+            text.appendChild(el(doc, "p", null, account.username));
+        }
+        if (account.email) {
+            text.appendChild(el(doc, "p", null, account.email));
+        }
+        card.appendChild(text);
+        box.appendChild(card);
+        parent.appendChild(box);
+    }
+
+    function replacePage(doc, theme, ctx, page, account, catalog) {
+        if (!doc.body) {
+            return;
+        }
+        var pageNode = doc.getElementById("pd-page");
+        if (!pageNode) {
+            pageNode = el(doc, "div");
+            pageNode.id = "pd-page";
+            doc.body.appendChild(pageNode);
+        }
+        var note = doc.getElementById("pd-original");
+        if (note && note.parentNode) {
+            note.parentNode.removeChild(note);
+        }
+        var blocks = blocksOf(theme);
+        var keep = {};
+        for (var i = 0; i < blocks.length; i++) {
+            var block = blocks[i];
+            if (!blockShown(theme, block, page)) {
+                continue;
+            }
+            keep[block.id] = true;
+            var select = block.type === "text" || block.type === "links" ? "block:" + block.id : block.type;
+            var parent = slot(doc, pageNode, block.id, select);
+            if (block.type === "announcement") {
+                renderAnnouncement(doc, parent, theme);
+            } else if (block.type === "header") {
+                renderHeader(doc, parent, theme, ctx, account);
+            } else if (block.type === "hero") {
+                renderHero(doc, parent, theme);
+            } else if (block.type === "search") {
+                renderSearch(doc, parent, theme);
+            } else if (block.type === "requests") {
+                if (page === "mine") {
+                    renderMine(doc, parent, ctx);
+                } else if (page === "profile") {
+                    renderProfile(doc, parent, ctx);
+                } else {
+                    renderCards(doc, parent, theme, ctx, catalog);
+                }
+            } else if (block.type === "footer") {
+                renderFooter(doc, parent, theme, ctx);
+            } else if (block.type === "text") {
+                renderTextBlock(doc, parent, block);
+            } else if (block.type === "links") {
+                renderLinksBlock(doc, parent, block, ctx);
+            } else if (block.type === "shape") {
+                renderShape(doc, parent, block);
+            }
+            placeBlock(parent, block);
+        }
+        var slots = pageNode.getElementsByClassName("pd-slot");
+        for (var s = slots.length - 1; s >= 0; s--) {
+            if (slots[s].id === "pd-slot-native") {
+                continue;
+            }
+            if (!keep[slots[s].getAttribute("data-pd-block")]) {
+                pageNode.removeChild(slots[s]);
+            }
+        }
+        if (page === "create" || page === "request" || page === "shell") {
+            mountNative(doc, pageNode);
+        } else {
+            releaseNative(doc);
+        }
+        liftFooter(pageNode);
+    }
+
+    function mountNative(doc, pageNode) {
+        var slot = doc.getElementById("pd-slot-native");
+        if (!slot) {
+            slot = el(doc, "div", "pd-slot");
+            slot.id = "pd-slot-native";
+        }
+        slot.setAttribute("data-pd-block", "native");
+        slot.setAttribute("data-pd-select", "requests");
+        var footer = doc.getElementById("pd-slot-footer");
+        if (footer && footer.parentNode === pageNode) {
+            pageNode.insertBefore(slot, footer);
+        } else if (slot.parentNode !== pageNode) {
+            pageNode.appendChild(slot);
+        }
+        var host = requestSurface(doc, pageNode);
+        if (!host) {
+            return;
+        }
+        while (slot.firstChild && slot.firstChild !== host && !(host.compareDocumentPosition(slot.firstChild) & 8)) {
+            doc.body.appendChild(slot.firstChild);
+        }
+        if (host.tagName === "FORM") {
+            addClass(host, "pd-native-form");
+        }
+        if (host.parentNode !== slot) {
+            slot.appendChild(host);
+        }
+    }
+
+    function releaseNative(doc) {
+        var slot = doc.getElementById("pd-slot-native");
+        if (!slot || !doc.body) {
+            return;
+        }
+        while (slot.firstChild) {
+            doc.body.appendChild(slot.firstChild);
+        }
+        if (slot.parentNode) {
+            slot.parentNode.removeChild(slot);
+        }
+    }
+
+    function controlCount(node) {
+        if (!node || !node.querySelectorAll) {
+            return 0;
+        }
+        var nodes = node.querySelectorAll("textarea, select, input");
+        var count = 0;
+        for (var i = 0; i < nodes.length; i++) {
+            var type = (nodes[i].getAttribute("type") || "text").toLowerCase();
+            if (type !== "hidden" && type !== "submit" && type !== "button" && type !== "search") {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    function searchLike(node) {
+        var id = ((node.id || "") + " " + (node.className || "")).toLowerCase();
+        var text = (node.textContent || "").slice(0, 240);
+        if (id.indexOf("search") >= 0 || id.indexOf("cv-search") >= 0) {
+            return controlCount(node) <= 1;
+        }
+        if (text.indexOf("В чем требуется помощь") >= 0 && controlCount(node) <= 1) {
+            return true;
+        }
+        var only = node.querySelector ? node.querySelector("input") : null;
+        return !!(only && (only.getAttribute("type") || "").toLowerCase() === "search" && controlCount(node) === 0);
+    }
+
+    function requestSurface(doc, pageNode) {
+        var forms = doc.getElementsByTagName("form");
         var best = null;
-        for (var k = 0; k < groups.length; k++) {
-            if (!best || groups[k].count > best.count) {
-                best = groups[k];
+        var bestScore = 0;
+        for (var i = 0; i < forms.length; i++) {
+            var form = forms[i];
+            if (form === pageNode || pageNode.contains(form) && form.parentNode && form.parentNode.id === "pd-slot-native") {
+                /* a form already inside the slot can still win if it is the request form */
+            }
+            if (pageNode.contains(form) && (!form.parentNode || form.parentNode.id !== "pd-slot-native")) {
+                continue;
+            }
+            if (searchLike(form)) {
+                continue;
+            }
+            var score = controlCount(form) + (form.querySelector("textarea, select") ? 3 : 0) + (form.querySelector("button, [type='submit']") ? 2 : 0);
+            if (score > bestScore) {
+                best = form;
+                bestScore = score;
             }
         }
         if (best) {
-            best.parent.setAttribute("data-pd-region", "requests");
-            best.parent.setAttribute("data-pd-select", "requests");
+            return best;
         }
+        var nodes = doc.querySelectorAll ? doc.querySelectorAll("div, section, form") : [];
+        var rich = null;
+        var richCount = 1;
+        var limit = Math.min(nodes.length, 500);
+        for (var n = 0; n < limit; n++) {
+            var node = nodes[n];
+            if (!node || node === pageNode || node.contains(pageNode) || (pageNode.contains(node) && node.id !== "pd-slot-native")) {
+                continue;
+            }
+            if (searchLike(node)) {
+                continue;
+            }
+            var count = controlCount(node);
+            if (count > richCount) {
+                rich = node;
+                richCount = count;
+            }
+        }
+        if (!rich) {
+            return nativeRoot(doc, pageNode);
+        }
+        var deep = rich;
+        var kids = rich.getElementsByTagName("*");
+        for (var k = 0; k < kids.length; k++) {
+            if (controlCount(kids[k]) === richCount && !searchLike(kids[k])) {
+                deep = kids[k];
+            }
+        }
+        return deep;
+    }
+
+    function nativeRoot(doc, pageNode) {
+        var selectors = ["#jsd-portal-container", ".cv-smart-portal", "#content", ".cv-page"];
+        for (var i = 0; i < selectors.length; i++) {
+            var node = doc.querySelector(selectors[i]);
+            if (!node || node === pageNode || owned(node) || node.contains(pageNode)) {
+                continue;
+            }
+            return node;
+        }
+        return null;
+    }
+
+    function releaseHold(doc) {
+        var html = doc && doc.documentElement;
+        if (html) {
+            removeClass(html, "pd-hold");
+        }
+    }
+
+    function dropPage(doc) {
+        releaseNative(doc);
+        var built = doc.getElementById("pd-page");
+        if (built && built.parentNode) {
+            built.parentNode.removeChild(built);
+        }
+        var html = doc.documentElement;
+        if (html) {
+            removeClass(html, "pd-active");
+            removeClass(html, "pd-replace");
+            removeClass(html, "pd-shell");
+        }
+    }
+
+    function isChromeBlue(color) {
+        var match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color || "");
+        if (!match) {
+            return false;
+        }
+        var red = Number(match[1]);
+        var green = Number(match[2]);
+        var blue = Number(match[3]);
+        return blue > 100 && blue > red + 20 && blue > green && red < 90;
+    }
+
+    function isPageWash(color) {
+        var match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(color || "");
+        if (!match) {
+            return false;
+        }
+        var red = Number(match[1]);
+        var green = Number(match[2]);
+        var blue = Number(match[3]);
+        return red > 228 && green > 228 && blue > 228 && Math.abs(red - blue) < 24;
+    }
+
+    function hideNativeBars(doc) {
+        var view = doc.defaultView || window;
+        var nodes = doc.querySelectorAll ? doc.querySelectorAll("[role='banner'], .aui-header, .cv-smart-portal-header, .cv-help-center-header, .jsd-header") : [];
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].id === "pd-header" || owned(nodes[i])) {
+                continue;
+            }
+            nodes[i].setAttribute("data-pd-native-bar", "1");
+        }
+        if (!doc.body || !view.getComputedStyle) {
+            return;
+        }
+        var all = doc.body.getElementsByTagName("*");
+        var width = doc.documentElement.clientWidth || 0;
+        var limit = Math.min(all.length, 500);
+        for (var n = 0; n < limit; n++) {
+            var el = all[n];
+            if (owned(el) || el.id === "pd-header" || el.getAttribute("data-pd-native-bar")) {
+                continue;
+            }
+            var rect = el.getBoundingClientRect();
+            var bg = view.getComputedStyle(el).backgroundColor;
+            if (rect.top < 180 && rect.height >= 36 && rect.height <= 160 && rect.width > 320 && isChromeBlue(bg)) {
+                el.setAttribute("data-pd-native-bar", "1");
+            } else if (width && rect.width > width * 0.9 && rect.height > 400 && isPageWash(bg)) {
+                el.style.backgroundColor = "transparent";
+            }
+        }
+        var forms = doc.getElementsByTagName("form");
+        for (var f = 0; f < forms.length; f++) {
+            if (!owned(forms[f])) {
+                dressForm(forms[f]);
+            }
+        }
+        hideBrand(doc);
+    }
+
+    function dressForm(form) {
+        addClass(form, "pd-native-form");
+        var node = form.parentNode;
+        var steps = 0;
+        while (node && node.nodeType === 1 && node !== document.body && node.id !== "pd-page" && steps < 8) {
+            if (!owned(node)) {
+                node.style.setProperty("max-width", "none", "important");
+                node.style.setProperty("width", "100%", "important");
+                node.style.setProperty("background-color", "transparent", "important");
+            }
+            node = node.parentNode;
+            steps++;
+        }
+    }
+
+    function hideBrand(doc) {
+        var branded = doc.querySelectorAll ? doc.querySelectorAll(".cv-powered-by, .jsd-powered-by, .cv-smart-portal-footer") : [];
+        for (var i = 0; i < branded.length; i++) {
+            branded[i].setAttribute("data-pd-brand", "1");
+        }
+        if (!doc.body) {
+            return;
+        }
+        var nodes = doc.body.getElementsByTagName("*");
+        var limit = Math.min(nodes.length, 400);
+        for (var n = 0; n < limit; n++) {
+            var el = nodes[n];
+            if (owned(el) || el.getAttribute("data-pd-brand") || el.children.length) {
+                continue;
+            }
+            var text = el.textContent || "";
+            if (text.length > 80 || (text.indexOf("Jira Service Management") < 0 && text.indexOf("Работает на базе") < 0)) {
+                continue;
+            }
+            var host = el;
+            var parent = el.parentNode;
+            if (parent && parent !== doc.body && parent.tagName !== "FORM" && !owned(parent)) {
+                var parentText = parent.textContent || "";
+                if (parentText.length < 120) {
+                    host = parent;
+                }
+            }
+            host.setAttribute("data-pd-brand", "1");
+        }
+    }
+
+    function pieceNode(doc, id) {
+        return doc.querySelector ? doc.querySelector("[data-pd-piece='" + id + "']") : null;
+    }
+
+    function placementIndex(theme) {
+        var index = {};
+        var list = theme && theme.placements || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].id) {
+                index[list[i].id] = list[i];
+            }
+        }
+        return index;
+    }
+
+    function rememberPlacement(theme, place) {
+        if (!theme) {
+            return;
+        }
+        var list = theme.placements || (theme.placements = []);
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] && list[i].id === place.id) {
+                list[i].x = place.x;
+                list[i].y = place.y;
+                list[i].width = place.width;
+                return;
+            }
+        }
+        list.push(place);
+    }
+
+    function clampNum(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function readBox(node, body) {
+        var bodyRect = body.getBoundingClientRect();
+        var rect = node.getBoundingClientRect();
+        var width = body.clientWidth ? rect.width / body.clientWidth * 100 : 30;
+        return {
+            x: (rect.left - bodyRect.left) / (body.clientWidth || 1) * 100,
+            y: rect.top - bodyRect.top,
+            width: clampNum(width, 8, 100)
+        };
+    }
+
+    function unlockOverflow(node) {
+        var parent = node.parentNode;
+        var steps = 0;
+        while (parent && parent.nodeType === 1 && parent !== node.ownerDocument.body && steps < 8) {
+            if (!owned(parent)) {
+                parent.style.setProperty("overflow", "visible", "important");
+            }
+            parent = parent.parentNode;
+            steps++;
+        }
+    }
+
+    function applyBox(node, place) {
+        addClass(node, "pd-piece");
+        addClass(node, "pd-placed");
+        node.style.position = "relative";
+        node.style.left = "";
+        node.style.top = "";
+        node.style.transform = "none";
+        node.style.zIndex = "4";
+        var shown = node.ownerDocument.defaultView && node.ownerDocument.defaultView.getComputedStyle(node);
+        if (shown && shown.display === "inline") {
+            node.style.display = "inline-block";
+        }
+        var body = node.ownerDocument.body;
+        var rect = node.getBoundingClientRect();
+        var bodyRect = body.getBoundingClientRect();
+        var pageX = (place.x || 0) / 100 * (body.clientWidth || 1);
+        var dx = Math.round(pageX - (rect.left - bodyRect.left));
+        var dy = Math.round((place.y || 0) - (rect.top - bodyRect.top));
+        node.style.transform = "translate(" + dx + "px, " + dy + "px)";
+        unlockOverflow(node);
+    }
+
+    function pieceKey(node) {
+        if (!node || node.nodeType !== 1) {
+            return "";
+        }
+        var mark = node.getAttribute && node.getAttribute("data-pd-piece");
+        if (mark && /^[A-Za-z0-9_-]{1,40}$/.test(mark)) {
+            return mark;
+        }
+        if (node.id && /^[A-Za-z][\w:-]{0,40}$/.test(node.id) && node.id.indexOf("pd-") !== 0) {
+            return ("id-" + node.id).replace(/[^\w-]/g, "").substring(0, 80);
+        }
+        var parts = [];
+        var current = node;
+        var guard = 0;
+        while (current && current !== node.ownerDocument.body && guard < 8) {
+            var parent = current.parentNode;
+            if (!parent || parent.nodeType !== 1) {
+                break;
+            }
+            var name = current.tagName.toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (!name) {
+                name = "n";
+            }
+            if (name.length > 10) {
+                name = name.substring(0, 10);
+            }
+            var index = 1;
+            var sibling = current;
+            while ((sibling = sibling.previousElementSibling)) {
+                if (sibling.id === "pd-page" || sibling.id === "pd-dragbar") {
+                    continue;
+                }
+                if (sibling.tagName === current.tagName) {
+                    index++;
+                }
+            }
+            parts.unshift(name + "n" + index);
+            current = parent;
+            guard++;
+        }
+        var key = parts.join("-");
+        return key.length > 80 ? key.substring(key.length - 80) : key;
+    }
+
+    function findByKey(doc, key) {
+        if (!key || !doc.body) {
+            return null;
+        }
+        if (key.indexOf("id-") === 0) {
+            return doc.getElementById(key.substring(3));
+        }
+        var parts = key.split("-");
+        var node = doc.body;
+        for (var i = 0; i < parts.length; i++) {
+            var match = /^([a-z0-9]+)n(\d+)$/.exec(parts[i]);
+            if (!match || !node) {
+                return null;
+            }
+            var children = node.children;
+            var seen = 0;
+            var next = null;
+            for (var c = 0; c < children.length; c++) {
+                var child = children[c];
+                if (child.id === "pd-page" || child.id === "pd-dragbar") {
+                    continue;
+                }
+                if (child.tagName.toLowerCase().replace(/[^a-z0-9]/g, "") === match[1]) {
+                    seen++;
+                    if (seen === Number(match[2])) {
+                        next = child;
+                        break;
+                    }
+                }
+            }
+            node = next;
+        }
+        return node;
+    }
+
+    function draggableNode(start) {
+        var node = start && start.nodeType === 1 ? start : (start && start.parentNode);
+        while (node && node !== document.body) {
+            if (node.id === "pd-dragbar") {
+                return null;
+            }
+            if (node.id === "pd-page") {
+                return null;
+            }
+            if (node.getAttribute && node.getAttribute("data-pd-piece")) {
+                return node;
+            }
+            if (node.getAttribute && (node.getAttribute("data-pd-brand") || node.getAttribute("data-pd-native-bar"))) {
+                node = node.parentNode;
+                continue;
+            }
+            if (!owned(node)) {
+                var rect = node.getBoundingClientRect();
+                if (rect.width >= 24 && rect.height >= 12 && rect.height < 900) {
+                    return node;
+                }
+            }
+            node = node.parentNode;
+        }
+        return null;
+    }
+
+    function forgetPlacement(theme, id) {
+        var list = theme && theme.placements;
+        if (!list || !id) {
+            return;
+        }
+        for (var i = list.length - 1; i >= 0; i--) {
+            if (list[i] && list[i].id === id) {
+                list.splice(i, 1);
+            }
+        }
+    }
+
+    function findTitle(doc, form) {
+        if (!doc.body) {
+            return null;
+        }
+        var formRect = form ? form.getBoundingClientRect() : null;
+        var nodes = doc.body.getElementsByTagName("*");
+        var best = null;
+        var bestScore = -1;
+        var limit = Math.min(nodes.length, 800);
+        for (var i = 0; i < limit; i++) {
+            var elNode = nodes[i];
+            if (owned(elNode) || elNode.getAttribute("data-pd-piece") || elNode.getAttribute("data-pd-brand") || elNode.getAttribute("data-pd-native-bar")) {
+                continue;
+            }
+            if (form && (form === elNode || form.contains(elNode) || elNode.contains(form))) {
+                continue;
+            }
+            var rect = elNode.getBoundingClientRect();
+            if (rect.width < 80 || rect.width > 560 || rect.height < 24 || rect.height > 280) {
+                continue;
+            }
+            if (formRect && (rect.top > formRect.bottom || rect.left > formRect.left + 40)) {
+                continue;
+            }
+            var text = (elNode.textContent || "").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            if (text.length < 2 || text.length > 180) {
+                continue;
+            }
+            var score = rect.height + Math.min(text.length, 80);
+            if (score > bestScore) {
+                best = elNode;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    function adoptPieces(doc) {
+        var form = pieceNode(doc, "form");
+        if (!form) {
+            var forms = doc.getElementsByTagName("form");
+            for (var i = 0; i < forms.length; i++) {
+                if (!owned(forms[i])) {
+                    form = forms[i];
+                    form.setAttribute("data-pd-piece", "form");
+                    addClass(form, "pd-piece");
+                    break;
+                }
+            }
+        }
+        if (!pieceNode(doc, "title")) {
+            var title = findTitle(doc, form);
+            if (title) {
+                title.setAttribute("data-pd-piece", "title");
+                addClass(title, "pd-piece");
+            }
+        }
+    }
+
+    function ensurePreviewPieces(doc) {
+        var page = doc.getElementById("pd-page");
+        if (!page || pieceNode(doc, "title")) {
+            return;
+        }
+        var title = el(doc, "div", "pd-piece pd-preview-piece");
+        title.setAttribute("data-pd-piece", "title");
+        title.appendChild(el(doc, "div", null, "Центр поддержки / STP"));
+        title.appendChild(el(doc, "h2", null, "Техническая поддержка"));
+        var form = el(doc, "div", "pd-piece pd-preview-piece");
+        form.setAttribute("data-pd-piece", "form");
+        form.appendChild(el(doc, "p", null, "Форма заявки"));
+        page.appendChild(title);
+        page.appendChild(form);
+    }
+
+    function stackTitle(title, form) {
+        if (!title || !form || title.parentNode !== form.parentNode) {
+            return;
+        }
+        var parent = title.parentNode;
+        parent.style.setProperty("display", "flex", "important");
+        parent.style.setProperty("flex-direction", "column", "important");
+        parent.style.setProperty("align-items", "center", "important");
+        title.style.order = "-1";
+        form.style.order = "1";
+    }
+
+    function ensureBar(doc, label) {
+        var bar = doc.getElementById("pd-dragbar");
+        if (bar) {
+            return bar;
+        }
+        bar = el(doc, "div");
+        bar.id = "pd-dragbar";
+        var move = el(doc, "button", "pd-move", label || "Перетащить");
+        move.type = "button";
+        move.setAttribute("data-pd-act", "move");
+        var up = el(doc, "button", "pd-move", "Выше");
+        up.type = "button";
+        up.setAttribute("data-pd-act", "up");
+        var reset = el(doc, "button", "pd-move", "Вернуть");
+        reset.type = "button";
+        reset.setAttribute("data-pd-act", "reset");
+        bar.appendChild(move);
+        bar.appendChild(up);
+        bar.appendChild(reset);
+        doc.body.appendChild(bar);
+        return bar;
+    }
+
+    function armArrange(doc, theme, options) {
+        if (!options.arrange || !doc.body || doc.documentElement.getAttribute("data-pd-arrange-on")) {
+            return;
+        }
+        doc.documentElement.setAttribute("data-pd-arrange-on", "1");
+        addClass(doc.documentElement, "pd-arrange");
+        var bar = ensureBar(doc, options.dragLabel);
+        var picked = null;
+        function placeBar() {
+            if (!picked || !doc.body.contains(picked)) {
+                bar.style.display = "none";
+                return;
+            }
+            var rect = picked.getBoundingClientRect();
+            bar.style.display = "flex";
+            var width = bar.offsetWidth || 220;
+            var left = rect.right + 8;
+            var top = Math.max(8, rect.top);
+            if (left + width > window.innerWidth - 8) {
+                left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+                top = Math.max(8, rect.top - 34);
+            }
+            bar.style.left = left + "px";
+            bar.style.top = top + "px";
+        }
+        function pick(node) {
+            if (picked && picked !== node) {
+                removeClass(picked, "pd-picked");
+            }
+            picked = node;
+            if (picked) {
+                addClass(picked, "pd-picked");
+            }
+            placeBar();
+        }
+        function commit(place) {
+            if (typeof options.onPlace === "function") {
+                options.onPlace(place, theme);
+            }
+        }
+        doc.addEventListener("pointermove", function (event) {
+            if (doc.documentElement.getAttribute("data-pd-dragging") || bar.contains(event.target)) {
+                return;
+            }
+            var node = draggableNode(event.target);
+            if (node) {
+                pick(node);
+            }
+        });
+        bar.addEventListener("pointerdown", function (event) {
+            var act = event.target.getAttribute && event.target.getAttribute("data-pd-act");
+            if (!act || !picked) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            if (act === "up") {
+                var parent = picked.parentNode;
+                if (parent && parent !== doc.body && parent.id !== "pd-dragbar" && !owned(parent)) {
+                    pick(parent);
+                }
+                return;
+            }
+            if (act === "reset") {
+                var resetKey = pieceKey(picked);
+                forgetPlacement(theme, resetKey);
+                if (picked.getAttribute("data-pd-piece")) {
+                    forgetPlacement(theme, picked.getAttribute("data-pd-piece"));
+                }
+                removeClass(picked, "pd-placed");
+                picked.style.position = "";
+                picked.style.left = "";
+                picked.style.top = "";
+                picked.style.transform = "";
+                picked.style.display = "";
+                picked.style.zIndex = "";
+                commit({id: resetKey, reset: true});
+                placeBar();
+                return;
+            }
+            var node = picked;
+            var key = pieceKey(node);
+            var origin = readBox(node, doc.body);
+            applyBox(node, {x: origin.x, y: origin.y, width: 0});
+            doc.documentElement.setAttribute("data-pd-dragging", "1");
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var span = doc.body.clientWidth || 1;
+            function move(ev) {
+                applyBox(node, {
+                    x: clampNum(origin.x + (ev.clientX - startX) / span * 100, 0, 90),
+                    y: clampNum(origin.y + (ev.clientY - startY), 0, 2400),
+                    width: 0
+                });
+                placeBar();
+            }
+            function up(ev) {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                doc.documentElement.removeAttribute("data-pd-dragging");
+                var place = {
+                    id: key,
+                    x: Math.round(clampNum(origin.x + (ev.clientX - startX) / span * 100, 0, 90)),
+                    y: Math.round(clampNum(origin.y + (ev.clientY - startY), 0, 2400)),
+                    width: 0
+                };
+                rememberPlacement(theme, place);
+                applyBox(node, place);
+                placeBar();
+                commit(place);
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        });
+    }
+
+    function layoutPieces(doc, theme, options) {
+        options = options || {};
+        if (!doc.body || !doc.documentElement || doc.documentElement.getAttribute("data-pd-dragging")) {
+            return;
+        }
+        if (options.preview) {
+            ensurePreviewPieces(doc);
+        } else {
+            adoptPieces(doc);
+        }
+        if (options.arrange) {
+            addClass(doc.documentElement, "pd-arrange");
+        }
+        var saved = placementIndex(theme);
+        var title = pieceNode(doc, "title");
+        var form = pieceNode(doc, "form");
+        if (title && saved.title) {
+            applyBox(title, saved.title);
+        } else if (title && !title.className.match(/(?:^|\s)pd-placed(?:\s|$)/)) {
+            stackTitle(title, form);
+        }
+        if (form && saved.form) {
+            applyBox(form, saved.form);
+        }
+        var list = theme && theme.placements || [];
+        for (var i = 0; i < list.length; i++) {
+            var place = list[i];
+            if (!place || !place.id || place.id === "title" || place.id === "form") {
+                continue;
+            }
+            var node = findByKey(doc, place.id);
+            if (node && (node.getAttribute("data-pd-piece") || !owned(node))) {
+                applyBox(node, place);
+            }
+        }
+        armArrange(doc, theme, options);
+    }
+
+    function arrangeShell(doc) {
+        var pageNode = doc.getElementById("pd-page");
+        if (pageNode && doc.body && doc.body.firstChild !== pageNode) {
+            doc.body.insertBefore(pageNode, doc.body.firstChild);
+        }
+        var footer = doc.getElementById("pd-slot-footer");
+        if (footer && doc.body) {
+            doc.body.appendChild(footer);
+        }
+        hideNativeBars(doc);
+    }
+
+    function showOriginal(doc, label) {
+        if (!doc.body) {
+            return;
+        }
+        var note = doc.getElementById("pd-original");
+        if (!note) {
+            note = el(doc, "div");
+            note.id = "pd-original";
+            note.className = "pd-original";
+            doc.body.insertBefore(note, doc.body.firstChild);
+        }
+        clearNode(note);
+        note.appendChild(el(doc, "p", null, label || "Так портал выглядит без плагина."));
+    }
+
+    function showKept(doc, label) {
+        if (!doc.body) {
+            return;
+        }
+        var note = el(doc, "div");
+        note.id = "pd-page";
+        note.className = "pd-kept";
+        note.appendChild(el(doc, "p", null, label || "Страница входа остаётся страницей Jira."));
+        doc.body.appendChild(note);
+        addClass(doc.documentElement, "pd-replace");
     }
 
     function apply(options) {
@@ -447,17 +1892,37 @@
         var doc = options.document || document;
         var theme = options.theme;
         if (!doc.documentElement || !theme) {
+            releaseHold(doc);
             return;
         }
         var html = doc.documentElement;
         var page = options.page || pageKind(window.location.pathname);
         var ctx = {
             contextPath: options.contextPath || "",
-            portalId: options.portalId || "global"
+            portalId: options.portalId || "global",
+            account: options.account || null,
+            accountState: options.accountState || (options.account ? "ready" : "anonymous"),
+            requests: options.requests || []
         };
+        if (options.original) {
+            dropPage(doc);
+            showOriginal(doc, options.originalLabel);
+            releaseHold(doc);
+            return;
+        }
+        if (page !== "home" && page !== "mine" && page !== "profile" && page !== "create" && page !== "request" && page !== "shell") {
+            dropPage(doc);
+            if (options.preview) {
+                showKept(doc, options.keptLabel);
+            }
+            releaseHold(doc);
+            return;
+        }
         addClass(html, "pd-active");
-        setAttr(html, "data-pd-header-mode", (theme.header && theme.header.mode) || "replace");
-        setAttr(html, "data-pd-footer-mode", (theme.footer && theme.footer.mode) || "replace");
+        addClass(html, "pd-replace");
+        removeClass(html, "pd-shell");
+        setAttr(html, "data-pd-header-mode", publishedMode(theme.header && theme.header.mode));
+        setAttr(html, "data-pd-footer-mode", publishedMode(theme.footer && theme.footer.mode));
         setAttr(html, "data-pd-sticky", theme.header && theme.header.sticky === false ? "0" : "1");
         setAttr(html, "data-pd-search", theme.search && theme.search.visible === false ? "off" : "on");
         setAttr(html, "data-pd-layout", (theme.requests && theme.requests.layout) || "grid");
@@ -467,19 +1932,32 @@
         setAttr(html, "data-pd-align", (theme.hero && theme.hero.align) || "center");
         setAttr(html, "data-pd-hero", showHero(theme, page) ? "on" : "off");
         setAttr(html, "data-pd-page", page);
+        setAttr(html, "data-pd-screen", options.screen || screenOf(doc.defaultView || window));
         if (options.css != null) {
             ensureStyle(doc, options.css);
         }
-        renderChrome(doc, theme, ctx);
-        markRegions(doc, theme, page);
+        replacePage(doc, theme, ctx, page, options.account || null, options.catalog || null);
         if (typeof options.onRender === "function") {
             options.onRender(doc);
         }
+        releaseHold(doc);
     }
 
     function teardown(doc) {
+        releaseNative(doc);
         var html = doc.documentElement;
         removeClass(html, "pd-active");
+        removeClass(html, "pd-replace");
+        removeClass(html, "pd-shell");
+        var built = doc.getElementById("pd-page");
+        if (built && built.parentNode) {
+            built.parentNode.removeChild(built);
+        }
+        var note = doc.getElementById("pd-original");
+        if (note && note.parentNode) {
+            note.parentNode.removeChild(note);
+        }
+        releaseHold(doc);
         var style = doc.getElementById(STYLE_ID);
         if (style && style.parentNode) {
             style.parentNode.removeChild(style);
@@ -494,10 +1972,17 @@
         }
     }
 
-    function getJson(url, cb) {
+    function getJson(url, cb, headers) {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.setRequestHeader("Accept", "application/json");
+        if (headers) {
+            for (var name in headers) {
+                if (headers.hasOwnProperty(name)) {
+                    xhr.setRequestHeader(name, headers[name]);
+                }
+            }
+        }
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) {
                 return;
@@ -515,6 +2000,24 @@
         xhr.send(null);
     }
 
+    function putJson(url, body, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("PUT", url, true);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) {
+                return;
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                cb(null);
+            } else {
+                cb(new Error("HTTP " + xhr.status));
+            }
+        };
+        xhr.send(body);
+    }
+
     function boot() {
         if (window.__PD_BOOTED) {
             return;
@@ -522,15 +2025,70 @@
         window.__PD_BOOTED = true;
         var contextPath = detectContext();
         var currentId = null;
+        var currentKind = null;
         var current = null;
         var suppress = 0;
         var timer = 0;
+        var account = null;
+        var accountState = "pending";
+        var catalog = null;
+        var mine = null;
+        var arrange = false;
+
+        function loadAccount() {
+            var dom = readVisitor(document);
+            getJson(contextPath + "/rest/api/2/myself", function (err, me) {
+                if (err || !me || (!me.displayName && !me.name && !me.key)) {
+                    account = null;
+                    accountState = "anonymous";
+                } else {
+                    var urls = me.avatarUrls || {};
+                    account = {
+                        username: me.name || me.key || "",
+                        name: me.displayName || me.name || me.key,
+                        email: me.emailAddress || "",
+                        avatar: urls["48x48"] || urls["24x24"] || urls["16x16"] || "",
+                        logoutHref: (dom && dom.logoutHref) || (contextPath + "/logout"),
+                        requestsHref: contextPath + "/servicedesk/customer/user/requests",
+                        profileHref: contextPath + "/servicedesk/customer/user/profile"
+                    };
+                    accountState = "ready";
+                }
+                if (current) {
+                    paint(current, currentId);
+                }
+            });
+        }
+
+        function mineRows(values) {
+            var rows = [];
+            var base = contextPath || "";
+            for (var i = 0; i < values.length; i++) {
+                var item = values[i] || {};
+                var key = item.issueKey || "";
+                if (!key) {
+                    continue;
+                }
+                var href = item._links && item._links.web ? item._links.web : "";
+                if (!href && item.serviceDeskId) {
+                    href = base + "/servicedesk/customer/portal/" + item.serviceDeskId + "/" + key;
+                }
+                var status = item.currentStatus && (item.currentStatus.status || item.currentStatus.statusName) || "";
+                rows.push({
+                    key: key,
+                    summary: requestSummary(item),
+                    status: plainText(status),
+                    href: href || "#"
+                });
+            }
+            return rows;
+        }
 
         function paint(data, id) {
             suppress++;
             try {
-                if (!data || !data.enabled || !data.theme) {
-                    current = null;
+                if (!data || data.active === false || !data.enabled || !data.theme) {
+                    current = data || {enabled: false, active: false};
                     teardown(document);
                     return;
                 }
@@ -541,9 +2099,22 @@
                     css: data.css,
                     contextPath: contextPath,
                     portalId: id,
-                    page: pageKind(window.location.pathname)
+                    page: pageKind(window.location.pathname),
+                    screen: screenOf(window),
+                    account: account,
+                    accountState: accountState,
+                    requests: mine,
+                    catalog: catalog,
+                    arrange: arrange,
+                    dragLabel: "Перетащить",
+                    onPlace: function (place, theme) {
+                        var source = data.source && data.source !== "off" && data.source !== "none" ? data.source : "global";
+                        putJson(contextPath + "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(source), JSON.stringify(theme), function () {
+                        });
+                    }
                 });
             } catch (e) {
+                releaseHold(document);
                 if (window.console && console.warn) {
                     console.warn("Portal Designer skipped a render", e);
                 }
@@ -555,17 +2126,52 @@
 
         function load(force) {
             var id = portalIdFromPath(window.location.pathname);
-            if (!force && current && currentId === id) {
+            var kindNow = pageKind(window.location.pathname);
+            if (!force && current && currentId === id && currentKind === kindNow) {
                 paint(current, id);
                 return;
             }
+            var known = current && current.theme && currentId === id && current.active !== false && current.enabled;
             currentId = id;
-            getJson(contextPath + "/rest/portal-designer/1.0/public-theme?portalId=" + encodeURIComponent(id), function (err, data) {
-                if (err) {
+            currentKind = kindNow;
+            if (known) {
+                paint(current, id);
+            }
+            var token = {};
+            var kind = pageKind(window.location.pathname);
+            load.token = token;
+            var pending = kind === "mine" ? 3 : 2;
+            var themeData = null;
+            var failed = false;
+            var items = null;
+            function finish() {
+                if (load.token !== token || --pending) {
                     return;
                 }
-                paint(data, id);
+                if (failed) {
+                    teardown(document);
+                    return;
+                }
+                catalog = items;
+                paint(themeData, id);
+            }
+            getJson(contextPath + "/rest/portal-designer/1.0/public-theme?portalId=" + encodeURIComponent(id), function (err, data) {
+                failed = !!err;
+                themeData = data;
+                finish();
             });
+            fetchCatalog(contextPath, id, function (list) {
+                items = list;
+                finish();
+            });
+            if (kind === "mine") {
+                fetchValues(contextPath, "/rest/servicedeskapi/request", function (err, values) {
+                    mine = mineRows(values || []);
+                    finish();
+                });
+            } else {
+                mine = null;
+            }
         }
 
         function schedule() {
@@ -579,6 +2185,44 @@
         }
 
         load(true);
+        var currentScreen = screenOf(window);
+        window.addEventListener("resize", function () {
+            var next = screenOf(window);
+            if (next === currentScreen) {
+                return;
+            }
+            currentScreen = next;
+            if (current) {
+                paint(current, currentId);
+            }
+        });
+        loadAccount();
+        getJson(contextPath + "/rest/portal-designer/1.0/admin/theme?portalId=global", function (err) {
+            arrange = !err;
+            if (arrange && current) {
+                paint(current, currentId);
+            }
+        });
+        document.addEventListener("click", function (event) {
+            if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+            var node = event.target;
+            while (node && node !== document && node.tagName !== "A") {
+                node = node.parentNode;
+            }
+            if (!node || node.tagName !== "A" || node.getAttribute("target") === "_blank") {
+                return;
+            }
+            var href = node.getAttribute("href") || "";
+            if (href.indexOf("/servicedesk/customer/") < 0 || node.pathname === window.location.pathname) {
+                return;
+            }
+            addClass(document.documentElement, "pd-hold");
+            window.setTimeout(function () {
+                removeClass(document.documentElement, "pd-hold");
+            }, 4000);
+        }, true);
         if (window.MutationObserver && document.body) {
             var observer = new MutationObserver(schedule);
             observer.observe(document.body, {childList: true, subtree: true});

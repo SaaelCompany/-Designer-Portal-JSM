@@ -33,6 +33,7 @@
         <description>Adds the portal runtime to customer portal HTML.</description>
         <url-pattern>/servicedesk/customer/*</url-pattern>
         <dispatcher>REQUEST</dispatcher>
+        <dispatcher>FORWARD</dispatcher>
     </servlet-filter>
 
     <web-resource key="portal-runtime" name="Portal Designer runtime">
@@ -40,6 +41,8 @@
         <context>customerportal</context>
         <context>servicedesk.portal</context>
         <context>servicedesk.general</context>
+        <context>servicedesk.portal.general</context>
+        <context>sd.customer.portal</context>
         <resource type="download" name="portal.css" location="css/portal.css"/>
         <resource type="download" name="portal.js" location="js/portal.js"/>
     </web-resource>

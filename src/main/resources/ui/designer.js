@@ -8,6 +8,8 @@
             all: "Все порталы",
             portalPh: "ID",
             home: "Главная",
+            mine: "Запросы",
+            profile: "Профиль",
             login: "Вход",
             create: "Заявка",
             desktop: "Компьютер",
@@ -19,6 +21,39 @@
             import: "Импорт",
             export: "Экспорт",
             published: "Опубликовано",
+            structure: "Страница",
+            style: "Стиль",
+            designedPage: "Конструктор",
+            originalPortal: "Выключить",
+            pluginOff: "Плагин выключен на всех порталах. Посетители видят обычный портал Jira.",
+            originalLive: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
+            originalLabel: "Так портал выглядит без плагина: услуги Jira, без собранной страницы.",
+            pageHint: "Макет — это холст выбранного экрана. Тяните объект мышью, правый край меняет ширину. Снизу задаются положение, свой шрифт и цвет именно этого объекта.",
+            place: "Положение и размер",
+            freePlace: "Свободное положение",
+            placeHint: "Возьмите объект на холсте и перетащите его. Правый нижний угол меняет ширину. Числа относятся к выбранному экрану. Свой шрифт — это имя семейства, например Manrope или Georgia.",
+            dragPiece: "Перетащить",
+            posX: "Слева, %",
+            posY: "Сверху, px",
+            blockWidth: "Ширина, %",
+            blockFont: "Шрифт блока",
+            blockSize: "Размер шрифта",
+            inheritFont: "Как на странице",
+            addText: "Текстовый блок",
+            addLinks: "Блок ссылок",
+            addShape: "Фигура",
+            deleteObject: "Удалить",
+            customFont: "Свой шрифт",
+            fontColor: "Цвет шрифта",
+            fillColor: "Заливка",
+            blockHeight: "Высота, px",
+            blockTitle: "Заголовок",
+            blockText: "Текст",
+            hideBlock: "Скрыть",
+            showBlock: "Показать",
+            guest: "Гость",
+            signedIn: "Вошёл",
+            profileHint: "Кнопка входа только у гостя. У вошедшего здесь его имя: профиль, запросы и выход.",
             save: "Сохранить",
             saving: "Сохраняем…",
             saved: "Сохранено",
@@ -36,7 +71,7 @@
             colors: "Цвета",
             type: "Типографика",
             layout: "Сетка",
-            unpublished: "Посетители портала этого не видят, пока стиль не опубликован.",
+            unpublished: "Сейчас посетители видят обычный портал Jira. Сохраните, чтобы включить страницу конструктора.",
             inherited: "Этот портал показывает общий стиль. Включите свой стиль, чтобы править только его.",
             ownStyle: "Свой стиль этого портала",
             editGlobal: "Править общий стиль",
@@ -69,8 +104,8 @@
             showTitle: "Показывать название",
             titleField: "Название",
             sticky: "Прилипает при прокрутке",
-            showLogin: "Кнопка входа",
-            loginLabel: "Текст кнопки входа",
+            showLogin: "Вход или профиль",
+            loginLabel: "Текст для гостя",
             headerH: "Высота шапки",
             links: "Ссылки",
             visible: "Показывать",
@@ -85,6 +120,9 @@
             gap: "Интервал",
             cardStyle: "Вид карточек",
             descriptions: "Описания на карточках",
+            replaceHint: "Опубликованная страница заменяет портал Jira: список, проект, запросы, профиль и форму заявки. Поля заявки остаются полями Jira и стоят внутри этой страницы. Страница входа не меняется.",
+            cardOrderHint: "Объект двигается, если потянуть его мышью. Порядок карточек меняется, если тянуть одну на другую с зажатой клавишей Alt.",
+            keptPage: "Страница входа остаётся страницей Jira.",
             layoutMode: "Раскладка",
             tone: "Тон",
             text: "Текст",
@@ -102,6 +140,7 @@
             homeOnly: "Только главная",
             allPages: "Все страницы",
             start: "Слева",
+            rightAlign: "Справа",
             center: "По центру",
             grid: "Плитка",
             list: "Список",
@@ -147,6 +186,8 @@
             all: "All portals",
             portalPh: "ID",
             home: "Home",
+            mine: "Requests",
+            profile: "Profile",
             login: "Login",
             create: "Request",
             desktop: "Desktop",
@@ -158,6 +199,39 @@
             import: "Import",
             export: "Export",
             published: "Published",
+            structure: "Page",
+            style: "Style",
+            designedPage: "Builder",
+            originalPortal: "Turn off",
+            pluginOff: "The plugin is off for every portal. Visitors see the standard Jira portal.",
+            originalLive: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
+            originalLabel: "This is the portal without the plugin: Jira's services, with no constructed page.",
+            pageHint: "The canvas is the screen selected above. Drag an object, and drag its right edge to change the width. Position, a custom font and color below belong to that object.",
+            place: "Place and size",
+            freePlace: "Free position",
+            placeHint: "Drag an object on the canvas. The bottom-right corner changes its width. The numbers follow the selected screen. A custom font is a family name, such as Manrope or Georgia.",
+            dragPiece: "Drag",
+            posX: "From the left, %",
+            posY: "From the top, px",
+            blockWidth: "Width, %",
+            blockFont: "Block font",
+            blockSize: "Font size",
+            inheritFont: "Same as the page",
+            addText: "Text block",
+            addLinks: "Link row",
+            addShape: "Shape",
+            deleteObject: "Delete",
+            customFont: "Custom font",
+            fontColor: "Font color",
+            fillColor: "Fill",
+            blockHeight: "Height, px",
+            blockTitle: "Heading",
+            blockText: "Text",
+            hideBlock: "Hide",
+            showBlock: "Show",
+            guest: "Guest",
+            signedIn: "Signed in",
+            profileHint: "Only a guest sees the login button. A signed-in visitor sees their name, with profile, requests and sign out.",
             save: "Save",
             saving: "Saving…",
             saved: "Saved",
@@ -175,7 +249,7 @@
             colors: "Colors",
             type: "Type",
             layout: "Layout",
-            unpublished: "Visitors will not see this until you publish it.",
+            unpublished: "Visitors currently see the plain Jira portal. Save to turn the constructed page on.",
             inherited: "This portal uses the shared theme. Turn on its own theme to edit it separately.",
             ownStyle: "Own theme for this portal",
             editGlobal: "Edit the shared theme",
@@ -208,8 +282,8 @@
             showTitle: "Show title",
             titleField: "Title",
             sticky: "Stick while scrolling",
-            showLogin: "Login button",
-            loginLabel: "Login label",
+            showLogin: "Login or profile",
+            loginLabel: "Label for a guest",
             headerH: "Header height",
             links: "Links",
             visible: "Visible",
@@ -224,6 +298,9 @@
             gap: "Gap",
             cardStyle: "Card style",
             descriptions: "Card descriptions",
+            replaceHint: "The published page replaces the Jira portal: the list, the project, requests, the profile and the request form. The fields stay Jira fields and sit inside this page. The login page is unchanged.",
+            cardOrderHint: "Drag an object to move it. Hold Alt and drag one card onto another to change their order.",
+            keptPage: "The login page stays a Jira page.",
             layoutMode: "Layout",
             tone: "Tone",
             text: "Text",
@@ -241,6 +318,7 @@
             homeOnly: "Home only",
             allPages: "Every page",
             start: "Start",
+            rightAlign: "Right",
             center: "Center",
             grid: "Grid",
             list: "List",
@@ -309,7 +387,10 @@
         presets: [],
         device: "desktop",
         page: "home",
-        section: "hero",
+        section: "page",
+        blockId: "header",
+        asUser: false,
+        pluginActive: true,
         dirty: false,
         past: [],
         future: [],
@@ -449,6 +530,7 @@
 
     function markDirty() {
         state.dirty = true;
+        state.revision = (state.revision || 0) + 1;
         var save = document.getElementById("save");
         if (save) {
             save.textContent = t("save");
@@ -467,12 +549,21 @@
         theme.layout = theme.layout || {};
         theme.header = theme.header || {};
         theme.header.links = theme.header.links || [];
+        if (theme.header.mode === "theme") {
+            theme.header.mode = "replace";
+        }
         theme.hero = theme.hero || {};
         theme.search = theme.search || {};
         theme.requests = theme.requests || {};
+        theme.requests.order = theme.requests.order || [];
+        theme.blocks = theme.blocks || [];
+        theme.placements = theme.placements || [];
         theme.announcement = theme.announcement || {};
         theme.footer = theme.footer || {};
         theme.footer.columns = theme.footer.columns || [];
+        if (theme.footer.mode === "theme") {
+            theme.footer.mode = "replace";
+        }
         theme.responsive = theme.responsive || {};
         theme.responsive.mobile = theme.responsive.mobile || {};
         theme.responsive.tablet = theme.responsive.tablet || {};
@@ -524,7 +615,9 @@
         if (state.device === "tablet") {
             return 820;
         }
-        return 1180;
+        var content = state.theme && state.theme.layout ? Number(state.theme.layout.contentWidth) || 1080 : 1080;
+        var pad = state.theme && state.theme.layout ? Number(state.theme.layout.pagePadding) || 28 : 28;
+        return Math.max(960, Math.min(1600, content + pad * 2 + 24));
     }
 
     function layoutDevice() {
@@ -534,16 +627,14 @@
             return;
         }
         var w = widths();
-        var availW = Math.max(280, stage.clientWidth - 48);
         var availH = Math.max(420, stage.clientHeight - 28);
-        var scale = Math.min(1, availW / w);
         frame.style.width = w + "px";
-        frame.style.height = Math.round(availH / scale) + "px";
-        frame.style.transform = "scale(" + scale + ")";
+        frame.style.height = availH + "px";
+        frame.style.transform = "none";
         frame.style.transformOrigin = "top left";
         var device = document.getElementById("device");
-        device.style.width = Math.round(w * scale + 20) + "px";
-        device.style.height = Math.round(availH + 20) + "px";
+        device.style.width = (w + 20) + "px";
+        device.style.height = (availH + 20) + "px";
     }
 
     function frameDoc() {
@@ -556,26 +647,44 @@
         var js = (window.PD_CONTEXT || "") + "/download/resources/" + window.PD_PLUGIN_KEY + ":portal-runtime/portal.js";
         return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>" +
             "<link rel=\"stylesheet\" href=\"" + css + "\"/>" +
-            "<style id=\"pd-generated-style\"></style></head><body>" +
-            "<header data-pd-region=\"header\"><span>Jira Service Management</span></header>" +
-            "<div id=\"mock-home\"><div class=\"native-search\"><input type=\"search\" placeholder=\"Поиск\"/></div>" +
-            "<h2 id=\"mock-group\">Популярные услуги</h2><div id=\"mock-requests\"></div></div>" +
-            "<div id=\"mock-login\"><form><h2>Вход</h2><label>Эл. почта<input type=\"email\"/></label>" +
-            "<label>Пароль<input type=\"password\"/></label><button type=\"submit\">Войти</button></form></div>" +
-            "<div id=\"mock-create\"><form><h2>Новая заявка</h2><label>Тема<input type=\"text\"/></label>" +
-            "<label>Описание<textarea rows=\"4\"></textarea></label><button type=\"submit\">Отправить</button></form></div>" +
-            "<footer data-pd-region=\"footer\">Jira Service Management</footer>" +
+            "<style id=\"pd-generated-style\"></style>" +
+            "<style>.pd-slot{cursor:grab}.pd-slot.pd-dragging{cursor:grabbing}.pd-slot.pd-selected{outline:2px solid #0c66e4;outline-offset:2px}</style></head><body>" +
+            "<div id=\"pd-source\"></div>" +
             "<script>window.__PD_MANUAL=true;</script><script src=\"" + js + "\"></script>" +
             "</body></html>";
     }
 
+    function ensureSampleForm(doc) {
+        if (state.page !== "create" && state.page !== "request") {
+            return;
+        }
+        if (doc.getElementById("create-form")) {
+            return;
+        }
+        var form = doc.createElement("form");
+        form.id = "create-form";
+        var label = doc.createElement("label");
+        label.appendChild(doc.createTextNode("Тема"));
+        var input = doc.createElement("input");
+        input.type = "text";
+        input.name = "summary";
+        label.appendChild(input);
+        form.appendChild(label);
+        var button = doc.createElement("button");
+        button.type = "submit";
+        button.className = "aui-button-primary";
+        button.appendChild(doc.createTextNode("Создать"));
+        form.appendChild(button);
+        doc.body.appendChild(form);
+    }
+
     function fillCards(doc) {
-        var box = doc.getElementById("mock-requests");
+        var box = doc.getElementById("pd-source");
         if (!box) {
             return;
         }
-        var types = state.requestTypes.length ? state.requestTypes : SAMPLE;
-        var sig = state.portalId + ":" + types.map(function (item) { return item.name; }).join("|");
+        var types = cardSource();
+        var sig = state.portalId + ":" + types.map(function (item) { return item.id + ":" + item.name; }).join("|");
         if (box.getAttribute("data-sig") === sig) {
             return;
         }
@@ -583,28 +692,24 @@
         while (box.firstChild) {
             box.removeChild(box.firstChild);
         }
-        var portal = state.portalId === "global" ? "1" : state.portalId;
-        types.forEach(function (type, index) {
+        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "";
+        types.forEach(function (type) {
             var link = doc.createElement("a");
-            link.href = "#";
-            link.setAttribute("data-pd-card", "1");
-            var icon = doc.createElement("span");
-            icon.className = "pd-card-icon";
-            icon.textContent = (type.name || "?").charAt(0).toUpperCase();
-            var title = doc.createElement("span");
-            title.className = "pd-card-title";
-            title.textContent = type.name || "";
-            var desc = doc.createElement("span");
-            desc.className = "pd-card-desc";
-            desc.setAttribute("data-pd-desc", "1");
-            desc.textContent = type.description || "";
-            link.appendChild(icon);
-            link.appendChild(title);
-            link.appendChild(desc);
+            link.href = portal
+                ? "/servicedesk/customer/portal/" + portal + "/create/" + type.id
+                : "/servicedesk/customer/portal/" + type.id;
+            link.appendChild(doc.createTextNode(type.name || ""));
+            if (type.description) {
+                var note = doc.createElement("p");
+                note.textContent = type.description;
+                link.appendChild(note);
+            }
             box.appendChild(link);
         });
-        box.setAttribute("data-pd-region", "requests");
-        box.setAttribute("data-pd-select", "requests");
+        var cards = doc.getElementById("pd-cards");
+        if (cards) {
+            cards.removeAttribute("data-pd-sig");
+        }
     }
 
     function armPreview(doc) {
@@ -619,7 +724,13 @@
             }
             while (node && node !== doc) {
                 if (node.getAttribute && node.getAttribute("data-pd-select")) {
-                    state.section = node.getAttribute("data-pd-select");
+                    var sel = node.getAttribute("data-pd-select");
+                    if (sel.indexOf("block:") === 0) {
+                        state.blockId = sel.substring(6);
+                    } else {
+                        state.blockId = sel;
+                    }
+                    state.section = "block";
                     renderNav();
                     renderInspector();
                     return;
@@ -627,6 +738,180 @@
                 node = node.parentNode;
             }
         }, true);
+        doc.addEventListener("pointerdown", function (event) {
+            if (!state.theme || !event.target.closest || event.altKey) {
+                return;
+            }
+            var handle = event.target.closest(".pd-resize, .pd-slot");
+            if (!handle) {
+                return;
+            }
+            var slot = handle.classList && handle.classList.contains("pd-slot") ? handle : handle.closest(".pd-slot");
+            var page = doc.getElementById("pd-page");
+            if (!slot || !page) {
+                return;
+            }
+            var block = findBlock(slot.getAttribute("data-pd-block"));
+            if (!block) {
+                return;
+            }
+            var resizing = handle !== slot && (" " + handle.className + " ").indexOf(" pd-resize ") >= 0;
+            if (event.target.closest("a, button")) {
+                event.preventDefault();
+            }
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var dragging = false;
+            var origin = null;
+            function keys() {
+                if (state.device === "mobile") {
+                    return {x: "mobileX", y: "mobileY", w: "mobileW"};
+                }
+                if (state.device === "tablet") {
+                    return {x: "tabletX", y: "tabletY", w: "tabletW"};
+                }
+                return {x: "x", y: "y", w: "width"};
+            }
+            function measured() {
+                var rect = page.getBoundingClientRect();
+                var freeAlready = (" " + slot.className + " ").indexOf(" pd-free ") >= 0;
+                var target = freeAlready ? slot : (slot.querySelector("[data-pd-region], .pd-text-block, .pd-shape, .pd-links-block") || slot);
+                var box = target.getBoundingClientRect();
+                var width = rect.width || 1;
+                return {
+                    x: (box.left - rect.left) / width * 100,
+                    y: box.top - rect.top,
+                    w: Math.max(8, box.width / width * 100)
+                };
+            }
+            function begin() {
+                if (dragging) {
+                    return;
+                }
+                dragging = true;
+                remember();
+                origin = measured();
+                block.free = true;
+                if (slot.setPointerCapture && event.pointerId != null) {
+                    try {
+                        slot.setPointerCapture(event.pointerId);
+                    } catch (ignored) {
+                        /* capture stays inside the preview */
+                    }
+                }
+                slot.className += (slot.className.indexOf("pd-dragging") >= 0 ? "" : " pd-dragging");
+                if (doc.getSelection) {
+                    var selection = doc.getSelection();
+                    if (selection && selection.removeAllRanges) {
+                        selection.removeAllRanges();
+                    }
+                }
+            }
+            function move(ev) {
+                if (!dragging) {
+                    if (!resizing && Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) < 4) {
+                        return;
+                    }
+                    begin();
+                }
+                ev.preventDefault();
+                var rect = page.getBoundingClientRect();
+                var width = rect.width || 1;
+                var frame = keys();
+                if (resizing) {
+                    block[frame.w] = Math.max(8, Math.min(100, origin.w + (ev.clientX - startX) / width * 100));
+                } else {
+                    block[frame.x] = Math.max(0, Math.min(100, origin.x + (ev.clientX - startX) / width * 100));
+                    block[frame.y] = Math.max(0, Math.min(2400, origin.y + (ev.clientY - startY)));
+                    block[frame.w] = Math.max(8, Math.min(100, origin.w));
+                }
+                slot.style.position = "absolute";
+                slot.style.left = block[frame.x] + "%";
+                slot.style.top = block[frame.y] + "px";
+                slot.style.width = block[frame.w] + "%";
+                if ((" " + slot.className + " ").indexOf(" pd-free ") < 0) {
+                    slot.className += " pd-free";
+                }
+            }
+            function up() {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                slot.className = slot.className.replace(" pd-dragging", "");
+                if (!dragging) {
+                    return;
+                }
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }
+            if (resizing) {
+                event.preventDefault();
+                begin();
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        }, true);
+        doc.addEventListener("pointerdown", function (event) {
+            var tile = event.target.closest ? event.target.closest(".pd-tile") : null;
+            if (!tile || !state.theme || !event.altKey) {
+                return;
+            }
+            event.preventDefault();
+            if (tile.setPointerCapture && event.pointerId != null) {
+                try {
+                    tile.setPointerCapture(event.pointerId);
+                } catch (ignored) {
+                    /* capture is optional */
+                }
+            }
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var moved = false;
+            function move(ev) {
+                if (Math.abs(ev.clientX - startX) + Math.abs(ev.clientY - startY) > 6) {
+                    moved = true;
+                }
+            }
+            function up(ev) {
+                doc.removeEventListener("pointermove", move);
+                doc.removeEventListener("pointerup", up);
+                if (tile.releasePointerCapture && ev.pointerId != null) {
+                    try {
+                        tile.releasePointerCapture(ev.pointerId);
+                    } catch (ignored) {
+                        /* already released */
+                    }
+                }
+                if (!moved) {
+                    return;
+                }
+                var under = doc.elementFromPoint(ev.clientX, ev.clientY);
+                var other = under && under.closest ? under.closest(".pd-tile") : null;
+                var box = doc.getElementById("pd-cards");
+                if (!other || other === tile || !box || other.parentNode !== box) {
+                    return;
+                }
+                remember();
+                var mark = doc.createComment("");
+                box.insertBefore(mark, tile);
+                box.insertBefore(tile, other);
+                box.insertBefore(other, mark);
+                box.removeChild(mark);
+                var ids = [];
+                for (var i = 0; i < box.children.length; i++) {
+                    var id = box.children[i].getAttribute("data-pd-type");
+                    if (id) {
+                        ids.push(id);
+                    }
+                }
+                ensureShape(state.theme);
+                state.theme.requests.order = ids;
+                markDirty();
+                scheduleCompile();
+            }
+            doc.addEventListener("pointermove", move);
+            doc.addEventListener("pointerup", up);
+        });
         doc.addEventListener("input", function (event) {
             var path = event.target.getAttribute && event.target.getAttribute("data-pd-bind");
             if (!path || !state.theme) {
@@ -650,6 +935,7 @@
             return;
         }
         fillCards(doc);
+        ensureSampleForm(doc);
         runtime.apply({
             document: doc,
             theme: state.previewTheme,
@@ -658,10 +944,66 @@
             portalId: state.portalId,
             page: state.page,
             preview: true,
+            keptLabel: t("keptPage"),
+            original: state.pluginActive === false || !(state.theme && state.theme.enabled),
+            catalog: previewCatalog(),
+            screen: state.device,
+            originalLabel: t("originalLabel"),
+            account: state.asUser ? {name: "Анна Ковалева", username: "anna", email: "anna@example.com"} : null,
+            accountState: state.asUser ? "ready" : "anonymous",
+            requests: [
+                {key: "STP-50", summary: "Тест", status: "Ожидание поддержки", href: "#"},
+                {key: "STP-47", summary: "Заявка", status: "Ожидание поддержки", href: "#"}
+            ],
+            arrange: false,
+            dragLabel: t("dragPiece"),
+            onPlace: function (place) {
+                ensureShape(state.theme);
+                var list = state.theme.placements;
+                var found = false;
+                for (var i = list.length - 1; i >= 0; i--) {
+                    if (list[i].id !== place.id) {
+                        continue;
+                    }
+                    if (place.reset) {
+                        list.splice(i, 1);
+                    } else {
+                        list[i].x = place.x;
+                        list[i].y = place.y;
+                        list[i].width = place.width;
+                        found = true;
+                    }
+                }
+                if (!place.reset && !found) {
+                    list.push({id: place.id, x: place.x, y: place.y, width: place.width});
+                }
+                if (state.previewTheme) {
+                    ensureShape(state.previewTheme);
+                    state.previewTheme.placements = list;
+                }
+                markDirty();
+                scheduleCompile();
+            },
             onRender: function (rendered) {
                 var bound = rendered.querySelectorAll("[data-pd-bind]");
                 for (var i = 0; i < bound.length; i++) {
                     bound[i].setAttribute("contenteditable", "true");
+                }
+                var slots = rendered.querySelectorAll(".pd-slot");
+                for (var s = 0; s < slots.length; s++) {
+                    var sel = slots[s].getAttribute("data-pd-select") || "";
+                    var chosen = sel === state.blockId || sel === "block:" + state.blockId;
+                    slots[s].className = slots[s].className.replace(" pd-selected", "");
+                    if (chosen) {
+                        slots[s].className += " pd-selected";
+                    }
+                    if (slots[s].querySelector(".pd-resize")) {
+                        continue;
+                    }
+                    var resize = rendered.createElement("div");
+                    resize.className = "pd-resize";
+                    resize.setAttribute("aria-label", t("blockWidth"));
+                    slots[s].appendChild(resize);
                 }
             }
         });
@@ -674,7 +1016,9 @@
             return;
         }
         var messages = [];
-        if (!state.theme.enabled) {
+        if (state.pluginActive === false) {
+            messages.push(t("pluginOff"));
+        } else if (!state.theme.enabled) {
             messages.push(t("unpublished"));
         }
         if (state.portalId !== "global" && state.theme.useGlobal) {
@@ -720,7 +1064,9 @@
                 ]),
                 h("select", {id: "portal", onchange: onPortal}),
                 h("input", {id: "portal-id", class: "portal-id", type: "text", placeholder: t("portalPh"), onchange: onManualPortal}),
+                h("div", {class: "seg", id: "mode"}),
                 h("div", {class: "seg", id: "pages"}),
+                h("div", {class: "seg", id: "audience"}),
                 h("div", {class: "seg", id: "devices"}),
                 h("div", {class: "grow"}, [
                     h("button", {type: "button", class: "ghost", text: t("undo"), onclick: undo}),
@@ -728,10 +1074,6 @@
                     h("button", {type: "button", class: "ghost", id: "lang", text: t("lang"), onclick: toggleLang}),
                     h("button", {type: "button", class: "ghost", text: t("import"), onclick: importTheme}),
                     h("button", {type: "button", class: "ghost", text: t("export"), onclick: exportTheme}),
-                    h("label", {class: "publish"}, [
-                        h("input", {id: "enabled", type: "checkbox", onchange: onEnabled}),
-                        h("span", {id: "published-label", text: t("published")})
-                    ]),
                     save
                 ])
             ]),
@@ -739,6 +1081,12 @@
                 h("nav", {class: "nav", id: "nav"}),
                 h("div", {class: "stage-wrap"}, [
                     h("div", {id: "banner", class: "banner"}),
+                    h("div", {class: "canvas-tools", id: "canvas-tools"}, [
+                        h("button", {type: "button", class: "text-btn", text: t("addText"), onclick: function () { addBlock("text"); }}),
+                        h("button", {type: "button", class: "text-btn", text: t("addShape"), onclick: function () { addBlock("shape"); }}),
+                        h("button", {type: "button", class: "text-btn", text: t("addLinks"), onclick: function () { addBlock("links"); }}),
+                        h("button", {type: "button", class: "text-btn danger", id: "delete-object", text: t("deleteObject"), onclick: function () { deleteBlock(state.blockId); }})
+                    ]),
                     h("div", {class: "stage", id: "stage"}, [
                         h("div", {class: "device", id: "device"}, [
                             h("iframe", {id: "preview", title: "Portal preview"})
@@ -757,8 +1105,16 @@
     }
 
     function renderSegments() {
-        fillSeg("pages", [["home", "home"], ["login", "login"], ["create", "create"]], state.page, function (id) {
+        fillSeg("pages", [["home", "home"], ["mine", "mine"], ["profile", "profile"], ["login", "login"], ["create", "create"]], state.page, function (id) {
             state.page = id;
+            renderSegments();
+            paintPreview();
+        });
+        fillSeg("mode", [["designed", "designedPage"], ["original", "originalPortal"]], state.pluginActive === false ? "original" : "designed", function (id) {
+            setSwitch(id !== "original");
+        });
+        fillSeg("audience", [["guest", "guest"], ["user", "signedIn"]], state.asUser ? "user" : "guest", function (id) {
+            state.asUser = id === "user";
             renderSegments();
             paintPreview();
         });
@@ -767,6 +1123,7 @@
             renderSegments();
             renderInspector();
             layoutDevice();
+            paintPreview();
         });
     }
 
@@ -786,11 +1143,13 @@
     function renderNav() {
         var host = document.getElementById("nav");
         host.innerHTML = "";
-        ["theme", "header", "hero", "search", "requests", "announcement", "footer", "screens", "css"].forEach(function (id) {
+        ["page", "style", "screens", "css"].forEach(function (id) {
+            var active = state.section === id || (id === "page" && state.section === "block");
+            var label = id === "page" ? "structure" : id;
             host.appendChild(h("button", {
                 type: "button",
-                class: state.section === id ? "active" : "",
-                text: t(id),
+                class: active ? "active" : "",
+                text: t(label),
                 onclick: function () {
                     state.section = id;
                     renderNav();
@@ -935,11 +1294,15 @@
         }
         host.innerHTML = "";
         ensureShape(state.theme);
-        host.appendChild(h("h2", {text: t(state.section)}));
-        if (state.device !== "desktop" && (state.section === "requests" || state.section === "hero" || state.section === "header" || state.section === "theme")) {
+        host.appendChild(h("h2", {text: inspectorTitle()}));
+        if (state.device !== "desktop" && (state.section === "style" || state.section === "block")) {
             host.appendChild(h("p", {class: "hint", text: t("deviceHint")}));
         }
-        if (state.section === "theme") {
+        if (state.section === "page") {
+            renderPage(host);
+        } else if (state.section === "block") {
+            renderBlock(host);
+        } else if (state.section === "style" || state.section === "theme") {
             renderTheme(host);
         } else if (state.section === "header") {
             renderHeader(host);
@@ -973,14 +1336,452 @@
         host.appendChild(h("ul", {class: "warn-list", id: "warnings"}));
         paintWarnings();
         paintContrast();
-        var enabled = document.getElementById("enabled");
-        if (enabled) {
-            enabled.checked = !!state.theme.enabled;
-        }
+        renderSegments();
         paintBanner();
     }
 
+    function inspectorTitle() {
+        if (state.section === "page") {
+            return t("structure");
+        }
+        if (state.section === "style" || state.section === "theme") {
+            return t("style");
+        }
+        if (state.section === "block") {
+            var block = findBlock(state.blockId);
+            return block ? blockLabel(block) : t("structure");
+        }
+        return t(state.section);
+    }
+
+    function blockLabel(block) {
+        if (block.type === "text" || block.type === "links" || block.type === "shape") {
+            return block.title || t(block.type === "text" ? "addText" : block.type === "shape" ? "addShape" : "addLinks");
+        }
+        return t(block.type === "requests" ? "requests" : block.type);
+    }
+
+    function defaultBlocks(theme) {
+        return [
+            {id: "announcement", type: "announcement", visible: !!(theme.announcement && theme.announcement.visible), title: "", text: "", links: []},
+            {id: "header", type: "header", visible: !theme.header || theme.header.mode !== "hidden", title: "", text: "", links: []},
+            {id: "hero", type: "hero", visible: !theme.hero || theme.hero.visible !== false, title: "", text: "", links: []},
+            {id: "search", type: "search", visible: !theme.search || theme.search.visible !== false, title: "", text: "", links: []},
+            {id: "requests", type: "requests", visible: true, title: "", text: "", links: []},
+            {id: "footer", type: "footer", visible: !theme.footer || theme.footer.mode !== "hidden", title: "", text: "", links: []}
+        ];
+    }
+
+    function materializeBlocks() {
+        ensureShape(state.theme);
+        if (!state.theme.blocks.length && !state.theme.composed) {
+            state.theme.blocks = defaultBlocks(state.theme);
+        }
+    }
+
+    function findBlock(id) {
+        materializeBlocks();
+        var list = state.theme.blocks;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === id) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function blockIsShown(block) {
+        if (!block || block.visible === false) {
+            return false;
+        }
+        if (block.type === "header") {
+            return state.theme.header.mode !== "hidden";
+        }
+        if (block.type === "footer") {
+            return state.theme.footer.mode !== "hidden";
+        }
+        if (block.type === "hero") {
+            return state.theme.hero.visible !== false;
+        }
+        if (block.type === "search") {
+            return state.theme.search.visible !== false;
+        }
+        if (block.type === "announcement") {
+            return !!state.theme.announcement.visible;
+        }
+        return true;
+    }
+
+    function setBlockShown(block, shown) {
+        block.visible = shown;
+        if (block.type === "header") {
+            state.theme.header.mode = shown ? "replace" : "hidden";
+        } else if (block.type === "footer") {
+            state.theme.footer.mode = shown ? "replace" : "hidden";
+        } else if (block.type === "hero") {
+            state.theme.hero.visible = shown;
+        } else if (block.type === "search") {
+            state.theme.search.visible = shown;
+        } else if (block.type === "announcement") {
+            state.theme.announcement.visible = shown;
+        }
+    }
+
+    function renderPage(host) {
+        host.appendChild(h("p", {class: "hint", text: t("pageHint")}));
+        materializeBlocks();
+        var list = h("div", {class: "outline"});
+        state.theme.blocks.forEach(function (block) {
+            var row = h("div", {class: "outline-item" + (state.blockId === block.id ? " active" : "") + (blockIsShown(block) ? "" : " off")});
+            row.draggable = true;
+            row.addEventListener("dragstart", function (event) {
+                event.dataTransfer.setData("text/plain", block.id);
+                event.dataTransfer.effectAllowed = "move";
+            });
+            row.addEventListener("dragover", function (event) {
+                event.preventDefault();
+            });
+            row.addEventListener("drop", function (event) {
+                event.preventDefault();
+                moveBlock(event.dataTransfer.getData("text/plain"), block.id);
+            });
+            row.appendChild(h("button", {type: "button", class: "name", text: blockLabel(block), onclick: function () {
+                state.blockId = block.id;
+                state.section = "block";
+                renderNav();
+                renderInspector();
+            }}));
+            row.appendChild(h("button", {type: "button", class: "mini", text: blockIsShown(block) ? t("hideBlock") : t("showBlock"), onclick: function () {
+                remember();
+                materializeBlocks();
+                setBlockShown(block, !blockIsShown(block));
+                markDirty();
+                renderInspector();
+                scheduleCompile();
+            }}));
+            row.appendChild(h("button", {type: "button", class: "mini", text: "×", onclick: function () {
+                deleteBlock(block.id);
+            }}));
+            list.appendChild(row);
+        });
+        host.appendChild(list);
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addText"), onclick: function () { addBlock("text"); }}));
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addShape"), onclick: function () { addBlock("shape"); }}));
+        host.appendChild(h("button", {type: "button", class: "text-btn", text: t("addLinks"), onclick: function () { addBlock("links"); }}));
+    }
+
+    function moveBlock(fromId, toId) {
+        if (!fromId || fromId === toId) {
+            return;
+        }
+        remember();
+        materializeBlocks();
+        var list = state.theme.blocks;
+        var from = -1;
+        var to = -1;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].id === fromId) {
+                from = i;
+            }
+            if (list[i].id === toId) {
+                to = i;
+            }
+        }
+        if (from < 0 || to < 0) {
+            return;
+        }
+        var item = list.splice(from, 1)[0];
+        list.splice(to, 0, item);
+        markDirty();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function deleteBlock(id) {
+        if (!id || !state.theme) {
+            return;
+        }
+        remember();
+        materializeBlocks();
+        state.theme.composed = true;
+        state.theme.blocks = state.theme.blocks.filter(function (item) { return item.id !== id; });
+        state.blockId = "";
+        state.section = "page";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function addBlock(type) {
+        remember();
+        materializeBlocks();
+        state.theme.composed = true;
+        var id = "b" + Math.random().toString(36).slice(2, 8);
+        state.theme.blocks.push({
+            id: id,
+            type: type,
+            visible: true,
+            title: type === "shape" ? t("addShape") : type === "text" ? t("addText") : t("addLinks"),
+            text: "",
+            links: type === "links" ? [{label: t("newLink"), href: "/"}] : [],
+            free: true,
+            x: 8,
+            y: 180,
+            width: type === "shape" ? 28 : 40,
+            height: type === "shape" ? 120 : 0,
+            fill: type === "shape" ? "#E8EEF9" : "",
+            color: ""
+        });
+        state.blockId = id;
+        state.section = "block";
+        markDirty();
+        renderNav();
+        renderInspector();
+        scheduleCompile();
+    }
+
+    function renderBlock(host) {
+        var block = findBlock(state.blockId);
+        if (!block) {
+            renderPage(host);
+            return;
+        }
+        if (block.type === "header") {
+            host.appendChild(h("p", {class: "hint", text: t("profileHint")}));
+            renderHeader(host);
+        } else if (block.type === "hero") {
+            renderHero(host);
+        } else if (block.type === "search") {
+            renderSearch(host);
+        } else if (block.type === "requests") {
+            renderRequests(host);
+        } else if (block.type === "announcement") {
+            renderAnnouncement(host);
+        } else if (block.type === "footer") {
+            renderFooter(host);
+        } else if (block.type === "text" || block.type === "shape") {
+            host.appendChild(plainField(block, "title", t("blockTitle")));
+            if (block.type === "text") {
+                host.appendChild(plainArea(block, "text", t("blockText")));
+            }
+        } else if (block.type === "links") {
+            host.appendChild(plainField(block, "title", t("blockTitle")));
+            block.links = block.links || [];
+            host.appendChild(linkEditor(block.links));
+        }
+        host.appendChild(placeControls(block));
+    }
+
+    function placeControls(block) {
+        if (!block.width) {
+            block.width = 100;
+        }
+        var box = h("div");
+        var frame = frameKeys();
+        box.appendChild(h("div", {class: "block-label", text: t("place")}));
+        box.appendChild(h("p", {class: "hint", text: t("placeHint")}));
+        var free = h("input", {type: "checkbox", checked: !!block.free});
+        free.addEventListener("change", function () {
+            remember();
+            block.free = free.checked;
+            if (block.free && !block.width) {
+                block.width = 80;
+            }
+            markDirty();
+            renderInspector();
+            scheduleCompile();
+        });
+        box.appendChild(h("label", {class: "check"}, [free, document.createTextNode(t("freePlace"))]));
+        box.appendChild(frameNumber(block, frame.x, block.x, t("posX"), 0, 100));
+        box.appendChild(frameNumber(block, frame.y, block.y, t("posY"), 0, 2400));
+        box.appendChild(frameNumber(block, frame.w, block.width, t("blockWidth"), 8, 100));
+        box.appendChild(frameNumber(block, frame.h, block.height, t("blockHeight"), 0, 1600));
+        box.appendChild(blockNumber(block, "fontSize", t("blockSize"), 0, 96));
+        box.appendChild(plainField(block, "font", t("customFont")));
+        box.appendChild(blockColor(block, "color", t("fontColor")));
+        box.appendChild(blockColor(block, "fill", t("fillColor")));
+        box.appendChild(h("button", {type: "button", class: "text-btn danger", text: t("deleteObject"), onclick: function () { deleteBlock(block.id); }}));
+        box.appendChild(blockChoice(block, "align", t("align"), [
+            ["", "inheritFont"], ["left", "start"], ["center", "center"], ["right", "rightAlign"]
+        ]));
+        return box;
+    }
+
+    function frameKeys() {
+        if (state.device === "mobile") {
+            return {x: "mobileX", y: "mobileY", w: "mobileW", h: "mobileH"};
+        }
+        if (state.device === "tablet") {
+            return {x: "tabletX", y: "tabletY", w: "tabletW", h: "tabletH"};
+        }
+        return {x: "x", y: "y", w: "width", h: "height"};
+    }
+
+    function frameNumber(block, key, fallback, label, min, max) {
+        var shown = block[key] != null && block[key] >= 0 ? block[key] : (fallback || 0);
+        var input = h("input", {type: "number", min: String(min), max: String(max), step: "1", value: shown});
+        input.addEventListener("change", function () {
+            remember();
+            var value = Number(input.value);
+            if (isNaN(value)) {
+                value = 0;
+            }
+            block.free = true;
+            block[key] = Math.max(min, Math.min(max, value));
+            input.value = String(block[key]);
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function blockColor(block, key, label) {
+        var current = /^#[0-9a-fA-F]{6}$/.test(block[key] || "") ? block[key] : "#000000";
+        var picker = h("input", {type: "color", value: current});
+        var text = h("input", {type: "text", value: block[key] || ""});
+        function write(next) {
+            remember();
+            block[key] = next;
+            markDirty();
+            scheduleCompile();
+        }
+        picker.addEventListener("input", function () {
+            text.value = picker.value.toUpperCase();
+            write(text.value);
+        });
+        text.addEventListener("change", function () {
+            write(text.value.trim());
+            if (/^#[0-9a-fA-F]{6}$/.test(text.value)) {
+                picker.value = text.value;
+            }
+        });
+        return field(key, label, h("div", {class: "color-row"}, [picker, text]));
+    }
+
+    function blockNumber(block, key, label, min, max) {
+        var input = h("input", {type: "number", min: String(min), max: String(max), step: "1", value: block[key] || 0});
+        input.addEventListener("change", function () {
+            remember();
+            var value = Number(input.value);
+            if (isNaN(value)) {
+                value = 0;
+            }
+            block[key] = Math.max(min, Math.min(max, value));
+            input.value = String(block[key]);
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function blockChoice(block, key, label, options) {
+        var input = h("select");
+        options.forEach(function (option) {
+            var node = h("option", {value: option[0], text: t(option[1])});
+            if ((block[key] || "") === option[0]) {
+                node.selected = true;
+            }
+            input.appendChild(node);
+        });
+        input.addEventListener("change", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function plainField(block, key, label) {
+        var input = h("input", {type: "text", value: block[key] || ""});
+        input.addEventListener("input", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function plainArea(block, key, label) {
+        var input = h("textarea", {rows: 4, value: block[key] || ""});
+        input.addEventListener("input", function () {
+            remember();
+            block[key] = input.value;
+            markDirty();
+            scheduleCompile();
+        });
+        return field(key, label, input);
+    }
+
+    function cardSource() {
+        if (/^[0-9]+$/.test(state.portalId)) {
+            return state.requestTypes.length ? state.requestTypes : SAMPLE;
+        }
+        if (state.portals.length) {
+            return state.portals.map(function (portal) {
+                return {id: portal.id, name: portal.projectName || portal.projectKey || "", description: ""};
+            });
+        }
+        return SAMPLE;
+    }
+
+    function previewCatalog() {
+        var portal = /^[0-9]+$/.test(state.portalId) ? state.portalId : "";
+        return cardSource().map(function (item) {
+            return {
+                id: String(item.id),
+                name: item.name || "",
+                description: item.description || "",
+                href: portal
+                    ? "/servicedesk/customer/portal/" + portal + "/create/" + item.id
+                    : "/servicedesk/customer/portal/" + item.id
+            };
+        });
+    }
+
+    function setSwitch(active) {
+        if (state.pluginActive === active && (!active || !state.theme || state.theme.enabled)) {
+            paintPreview();
+            return;
+        }
+        var previous = state.pluginActive;
+        var previousEnabled = state.theme ? state.theme.enabled : false;
+        state.pluginActive = active;
+        if (active && state.theme && !state.theme.enabled) {
+            remember();
+            state.theme.enabled = true;
+            markDirty();
+        }
+        renderSegments();
+        paintPreview();
+        paintBanner();
+        api("PUT", "/rest/portal-designer/1.0/admin/switch", {active: active}, function (err) {
+            if (err) {
+                state.pluginActive = previous;
+                if (state.theme) {
+                    state.theme.enabled = previousEnabled;
+                }
+                toast(t("saveError"));
+                renderSegments();
+                paintPreview();
+                paintBanner();
+            }
+        });
+    }
+
+    function loadSwitch(done) {
+        api("GET", "/rest/portal-designer/1.0/admin/switch", null, function (err, data) {
+            state.pluginActive = !(data && data.active === false);
+            if (done) {
+                done();
+            }
+        });
+    }
+
     function renderTheme(host) {
+        host.appendChild(h("p", {class: "hint", text: t("replaceHint")}));
         host.appendChild(h("div", {class: "block-label", text: t("presets")}));
         var presets = h("div", {class: "presets"});
         state.presets.forEach(function (preset) {
@@ -1009,7 +1810,8 @@
         host.appendChild(field("typography.font", t("font"), selectInput("typography.font", [
             ["system", "system"], ["serif", "serif"], ["humanist", "humanist"], ["condensed", "condensed"], ["mono", "mono"]
         ])));
-        host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 13, 22)));
+        host.appendChild(field("typography.font", t("customFont"), textInput("typography.font")));
+        host.appendChild(field(pathFor("typography.baseSize"), t("base"), numberInput("typography.baseSize", 12, 48)));
         host.appendChild(field("typography.headingWeight", t("weight"), selectInput("typography.headingWeight", [
             ["400", "400"], ["500", "500"], ["600", "600"], ["700", "700"], ["800", "800"]
         ])));
@@ -1023,7 +1825,7 @@
     }
 
     function renderHeader(host) {
-        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("header.mode", t("mode"), selectInput("header.mode", [["replace", "replace"], ["hidden", "hidden"]])));
         host.appendChild(field("header.title", t("titleField"), textInput("header.title")));
         host.appendChild(checkInput("header.showTitle", t("showTitle")));
         host.appendChild(checkInput("header.sticky", t("sticky")));
@@ -1058,6 +1860,7 @@
     }
 
     function renderRequests(host) {
+        host.appendChild(h("p", {class: "hint", text: t("cardOrderHint")}));
         host.appendChild(field("requests.layout", t("layoutMode"), selectInput("requests.layout", [["grid", "grid"], ["list", "list"]])));
         host.appendChild(field(pathFor("requests.columns"), t("columns"), numberInput("requests.columns", 1, 4)));
         host.appendChild(field("requests.gap", t("gap"), numberInput("requests.gap", 0, 40)));
@@ -1072,7 +1875,7 @@
     }
 
     function renderFooter(host) {
-        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["theme", "themeMode"], ["hidden", "hidden"]])));
+        host.appendChild(field("footer.mode", t("mode"), selectInput("footer.mode", [["replace", "replace"], ["hidden", "hidden"]])));
         host.appendChild(field("footer.copyright", t("copyright"), textInput("footer.copyright")));
         host.appendChild(h("div", {class: "block-label", text: t("columnsTitle")}));
         state.theme.footer.columns = state.theme.footer.columns || [];
@@ -1250,12 +2053,25 @@
     }
 
     function saveTheme() {
+        if (state.pluginActive !== false && state.theme) {
+            state.theme.enabled = true;
+        }
         var button = document.getElementById("save");
+        var onError = state.afterSaveError;
+        var revision = state.revision || 0;
+        state.afterSaveError = null;
         button.textContent = t("saving");
         api("PUT", "/rest/portal-designer/1.0/admin/theme?portalId=" + encodeURIComponent(state.portalId), state.theme, function (err, data) {
+            if ((state.revision || 0) !== revision) {
+                button.textContent = t("save");
+                return;
+            }
             if (err || !data) {
                 button.textContent = t("save");
                 toast(t("saveError"));
+                if (onError) {
+                    onError();
+                }
                 return;
             }
             state.theme = data.theme;
@@ -1392,6 +2208,9 @@
         } else if (!typing && (event.ctrlKey || event.metaKey) && ((event.key === "z" && event.shiftKey) || event.key === "y")) {
             event.preventDefault();
             redo();
+        } else if (!typing && (event.key === "Delete" || event.key === "Backspace") && state.blockId) {
+            event.preventDefault();
+            deleteBlock(state.blockId);
         }
     });
     window.addEventListener("beforeunload", function (event) {
@@ -1402,8 +2221,13 @@
         event.returnValue = "";
     });
 
+    if (document.getElementById("header")) {
+        document.documentElement.className += " pd-embedded";
+    }
     renderShell();
     loadPresets(function () {
-        loadPortals();
+        loadSwitch(function () {
+            loadPortals();
+        });
     });
 })();
